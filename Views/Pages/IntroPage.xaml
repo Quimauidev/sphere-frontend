@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="Sphere.Views.Pages.IntroPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    Title="Giới thiệu">
+
+    <VerticalStackLayout
+        Margin="0,20,0,0"
+        Padding="20"
+        Spacing="50">
+
+        <!--  Tiêu đề  -->
+        <Label
+            FontAttributes="Bold"
+            FontSize="20"
+            HorizontalOptions="Center"
+            HorizontalTextAlignment="Center"
+            Text="Chào mừng Sphere duyên khởi" />
+
+        <!--  Tính năng 1  -->
+        <Grid ColumnDefinitions="50,*" ColumnSpacing="20">
+            <Image Source="chat.png" />
+            <VerticalStackLayout Grid.Column="1">
+                <Label
+                    FontAttributes="Bold"
+                    FontSize="16"
+                    Text="Trò chuyện và gọi điện với bất kỳ ai" />
+                <Label
+                    LineBreakMode="WordWrap"
+                    Text="Nhắn tin và gọi điện thoại/video với mọi người, tạo kết nối tức thì 💎."
+                    TextColor="Gray" />
+            </VerticalStackLayout>
+        </Grid>
+
+        <!--  Tính năng 2  -->
+        <Grid ColumnDefinitions="50,*" ColumnSpacing="20">
+            <Image Source="location.png" />
+
+            <VerticalStackLayout Grid.Column="1">
+                <Label
+                    FontAttributes="Bold"
+                    FontSize="16"
+                    Text="Tìm bạn bè khu vực gần bạn nhất" />
+                <Label
+                    LineBreakMode="WordWrap"
+                    Text="Dễ dàng khám phá và kết nối với người dùng xung quanh của bạn 💎."
+                    TextColor="Gray" />
+            </VerticalStackLayout>
+        </Grid>
+
+        <!--  Tính năng 3  -->
+        <Grid ColumnDefinitions="50,*" ColumnSpacing="20">
+            <Image Source="khien3.png" />
+            <VerticalStackLayout Grid.Column="1">
+                <Label
+                    FontAttributes="Bold"
+                    FontSize="16"
+                    Text="Thẻ kết nối yêu thương" />
+                <Label
+                    LineBreakMode="WordWrap"
+                    Text="Thẻ đặc biệt gắn kết với bạn bè, tăng sự tương tác văn minh 💎."
+                    TextColor="Gray" />
+            </VerticalStackLayout>
+        </Grid>
+
+        <!--  Tính năng 4  -->
+        <Grid ColumnDefinitions="50,*" ColumnSpacing="20">
+            <Image Source="name.png" />
+            <VerticalStackLayout Grid.Column="1">
+                <Label
+                    FontAttributes="Bold"
+                    FontSize="16"
+                    Text="Thẻ đổi tên đặc biệt" />
+                <Label
+                    LineBreakMode="WordWrap"
+                    Text="Thay đổi biệt danh hoặc nickname của bạn một cách độc đáo, nổi bật trong mắt bạn bè 💎."
+                    TextColor="Gray" />
+            </VerticalStackLayout>
+        </Grid>
+
+        <!--  Nút bắt đầu  -->
+        <Button
+            BackgroundColor="#512BD4"
+            Clicked="OnGetStartedClicked"
+            CornerRadius="25"
+            FontAttributes="Bold"
+            Text="Bắt đầu"
+            TextColor="White" />
+
+    </VerticalStackLayout>
+</ContentPage>

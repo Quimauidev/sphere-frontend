@@ -1,0 +1,212 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView
+    x:Class="Sphere.Views.Controls.ProfileHeaderView"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
+
+    <VerticalStackLayout Spacing="5">
+        <Grid>
+            <Image
+                Aspect="AspectFill"
+                HeightRequest="100"
+                Source="{Binding CoverPhotoDisplay}"
+                VerticalOptions="Start">
+                <Image.GestureRecognizers>
+                    <TapGestureRecognizer Command="{Binding ShowImageOptionsCommand}" CommandParameter="cover" />
+                </Image.GestureRecognizers>
+            </Image>
+
+            <StackLayout
+                Margin="0,30,0,0"
+                HorizontalOptions="Center"
+                Spacing="5">
+
+                <Frame
+                    Padding="0"
+                    BorderColor="White"
+                    CornerRadius="50"
+                    HeightRequest="100"
+                    WidthRequest="100">
+                    <Image
+                        x:Name="AvatarImage"
+                        Aspect="AspectFill"
+                        Source="{Binding AvatarDisplay}">
+                        <Image.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding ShowImageOptionsCommand}" CommandParameter="avatar" />
+                        </Image.GestureRecognizers>
+                    </Image>
+                </Frame>
+
+                <StackLayout
+                    HorizontalOptions="End"
+                    Orientation="Horizontal"
+                    Spacing="5">
+                    <Label
+                        FontAttributes="Bold"
+                        FontSize="20"
+                        Text="{Binding FullNameDisplay}" />
+
+                    <Label
+                        FontAttributes="Bold"
+                        FontFamily="MaterialIcons"
+                        FontSize="14"
+                        Text="{Binding CurrentUser.UserDTO.Gender, Converter={StaticResource GenderToIconConverter}}"
+                        TextColor="{Binding CurrentUser.UserDTO.Gender, Converter={StaticResource GenderToColorConverter}}"
+                        VerticalOptions="Center" />
+                </StackLayout>
+            </StackLayout>
+        </Grid>
+        <VerticalStackLayout HorizontalOptions="Center">
+
+            <!--  Ngày sinh  -->
+            <HorizontalStackLayout>
+                <Label Text="Ngày sinh: " />
+                <Label Text="{Binding BirthDayDisplay}" />
+            </HorizontalStackLayout>
+
+            <!--  Giới tính  -->
+            <HorizontalStackLayout>
+                <Label Text="Giới tính: " />
+                <Label Text="{Binding GenderDisplay}" />
+            </HorizontalStackLayout>
+
+            <!--  Ngày tham gia  -->
+            <HorizontalStackLayout>
+                <Label Text="Tham gia: " />
+                <Label Text="{Binding CreatedAtDisplay}" />
+            </HorizontalStackLayout>
+        </VerticalStackLayout>
+        <HorizontalStackLayout
+            Padding="10"
+            HorizontalOptions="Center"
+            Spacing="20">
+
+            <!--  Frame Kim cương  -->
+            <Frame
+                Margin="0"
+                Padding="5"
+                BackgroundColor="#f0f6f6"
+                BorderColor="#f0f6f6"
+                HasShadow="True"
+                HeightRequest="50"
+                WidthRequest="150">
+
+                <Grid ColumnDefinitions="Auto,*,Auto">
+
+                    <Image
+                        HeightRequest="30"
+                        Source="kimcuong.png"
+                        WidthRequest="30" />
+
+                    <Label
+                        Grid.Column="1"
+                        FontAttributes="Bold"
+                        FontSize="16"
+                        HorizontalTextAlignment="Center"
+                        Text="{Binding Coins, Converter={StaticResource CoinsFormatterConverter}}"
+                        TextColor="#512BD4"
+                        VerticalOptions="Center"
+                        WidthRequest="60" />
+
+                    <Image Grid.Column="2">
+                        <Image.Source>
+                            <FontImageSource
+                                FontFamily="MaterialIcons"
+                                Glyph="&#xF11EC;"
+                                Color="#1877F2" />
+                        </Image.Source>
+                    </Image>
+                </Grid>
+            </Frame>
+
+            <!--  Frame VIP  -->
+            <Frame
+                Padding="5"
+                BackgroundColor="#fdf2e6"
+                BorderColor="#fdf2e6"
+                HasShadow="True"
+                HeightRequest="50"
+                WidthRequest="150">
+                <StackLayout Orientation="Horizontal" VerticalOptions="Center">
+                    <Image
+                        HeightRequest="30"
+                        Source="vip.png"
+                        WidthRequest="30" />
+
+                    <Label
+                        Margin="5,0,0,0"
+                        FontAttributes="Bold"
+                        FontSize="16"
+                        Text="VIP"
+                        TextColor="#512BD4"
+                        VerticalOptions="Center" />
+
+                    <Label
+                        Margin="5,0,0,0"
+                        FontAttributes="Bold"
+                        FontSize="16"
+                        Text="{Binding VipLevel}"
+                        TextColor="#512BD4"
+                        VerticalOptions="Center"
+                        WidthRequest="50" />
+                </StackLayout>
+            </Frame>
+        </HorizontalStackLayout>
+
+        <Grid Padding="10" ColumnDefinitions="Auto,Auto,Auto">
+            <Label FontAttributes="Bold" Text="Tiểu sử: " />
+            <VerticalStackLayout Grid.Column="1">
+                <Label
+                    x:Name="BioLabel"
+                    LineBreakMode="WordWrap"
+                    MaxLines="{Binding BioMaxLines}"
+                    Text="{Binding BioDisplay}"
+                    VerticalOptions="Fill"
+                    WidthRequest="250">
+                    <Label.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding EditBioCommand}" />
+                    </Label.GestureRecognizers>
+                </Label>
+                <!--  Nút xem thêm/thu gọn  -->
+                <Label
+                    FontAttributes="Italic"
+                    IsVisible="{Binding ShouldShowBioToggle}"
+                    Text="{Binding BioToggleText}"
+                    TextColor="Blue">
+                    <Label.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding ToggleBioCommand}" />
+                    </Label.GestureRecognizers>
+                </Label>
+
+            </VerticalStackLayout>
+            <ImageButton
+                Grid.Column="2"
+                Command="{Binding EditBioCommand}"
+                HeightRequest="18"
+                VerticalOptions="Start"
+                WidthRequest="18">
+                <ImageButton.Source>
+                    <FontImageSource
+                        FontFamily="MaterialIcons"
+                        Glyph="&#xF03EB;"
+                        Color="Blue" />
+                </ImageButton.Source>
+            </ImageButton>
+        </Grid>
+        <BoxView BackgroundColor="LightGray" HeightRequest="2" />
+        <Frame
+            Margin="10"
+            Padding="0"
+            BorderColor="LightGray"
+            HasShadow="True">
+            <Editor
+                Margin="5"
+                IsReadOnly="True"
+                Placeholder="Bạn đang nghĩ gì?">
+                <Editor.GestureRecognizers>
+                    <TapGestureRecognizer Command="{Binding PostStatusCommand}" />
+                </Editor.GestureRecognizers>
+            </Editor>
+        </Frame>
+    </VerticalStackLayout>
+</ContentView>

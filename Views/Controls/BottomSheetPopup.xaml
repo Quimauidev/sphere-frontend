@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<toolkit:Popup
+    x:Class="Sphere.Views.Controls.BottomSheetPopup"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+    CanBeDismissedByTappingOutsideOfPopup="True"
+    HorizontalOptions="Fill"
+    VerticalOptions="Fill">
+
+    <Grid>
+        <BoxView BackgroundColor="#80000000" />
+        <!--  Lớp overlay mờ nếu muốn  -->
+        <Frame
+            x:Name="SheetContent"
+            Padding="20"
+            BackgroundColor="White"
+            CornerRadius="20"
+            HasShadow="True"
+            HeightRequest="300"
+            TranslationY="300"
+            VerticalOptions="End">
+            <!--  Bắt đầu ngoài màn hình  -->
+            <Label Text="Đây là Bottom Sheet!" />
+
+        </Frame>
+    </Grid>
+
+</toolkit:Popup>

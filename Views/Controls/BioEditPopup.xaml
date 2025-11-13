@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<toolkit:Popup
+    x:Class="Sphere.Views.Controls.BioEditPopup"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:toolkit="clr-namespace:CommunityToolkit.Maui.Views;assembly=CommunityToolkit.Maui"
+    Size="300,220">
+
+    <VerticalStackLayout Padding="20">
+        <Label FontAttributes="Bold" Text="Giới thiệu bản thân" />
+        <Editor
+            x:Name="BioEditor"
+            AutoSize="TextChanges"
+            HeightRequest="120"
+            Keyboard="Text"
+            MaxLength="200"
+            Placeholder="Nhập tiểu sử..."
+            PlaceholderColor="Gray"
+            Text="{Binding CurrentBio, Mode=TwoWay}" />
+
+        <HorizontalStackLayout HorizontalOptions="End">
+            <Button Clicked="OnSave" Text="Lưu" />
+        </HorizontalStackLayout>
+    </VerticalStackLayout>
+</toolkit:Popup>

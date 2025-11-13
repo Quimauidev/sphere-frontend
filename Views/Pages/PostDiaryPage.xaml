@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="Sphere.Views.Pages.PostDiaryPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:help="clr-namespace:Sphere.Common.Helpers"
+    xmlns:local="clr-namespace:Sphere.Common.Helpers"
+    xmlns:viewsControls="clr-namespace:Sphere.Views.Controls"
+    x:Name="PageRoot"
+    Title="DiaryPage">
+
+    <ContentPage.Resources>
+        <ResourceDictionary>
+
+            <!--  Template Ảnh  -->
+            <DataTemplate x:Key="ImageTemplate">
+
+                <Border Stroke="Gray">
+
+                    <Grid ColumnDefinitions="*" RowDefinitions="120">
+                        <Image Aspect="AspectFill" Source="{Binding .}" />
+
+                        <ImageButton
+                            BackgroundColor="White"
+                            Command="{Binding BindingContext.RemoveImageCommand, Source={x:Reference PageRoot}}"
+                            CommandParameter="{Binding .}"
+                            CornerRadius="12"
+                            HeightRequest="24"
+                            HorizontalOptions="End"
+                            VerticalOptions="Start"
+                            WidthRequest="24">
+                            <ImageButton.Source>
+                                <FontImageSource
+                                    FontFamily="MaterialIcons"
+                                    Glyph="&#xF0C31;"
+                                    Color="Red" />
+                            </ImageButton.Source>
+                        </ImageButton>
+                    </Grid>
+                </Border>
+            </DataTemplate>
+
+            <!--  Template Nút +  -->
+            <DataTemplate x:Key="AddButtonTemplate">
+                <Border BackgroundColor="#f2f2f2" Stroke="Gray">
+                    <Grid ColumnDefinitions="*" RowDefinitions="120">
+                        <Button
+                            BackgroundColor="Transparent"
+                            Command="{Binding BindingContext.OpenImagePickerCommand, Source={x:Reference PageRoot}}"
+                            FontSize="36"
+                            Text="+"
+                            TextColor="Gray" />
+                    </Grid>
+                </Border>
+            </DataTemplate>
+        </ResourceDictionary>
+    </ContentPage.Resources>
+
+    <VerticalStackLayout Padding="10" Spacing="20">
+
+        <!--  Nội dung  -->
+        <Editor
+            AutoSize="TextChanges"
+            FontSize="18"
+            HeightRequest="200"
+            Keyboard="Text"
+            MaxLength="1000"
+            Placeholder="Bạn đang nghĩ gì?"
+            Text="{Binding PostDiaryModel.Content}" />
+
+        <!--  Grid Ảnh + Nút +  -->
+        <CollectionView x:Name="GalleryView" ItemsSource="{Binding GalleryItems}">
+            <CollectionView.ItemsLayout>
+                <GridItemsLayout
+                    HorizontalItemSpacing="2"
+                    Orientation="Vertical"
+                    Span="3"
+                    VerticalItemSpacing="2" />
+            </CollectionView.ItemsLayout>
+        </CollectionView>
+
+        <HorizontalStackLayout Spacing="10" VerticalOptions="Center">
+            <Label Text="Quyền riêng tư:" VerticalOptions="Center" />
+            <Picker
+                x:Name="privacyPicker"
+                ItemDisplayBinding="{Binding Converter={StaticResource PrivacyConverter}}"
+                ItemsSource="{Binding PrivacyOptions}"
+                SelectedItem="{Binding SelectedPrivacy}" />
+        </HorizontalStackLayout>
+
+        <!--  Nút Đăng  -->
+        <Button
+            BackgroundColor="#6200EE"
+            Command="{Binding PostDiaryCommand}"
+            CornerRadius="8"
+            FontAttributes="Bold"
+            HeightRequest="50"
+            Text="Đăng"
+            TextColor="White" />
+    </VerticalStackLayout>
+</ContentPage>

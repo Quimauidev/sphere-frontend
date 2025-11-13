@@ -1,0 +1,37 @@
+﻿<?xml version="1.0" encoding="UTF-8" ?>
+<Application
+    x:Class="Sphere.App"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:local="clr-namespace:Sphere.Converters">
+    <Application.Resources>
+        <ResourceDictionary>
+            <local:InverseBooleanConverter x:Key="InverseBooleanConverter" />
+            <local:InverseBoolConverter x:Key="InverseBoolConverter" />
+            <local:GenderToBoolConverter x:Key="GenderToBoolConverter" />
+            <local:PrivacyConverter x:Key="PrivacyConverter" />
+            <local:StringNotNullOrEmptyConverter x:Key="StringNotNullOrEmptyConverter" />
+            <local:TimeAgoConverter x:Key="TimeAgoConverter" />
+            <local:NullOrEmptyConverter x:Key="NullOrEmptyConverter" />
+            <local:ShowNoDataMessageConverter x:Key="ShowNoDataMessageConverter" />
+            <local:ShowEndOfListConverter x:Key="ShowEndOfListConverter" />
+            <local:StateToBoolConverter x:Key="StateToBoolConverter" />
+            <local:AvatarGenderConverter x:Key="AvatarGenderConverter" />
+            <local:CoinsFormatterConverter x:Key="CoinsFormatterConverter" />
+            <local:BoolToColorConverter x:Key="BoolToColorConverter" />
+            <local:BoolToLayoutOptionsConverter x:Key="BoolToLayoutOptionsConverter" />
+            <local:BoolToTextColorConverter x:Key="BoolToTextColorConverter" />
+            <local:GreaterThanZeroConverter x:Key="GreaterThanZeroConverter" />
+            <local:GenderToColorConverter x:Key="GenderToColorConverter" />
+            <local:GenderToIconConverter x:Key="GenderToIconConverter" />
+            <local:StringIsNullOrEmptyToBoolConverter x:Key="StringIsNullOrEmptyToBoolConverter" />
+            <local:StringIsNotNullOrEmptyToBoolConverter x:Key="StringIsNotNullOrEmptyToBoolConverter" />
+
+
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="Resources/Styles/Colors.xaml" />
+                <ResourceDictionary Source="Resources/Styles/Styles.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>

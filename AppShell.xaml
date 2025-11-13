@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Shell
+    x:Class="Sphere.AppShell"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:view="clr-namespace:Sphere.Views.Pages"
+    Title="Sphere"
+    FlyoutWidth="250"
+    Shell.FlyoutBehavior="Flyout"
+    Shell.ForegroundColor="{StaticResource Primary}"
+    Shell.TabBarBackgroundColor="#f5f5f5"
+    Shell.TabBarForegroundColor="{StaticResource Primary}"
+    Shell.TabBarTitleColor="{StaticResource Primary}"
+    Shell.TabBarUnselectedColor="{StaticResource Gray600}">
+    <Shell.BackgroundColor>
+        <Color>#f5f5f5</Color>
+    </Shell.BackgroundColor>
+
+    <TabBar>
+
+        <Tab Title="Trang chủ">
+            <Tab.Icon>
+                <FontImageSource
+                    FontFamily="MaterialIcons"
+                    Glyph="&#xF02DC;"
+                    Size="24" />
+            </Tab.Icon>
+
+            <ShellContent
+                Title="Phổ biến"
+                ContentTemplate="{DataTemplate view:PopularPage}"
+                Route="PopularPage" />
+            <ShellContent
+                Title="Mới nhất"
+                ContentTemplate="{DataTemplate view:LatestPage}"
+                Route="LatestPage" />
+            <ShellContent
+                Title="Theo dõi"
+                ContentTemplate="{DataTemplate view:FollowPage}"
+                Route="FollowPage" />
+        </Tab>
+
+        <ShellContent
+            Title="Lân cận"
+            ContentTemplate="{DataTemplate view:NearbyPage}"
+            Route="NearbyPage">
+            <ShellContent.Icon>
+                <FontImageSource
+                    FontFamily="MaterialIcons"
+                    Glyph="&#xF0352;"
+                    Size="24" />
+            </ShellContent.Icon>
+        </ShellContent>
+
+
+        <Tab Title="Thông báo" Route="NotificationPage">
+
+            <Tab.Icon>
+                <FontImageSource
+                    FontFamily="MaterialIcons"
+                    Glyph="&#xF009A;"
+                    Size="24" />
+            </Tab.Icon>
+            <ShellContent
+                Title="Lượt thích"
+                ContentTemplate="{DataTemplate view:HomePage}"
+                Route="HomePage" />
+            <ShellContent
+                Title="Lượt bình luận"
+                ContentTemplate="{DataTemplate view:HomePage}"
+                Route="HomePage" />
+            <ShellContent
+                Title="Lượt ghé thăm"
+                ContentTemplate="{DataTemplate view:HomePage}"
+                Route="HomePage" />
+            <ShellContent
+                Title="Lượt theo dõi"
+                ContentTemplate="{DataTemplate view:HomePage}"
+                Route="HomePage" />
+        </Tab>
+
+        <ShellContent
+            Title="Tin nhắn"
+            ContentTemplate="{DataTemplate view:MessageListPage}"
+            Route="MessageListPage">
+            <ShellContent.Icon>
+                <FontImageSource
+                    FontFamily="MaterialIcons"
+                    Glyph="&#xF020E;"
+                    Size="24" />
+            </ShellContent.Icon>
+        </ShellContent>
+
+        <ShellContent
+            Title="Cá nhân"
+            ContentTemplate="{DataTemplate view:ProfilePage}"
+            Route="ProfilePage">
+            <ShellContent.Icon>
+                <FontImageSource
+                    FontFamily="MaterialIcons"
+                    Glyph="&#xF0009;"
+                    Size="24" />
+            </ShellContent.Icon>
+        </ShellContent>
+    </TabBar>
+    <Shell.FlyoutFooter>
+        <StackLayout Padding="20" BackgroundColor="#f5f5f5">
+            <Button
+                Clicked="OnLogoutClicked"
+                Text="Đăng xuất"
+                TextColor="White" />
+        </StackLayout>
+    </Shell.FlyoutFooter>
+
+</Shell>

@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="Sphere.Views.Pages.ImagePickerPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:vm="clr-namespace:Sphere.ViewModels"
+    Title="ImagePickerPage">
+
+    <Grid
+        Padding="5"
+        RowDefinitions="Auto, *"
+        RowSpacing="5">
+
+        <!--  Nút Done luôn cố định  -->
+        <Button
+            Padding="5"
+            BackgroundColor="DodgerBlue"
+            Command="{Binding DoneCommand}"
+            FontAttributes="Bold"
+            HorizontalOptions="End"
+            Text="Xong"
+            TextColor="White" />
+        <CollectionView
+            Grid.Row="1"
+            ItemsSource="{Binding AllImages}"
+            RemainingItemsThreshold="3"
+            RemainingItemsThresholdReachedCommand="{Binding LoadMoreCommand}">
+            <CollectionView.ItemsLayout>
+                <GridItemsLayout
+                    HorizontalItemSpacing="2"
+                    Orientation="Vertical"
+                    Span="4"
+                    VerticalItemSpacing="2" />
+            </CollectionView.ItemsLayout>
+            <CollectionView.ItemTemplate>
+                <DataTemplate>
+                    <Border Padding="0">
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type vm:ImagePickerViewModel}}, Path=ToggleSelectionCommand}" CommandParameter="{Binding .}" />
+                        </Border.GestureRecognizers>
+                        <Grid>
+                            <Image
+                                Aspect="AspectFill"
+                                HeightRequest="100"
+                                Source="{Binding ContentUriString}"
+                                WidthRequest="100" />
+
+                            <Frame
+                                Padding="0"
+                                BackgroundColor="#512BD4"
+                                BorderColor="White"
+                                CornerRadius="12"
+                                HeightRequest="24"
+                                HorizontalOptions="End"
+                                IsVisible="{Binding IsSelected}"
+                                VerticalOptions="Start"
+                                WidthRequest="24">
+                                <Label
+                                    FontSize="12"
+                                    HorizontalTextAlignment="Center"
+                                    Text="{Binding OrderNumber}"
+                                    TextColor="White"
+                                    VerticalTextAlignment="Center" />
+                            </Frame>
+
+                        </Grid>
+
+                    </Border>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+    </Grid>
+
+
+</ContentPage>

@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="Sphere.Views.Pages.FollowPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:local="clr-namespace:Sphere.Views.Controls"
+    Title="Theo dõi">
+
+    <Grid Padding="10">
+        <!--  Loading  -->
+        <ActivityIndicator
+            HeightRequest="40"
+            HorizontalOptions="Center"
+            IsRunning="True"
+            IsVisible="{Binding FollowingState, Converter={StaticResource StateToBoolConverter}, ConverterParameter=Loading}"
+            VerticalOptions="Center"
+            WidthRequest="40" />
+
+        <!--  Error  -->
+        <StackLayout
+            HorizontalOptions="Center"
+            IsVisible="{Binding FollowingState, Converter={StaticResource StateToBoolConverter}, ConverterParameter=Error}"
+            Spacing="30"
+            VerticalOptions="Center">
+            <Label
+                FontAttributes="Bold"
+                FontSize="16"
+                Text="{Binding FollowingErrorMessage}" HorizontalTextAlignment="Center"
+                TextColor="Red" />
+            <Button
+                Command="{Binding LoadFirstFollowPageCommand}"
+                Text="Thử lại"
+                WidthRequest="100" />
+        </StackLayout>
+
+        <!--  Empty  -->
+        <StackLayout
+            HorizontalOptions="Center"
+            IsVisible="{Binding FollowingState, Converter={StaticResource StateToBoolConverter}, ConverterParameter=Empty}"
+            Spacing="30"
+            VerticalOptions="Center">
+            <Label
+                FontAttributes="Bold"
+                FontSize="16"
+                Text="{Binding FollowingErrorMessage}" />
+            <Button
+                Command="{Binding LoadFirstFollowPageCommand}"
+                Text="Thử lại"
+                WidthRequest="100" />
+        </StackLayout>
+
+        <!--  Offline  -->
+        <StackLayout
+            HorizontalOptions="Center"
+            IsVisible="{Binding FollowingState, Converter={StaticResource StateToBoolConverter}, ConverterParameter=Offline}"
+            Spacing="30"
+            VerticalOptions="Center">
+            <Label
+                FontAttributes="Bold"
+                FontSize="16"
+                Text="{Binding FollowingErrorMessage}"
+                TextColor="Red" />
+            <Button
+                Command="{Binding LoadFirstFollowPageCommand}"
+                Text="Thử lại"
+                WidthRequest="100" />
+        </StackLayout>
+
+        <!--  Success  -->
+        <RefreshView
+            Command="{Binding LoadFirstFollowPageCommand}"
+            IsRefreshing="{Binding IsRefreshingFollowing}"
+            IsVisible="{Binding FollowingState, Converter={StaticResource StateToBoolConverter}, ConverterParameter=Success}">
+            <CollectionView
+                ItemsSource="{Binding FollowingPosts}"
+                RemainingItemsThreshold="3"
+                RemainingItemsThresholdReachedCommand="{Binding LoadMoreFollowingCommand}"
+                SelectionMode="None">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate>
+                        <local:DiaryFeedItemView BindingContext="{Binding .}" />
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+        </RefreshView>
+    </Grid>
+</ContentPage>

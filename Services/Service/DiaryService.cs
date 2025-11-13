@@ -1,0 +1,96 @@
+﻿using Sphere.Common.Constans;
+using Sphere.Common.Responses;
+using Sphere.Models;
+using Sphere.Services.IService;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Net.Http.Headers;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Sphere.Services.Service
+{
+    internal class DiaryService(IApiService apiService) : IDiaryService
+    {
+        public async Task<ApiResponse<DiaryModel>> CreateDiaryAsync(PostDiaryModel postStatusModel)
+        {
+            // Prepare multipart form data
+            var form = new MultipartFormDataContent();
+
+            if (!string.IsNullOrWhiteSpace(postStatusModel.Content))
+                form.Add(new StringContent(postStatusModel.Content), "Content");
+
+            // Add privacy as string
+            form.Add(new StringContent(postStatusModel.Privacy.ToString()), "Privacy");
+
+            // Add images if any
+            if (postStatusModel.ImagePaths != null)
+            {
+                foreach (var path in postStatusModel.ImagePaths)
+                {
+                    var fileName = Path.GetFileName(path);
+                    var stream = File.OpenRead(path);
+                    var fileContent = new StreamContent(stream);
+                    fileContent.Headers.ContentType = new MediaTypeHeaderValue("image/jpeg");
+                    form.Add(fileContent, $"Images", fileName);
+                }
+            }
+            return await apiService.PostFormAsync<DiaryModel>("api/diary", form);
+        }
+
+        public async Task<ApiResponse<bool>> DeleteDiaryAsync(Guid id)
+        {
+            return await apiService.DeleteAsync<bool>($"api/diary/{id}");
+        }
+
+        public async Task<ApiResponse<IEnumerable<UserWithDiaryModel>>> GetHomeDiariesAsync(string type, int page, int pageSize)
+        {
+            return await apiService.GetAsync<IEnumerable<UserWithDiaryModel>>($"api/diary/home?type={type}&page={page}&pageSize={pageSize}");
+        }
+
+        public async Task<ApiResponse<IEnumerable<DiaryModel>>> GetListDiaryAsync(int page, int pageSize)
+        {
+            return await apiService.GetAsync<IEnumerable<DiaryModel>>($"api/diary?page={page}&pageSize={pageSize}");
+        }
+
+        public async Task<ApiResponse<DiaryModel>> PatchFormDiaryByIdAsync(Guid id, string? content, Privacy privacy, IEnumerable<string> oldImageUrls, IEnumerable<string> newImagePaths)
+        {
+            var formData = new MultipartFormDataContent();
+
+            // Add content only if it is not null
+            if (!string.IsNullOrEmpty(content))
+            {
+                formData.Add(new StringContent(content), "Content");
+            }
+
+            // Convert Privacy enum to string before adding
+            formData.Add(new StringContent(privacy.ToString()), "Privacy");
+
+            foreach (var url in oldImageUrls)
+            {
+                formData.Add(new StringContent(url), "Images");
+            }
+            // Add images (if any)
+            foreach (var imagePath in newImagePaths)
+            {
+                try
+                {
+                    if (!File.Exists(imagePath)) continue;
+                    var fileName = Path.GetFileName(imagePath);
+                    var stream = File.OpenRead(imagePath);
+                    var fileContent = new StreamContent(stream);
+                    fileContent.Headers.ContentType = new MediaTypeHeaderValue("image/jpeg"); // or appropriate MIME type
+
+                    formData.Add(fileContent, "Images", fileName);
+                }
+                catch
+                {
+                    // Ignore file errors
+                }
+            }
+
+            return await apiService.PatchFormAsync<DiaryModel>($"api/diary/{id}", formData);
+        }
+    }
+}

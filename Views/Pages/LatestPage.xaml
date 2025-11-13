@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="Sphere.Views.Pages.LatestPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:local="clr-namespace:Sphere.Views.Controls"
+    Title="Mới nhất">
+
+    <Grid Padding="10">
+        <!--  Loading  -->
+        <ActivityIndicator
+            HeightRequest="40"
+            HorizontalOptions="Center"
+            IsRunning="True"
+            IsVisible="{Binding LatestState, Converter={StaticResource StateToBoolConverter}, ConverterParameter=Loading}"
+            VerticalOptions="Center"
+            WidthRequest="40" />
+
+        <!--  Error  -->
+        <StackLayout
+            HorizontalOptions="Center"
+            IsVisible="{Binding LatestState, Converter={StaticResource StateToBoolConverter}, ConverterParameter=Error}"
+            Spacing="30"
+            VerticalOptions="Center">
+            <Label
+                FontAttributes="Bold"
+                FontSize="16"
+                HorizontalTextAlignment="Center"
+                Text="{Binding LatestErrorMessage}"
+                TextColor="Red" />
+            <Button
+                Command="{Binding LoadFirstLatestPageCommand}"
+                Text="Thử lại"
+                WidthRequest="100" />
+        </StackLayout>
+
+        <!--  Empty  -->
+        <StackLayout
+            HorizontalOptions="Center"
+            IsVisible="{Binding LatestState, Converter={StaticResource StateToBoolConverter}, ConverterParameter=Empty}"
+            Spacing="30"
+            VerticalOptions="Center">
+            <Label
+                FontAttributes="Bold"
+                FontSize="16"
+                Text="{Binding LatestErrorMessage}" />
+            <Button
+                Command="{Binding LoadFirstLatestPageCommand}"
+                Text="Thử lại"
+                WidthRequest="100" />
+        </StackLayout>
+
+        <!--  Offline  -->
+        <StackLayout
+            HorizontalOptions="Center"
+            IsVisible="{Binding LatestState, Converter={StaticResource StateToBoolConverter}, ConverterParameter=Offline}"
+            Spacing="30"
+            VerticalOptions="Center">
+            <Label
+                FontAttributes="Bold"
+                FontSize="16"
+                Text="{Binding LatestErrorMessage}"
+                TextColor="Red" />
+            <Button
+                Command="{Binding LoadFirstLatestPageCommand}"
+                Text="Thử lại"
+                WidthRequest="100" />
+        </StackLayout>
+
+        <!--  Success  -->
+        <RefreshView
+            Command="{Binding LoadFirstLatestPageCommand}"
+            IsRefreshing="{Binding IsRefreshingLatest}"
+            IsVisible="{Binding LatestState, Converter={StaticResource StateToBoolConverter}, ConverterParameter=Success}">
+            <CollectionView
+                ItemsSource="{Binding LatestPosts}"
+                RemainingItemsThreshold="3"
+                RemainingItemsThresholdReachedCommand="{Binding LoadMoreLatestCommand}"
+                SelectionMode="None">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate>
+                        <local:DiaryFeedItemView BindingContext="{Binding .}" />
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+        </RefreshView>
+    </Grid>
+</ContentPage>

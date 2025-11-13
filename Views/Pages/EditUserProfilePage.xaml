@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="Sphere.Views.Pages.EditUserProfilePage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:local="clr-namespace:Sphere.Common.Constans"
+    Title="EditUserProfilePage">
+
+    <VerticalStackLayout Padding="30" Spacing="20">
+        <Label
+            FontAttributes="Bold"
+            FontSize="20"
+            HorizontalOptions="Center"
+            Text="Cập nhật thông tin cá nhân"
+            TextColor="#1877F2" />
+        <Entry
+            FontAttributes="Bold"
+            MaxLength="30"
+            Placeholder="Họ và Tên"
+            Text="{Binding UserModel.FullName}"
+            TextChanged="OnTextChanged" />
+
+        <VerticalStackLayout>
+            <Label FontAttributes="Bold" Text="Giới tính" />
+            <HorizontalStackLayout Spacing="20">
+                <RadioButton
+                    Content="Nam"
+                    GroupName="Gender"
+                    IsChecked="{Binding UserModel.Gender, Converter={StaticResource GenderToBoolConverter}, ConverterParameter={x:Static local:Gender.Male}}" />
+                <RadioButton
+                    Content="Nữ"
+                    GroupName="Gender"
+                    IsChecked="{Binding UserModel.Gender, Converter={StaticResource GenderToBoolConverter}, ConverterParameter={x:Static local:Gender.Female}}" />
+            </HorizontalStackLayout>
+        </VerticalStackLayout>
+
+        <VerticalStackLayout>
+            <Label FontAttributes="Bold" Text="Ngày sinh" />
+            <DatePicker Date="{Binding UserModel.BirthDay}" />
+        </VerticalStackLayout>
+        <Button
+            Command="{Binding UpdateProfileCommand}"
+            FontAttributes="Bold"
+            Text="Cập nhật" />
+    </VerticalStackLayout>
+</ContentPage>

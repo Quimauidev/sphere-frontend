@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="Sphere.Views.Pages.LoginPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
+
+    <VerticalStackLayout
+        Padding="30"
+        Spacing="20"
+        VerticalOptions="Center">
+        <Image
+            HeightRequest="150"
+            Source="imagelogin.png"
+            WidthRequest="150" />
+        <StackLayout Orientation="Vertical" Spacing="20">
+            <Entry
+                Keyboard="Telephone"
+                MaxLength="10"
+                Placeholder="Số điện thoại"
+                Text="{Binding LoginModel.PhoneNumber}" />
+
+            <Grid ColumnDefinitions="*, Auto">
+                <Entry
+                    Grid.Column="0"
+                    IsPassword="{Binding IsPasswordVisible, Converter={StaticResource InverseBooleanConverter}}"
+                    MaxLength="30"
+                    Placeholder="Mật khẩu"
+                    Text="{Binding LoginModel.Password}" />
+
+                <ImageButton
+                    Grid.Column="1"
+                    Command="{Binding TogglePasswordCommand}"
+                    HeightRequest="30"
+                    WidthRequest="30">
+                    <ImageButton.Source>
+                        <FontImageSource
+                            FontFamily="MaterialIcons"
+                            Glyph="{Binding PasswordIcon}"
+                            Size="24"
+                            Color="Black" />
+                    </ImageButton.Source>
+                </ImageButton>
+            </Grid>
+        </StackLayout>
+
+        <Button
+            Command="{Binding LoginCommand}"
+            FontAttributes="Bold"
+            Text="Đăng nhập" />
+
+        <Label
+            HorizontalOptions="Center"
+            Text="Quên mật khẩu"
+            TextColor="#1877F2">
+            <Label.GestureRecognizers>
+                <TapGestureRecognizer Command="{Binding ForgotPasswordCommand}" />
+            </Label.GestureRecognizers>
+        </Label>
+
+        <Button
+            BackgroundColor="Green"
+            Command="{Binding RegisterCommand}"
+            FontAttributes="Bold"
+            Text="Tạo tài khoản mới" />
+    </VerticalStackLayout>
+</ContentPage>

@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="Sphere.Views.Pages.RegisterPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:behaviors="clr-namespace:Sphere.Common.Constans"
+    xmlns:local="clr-namespace:Sphere.Common.Constans"
+    Title="RegisterPage">
+
+    <VerticalStackLayout Padding="30" Spacing="20">
+
+        <Entry
+            MaxLength="30"
+            Placeholder="Họ và Tên"
+            Text="{Binding RegisterModel.FullName}"
+            TextChanged="OnTextChanged">
+            <Entry.Behaviors>
+                <behaviors:NoSpecialCharBehavior />
+            </Entry.Behaviors>
+        </Entry>
+
+        <VerticalStackLayout>
+            <Label FontAttributes="Bold" Text="Giới tính" />
+            <HorizontalStackLayout Spacing="20">
+                <RadioButton
+                    Content="Nam"
+                    GroupName="Gender"
+                    IsChecked="{Binding RegisterModel.Gender, Converter={StaticResource GenderToBoolConverter}, ConverterParameter={x:Static local:Gender.Male}}" />
+                <RadioButton
+                    Content="Nữ"
+                    GroupName="Gender"
+                    IsChecked="{Binding RegisterModel.Gender, Converter={StaticResource GenderToBoolConverter}, ConverterParameter={x:Static local:Gender.Female}}" />
+            </HorizontalStackLayout>
+        </VerticalStackLayout>
+
+        <VerticalStackLayout>
+            <Label FontAttributes="Bold" Text="Ngày sinh" />
+            <DatePicker Date="{Binding RegisterModel.BirthDay}" Format="dd/MM/yyyy" />
+        </VerticalStackLayout>
+
+
+        <Entry
+            Keyboard="Telephone"
+            MaxLength="10"
+            Placeholder="Số điện thoại"
+            Text="{Binding RegisterModel.PhoneNumber}" />
+
+        <Entry
+            IsPassword="{Binding IsPasswordVisible, Converter={StaticResource InverseBooleanConverter}}"
+            MaxLength="30"
+            Placeholder="Nhập mật khẩu"
+            Text="{Binding RegisterModel.Password}" />
+
+        <Entry
+            IsPassword="{Binding IsPasswordVisible, Converter={StaticResource InverseBooleanConverter}}"
+            MaxLength="30"
+            Placeholder="Nhập lại mật khẩu"
+            Text="{Binding RegisterModel.ConfirmPassword}" />
+
+        <StackLayout Orientation="Horizontal" Spacing="10">
+            <ImageButton
+                Command="{Binding TogglePasswordCommand}"
+                HeightRequest="30"
+                VerticalOptions="Center"
+                WidthRequest="30">
+                <ImageButton.Source>
+                    <FontImageSource
+                        FontFamily="MaterialIcons"
+                        Glyph="{Binding PasswordIcon}"
+                        Color="Black" />
+                </ImageButton.Source>
+            </ImageButton>
+            <Label
+                FontAttributes="Bold"
+                Text="Hiển thị mật khẩu"
+                TextColor="#1877F2"
+                VerticalOptions="Center" />
+        </StackLayout>
+
+
+        <Button
+            Command="{Binding RegisterCommand}"
+            IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBooleanConverter}}"
+            IsVisible="{Binding IsLoading, Converter={StaticResource InverseBooleanConverter}}"
+            Text="Đăng ký" />
+    </VerticalStackLayout>
+
+
+</ContentPage>

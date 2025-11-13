@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView
+    x:Class="Sphere.Views.Controls.DiaryContentView"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:ffimageloading="clr-namespace:FFImageLoading.Maui;assembly=FFImageLoading.Maui"
+    x:Name="RootView">
+    <VerticalStackLayout Spacing="10">
+        <Grid Padding="0" ColumnDefinitions="*, Auto">
+            <!--  Cột 1: ngày đăng  -->
+            <Label
+                Grid.Column="0"
+                FontSize="12"
+                Text="{Binding CreatedAt, Converter={StaticResource TimeAgoConverter}}"
+                TextColor="Gray"
+                VerticalOptions="Center" />
+
+            <!--  Cột 2: nút menu  -->
+            <!--<ImageButton
+                Grid.Column="1"
+                BackgroundColor="Transparent"
+                Clicked="OnMenuButtonClicked"
+                CommandParameter="{Binding}"
+                HeightRequest="25"
+                HorizontalOptions="End"
+                IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBooleanConverter}}"
+                VerticalOptions="Center"
+                WidthRequest="25">
+                <ImageButton.Source>
+                    <FontImageSource
+                        FontFamily="MaterialIcons"
+                        Glyph="&#xF01D9;"
+                        Color="Gray" />
+                </ImageButton.Source>
+            </ImageButton>-->
+        </Grid>
+
+        <!--  Nội dung  -->
+        <Label
+            FontSize="14"
+            IsVisible="{Binding Content, Converter={StaticResource StringNotNullOrEmptyConverter}}"
+            LineBreakMode="WordWrap"
+            Text="{Binding Content}" />
+
+        <!--  Ảnh nếu có  -->
+        <FlexLayout
+            BindableLayout.ItemsSource="{Binding Images}"
+            Direction="Row"
+            IsVisible="{Binding HasImages}"
+            Wrap="Wrap">
+            <BindableLayout.ItemTemplate>
+                <DataTemplate>
+                    <ffimageloading:CachedImage
+                        Margin="0,0,1,1"
+                        Aspect="AspectFill"
+                        BitmapOptimizations="True"
+                        CacheType="All"
+                        DownsampleToViewSize="true"
+                        FadeAnimationEnabled="False"
+                        HeightRequest="{Binding Source={x:Reference RootView}, Path=BindingContext.ImageItemHeight}"
+                        Source="{Binding Url}"
+                        WidthRequest="{Binding Source={x:Reference RootView}, Path=BindingContext.ImageItemWidth}" />
+                </DataTemplate>
+            </BindableLayout.ItemTemplate>
+        </FlexLayout>
+
+        <!--  Lượt xem, quyền riêng tư, like, comment  -->
+        <Grid ColumnDefinitions="70, 70, 70, *, Auto">
+            <StackLayout Orientation="Horizontal" Spacing="5">
+                <ImageButton HeightRequest="25" WidthRequest="25">
+                    <ImageButton.Source>
+                        <FontImageSource
+                            FontFamily="MaterialIcons"
+                            Glyph="&#xF0B94;"
+                            Color="Gray" />
+                    </ImageButton.Source>
+                </ImageButton>
+                <Label
+                    IsVisible="{Binding IsPersonalContext}"
+                    Text="{Binding ViewCount}"
+                    VerticalOptions="Center" />
+            </StackLayout>
+            <StackLayout
+                Grid.Column="1"
+                Orientation="Horizontal"
+                Spacing="5">
+                <ImageButton HeightRequest="25" WidthRequest="25">
+                    <ImageButton.Source>
+                        <FontImageSource
+                            FontFamily="MaterialIcons"
+                            Glyph="&#xF0971;"
+                            Color="Gray" />
+                    </ImageButton.Source>
+                </ImageButton>
+                <Label Text="{Binding LikeCount}" VerticalOptions="Center" />
+            </StackLayout>
+            <StackLayout
+                Grid.Column="2"
+                Orientation="Horizontal"
+                Spacing="5">
+                <ImageButton HeightRequest="25" WidthRequest="25">
+                    <ImageButton.Source>
+                        <FontImageSource
+                            FontFamily="MaterialIcons"
+                            Glyph="&#xF0188;"
+                            Color="Gray" />
+                    </ImageButton.Source>
+                </ImageButton>
+                <Label Text="{Binding CommentCount}" VerticalOptions="Center" />
+            </StackLayout>
+
+
+            <Label
+                Grid.Column="3"
+                Text="{Binding Privacy, Converter={StaticResource PrivacyConverter}}"
+                VerticalOptions="Center" />
+            <ImageButton
+                Grid.Column="4"
+                HeightRequest="25"
+                WidthRequest="25">
+                <ImageButton.Source>
+                    <FontImageSource
+                        FontFamily="MaterialIcons"
+                        Glyph="&#xF01D9;"
+                        Color="Gray" />
+                </ImageButton.Source>
+            </ImageButton>
+        </Grid>
+    </VerticalStackLayout>
+</ContentView>
