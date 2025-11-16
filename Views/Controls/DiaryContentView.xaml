@@ -66,8 +66,8 @@
 
         <!--  Lượt xem, quyền riêng tư, like, comment  -->
         <Grid ColumnDefinitions="70, 70, 70, *, Auto">
-            <StackLayout Orientation="Horizontal" Spacing="5">
-                <ImageButton HeightRequest="25" WidthRequest="25">
+            <StackLayout Orientation="Horizontal" Spacing="2">
+                <ImageButton HeightRequest="20" WidthRequest="20">
                     <ImageButton.Source>
                         <FontImageSource
                             FontFamily="MaterialIcons"
@@ -83,8 +83,8 @@
             <StackLayout
                 Grid.Column="1"
                 Orientation="Horizontal"
-                Spacing="5">
-                <ImageButton HeightRequest="25" WidthRequest="25">
+                Spacing="2">
+                <ImageButton HeightRequest="20" WidthRequest="20">
                     <ImageButton.Source>
                         <FontImageSource
                             FontFamily="MaterialIcons"
@@ -97,8 +97,8 @@
             <StackLayout
                 Grid.Column="2"
                 Orientation="Horizontal"
-                Spacing="5">
-                <ImageButton HeightRequest="25" WidthRequest="25">
+                Spacing="2">
+                <ImageButton HeightRequest="20" WidthRequest="20">
                     <ImageButton.Source>
                         <FontImageSource
                             FontFamily="MaterialIcons"
@@ -109,15 +109,15 @@
                 <Label Text="{Binding CommentCount}" VerticalOptions="Center" />
             </StackLayout>
 
-
             <Label
                 Grid.Column="3"
+                FontSize="12"
                 Text="{Binding Privacy, Converter={StaticResource PrivacyConverter}}"
                 VerticalOptions="Center" />
             <ImageButton
                 Grid.Column="4"
-                HeightRequest="25"
-                WidthRequest="25">
+                HeightRequest="20"
+                WidthRequest="20">
                 <ImageButton.Source>
                     <FontImageSource
                         FontFamily="MaterialIcons"

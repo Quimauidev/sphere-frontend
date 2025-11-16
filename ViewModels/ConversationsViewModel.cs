@@ -1,8 +1,9 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Sphere.Common.Constans;
+using Sphere.Common.Responses;
 using Sphere.Models;
 using Sphere.Services.IService;
-using Sphere.Common.Responses;
 using System;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -40,9 +41,23 @@ namespace Sphere.ViewModels
                 if (resp.IsSuccess && resp.Data != null)
                 {
                     Conversations.Clear();
-                    foreach (var c in resp.Data.OrderByDescending(c => c.LastUpdatedAt))
+
+                    var sorted = resp.Data
+                        .Where(x => !x.IsDeletedForCurrentUser)
+                        .OrderByDescending(x => x.LastUpdatedAt);
+
+                    foreach (var dto in sorted)
                     {
-                        Conversations.Add(c);
+                        Conversations.Add(new ConversationModel
+                        {
+                            Id = dto.Id,
+                            PartnerName = dto.PartnerName,
+                            PartnerAvatar = dto.PartnerAvatar,
+                            LastMessage = dto.LastMessage,      
+                            LastUpdatedAt = dto.LastUpdatedAt,
+                            IsDeletedForCurrentUser = dto.IsDeletedForCurrentUser,
+                            IsOnline = false
+                        });
                     }
                 }
                 else

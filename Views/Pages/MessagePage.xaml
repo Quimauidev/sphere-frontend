@@ -161,7 +161,7 @@
             <ImageButton
                 Command="{Binding SendLocationCommand}"
                 HeightRequest="25"
-                VerticalOptions="Center"
+                VerticalOptions="End"
                 WidthRequest="25">
                 <ImageButton.Source>
                     <FontImageSource
@@ -177,7 +177,7 @@
                 Grid.Column="1"
                 Command="{Binding OpenGalleryCommand}"
                 HeightRequest="25"
-                VerticalOptions="Center"
+                VerticalOptions="End"
                 WidthRequest="25">
                 <ImageButton.Source>
                     <FontImageSource
@@ -189,11 +189,16 @@
             </ImageButton>
 
             <!--  Ô nhập  -->
-            <Frame Grid.Column="2" Padding="0">
+            <Frame
+                Grid.Column="2"
+                Padding="2,0,0,0"
+                BackgroundColor="#f5f5f5"
+                BorderColor="#f5f5f5"
+                CornerRadius="5">
                 <Editor
                     x:Name="MessageEntry"
                     AutoSize="TextChanges"
-                    BackgroundColor="Transparent"
+                    Keyboard="Text"
                     MaxLength="1000"
                     MaximumHeightRequest="120"
                     Placeholder="Soạn tin nhắn..."
@@ -206,7 +211,7 @@
                 Command="{Binding AttachCommand}"
                 HeightRequest="25"
                 IsVisible="{Binding CurrentMessage, Converter={StaticResource StringIsNullOrEmptyToBoolConverter}}"
-                VerticalOptions="Center"
+                VerticalOptions="End"
                 WidthRequest="25">
                 <ImageButton.Source>
                     <FontImageSource
@@ -223,7 +228,7 @@
                 Command="{Binding SendMessageCommand}"
                 HeightRequest="25"
                 IsVisible="{Binding CurrentMessage, Converter={StaticResource StringIsNotNullOrEmptyToBoolConverter}}"
-                VerticalOptions="Center"
+                VerticalOptions="End"
                 WidthRequest="25">
                 <ImageButton.Source>
                     <FontImageSource

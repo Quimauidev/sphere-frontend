@@ -12,9 +12,13 @@ namespace Sphere.Models
         public string? PartnerName { get; set; }
         public string? PartnerAvatar { get; set; }
         public string? LastMessage { get; set; }
-        public DateTime LastUpdatedAt { get; set; }
 
-        public string? LastUpdatedText { get; set; } // ví dụ: "5 phút trước"
+        public DateTime LastUpdatedAt { get; set; } // thời gian tin nhắn cuối cùng
+        public bool IsDeletedForCurrentUser { get; set; }
         public bool IsOnline { get; set; } // thêm cho UI realtime
+                                           // Thuật toán hiển thị thời gian cho UI, ví dụ "HH:mm" hoặc "1 giờ trước"
+        public string LastUpdatedText => LastUpdatedAt.ToString("HH:mm");
     }
+
+
 }
