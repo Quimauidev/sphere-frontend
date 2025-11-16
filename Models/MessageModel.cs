@@ -1,4 +1,7 @@
-﻿using System;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
+using Sphere.Common.Constans;
+using SQLite;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -6,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace Sphere.Models
 {
-    public class MessageModel
+    public partial class MessageModel : ObservableObject
     {
         public Guid Id { get; set; } // ID tin nhắn
         public Guid ConversationId { get; set; } // ID cuộc trò chuyện
@@ -23,10 +26,64 @@ namespace Sphere.Models
         public bool IsRecalled { get; set; } // trạng thái đã thu hồi
         public DateTime SentAt { get; set; } // thời gian gửi
 
+        [ObservableProperty]
+        private bool isLastMessage;
+
         // Thuộc tính phụ cho UI (frontend-only)
-        public bool IsMine { get; set; } // để biết là tin mình gửi hay tin nhận
-        public string? DisplayTime => SentAt.ToLocalTime().ToString("HH:mm"); // định dạng thời gian hiển thị
-        public bool HasMedia => !string.IsNullOrEmpty(MediaUrl); // kiểm tra có media không
-        public bool HasLocation => Latitude.HasValue && Longitude.HasValue; // kiểm tra có vị trí không
+        [ObservableProperty]
+        private bool isMine;
+
+        [ObservableProperty]
+        private bool showStatusIcon;
+
+        [ObservableProperty]
+        private MessageStatus status;
+        public bool IsSending => Status == MessageStatus.Sending;
+
+
+        partial void OnStatusChanged(MessageStatus value)
+        {
+            // Raise change for computed property so UI updates icon when Status changes
+            OnPropertyChanged(nameof(StatusIcon));
+            OnPropertyChanged(nameof(IsSending));
+        }
+
+        // Hiển thị icon hoặc màu cho trạng thái
+        public string StatusIcon
+        {
+            get
+            {
+                return Status switch
+                {
+                    MessageStatus.Sent => "\U000F012C",       // sent
+                    MessageStatus.Delivered => "\U000F1CA3", // delivered
+                    MessageStatus.Seen => "\U000F0208",     // seen
+                    _ => ""
+                };
+            }
+        }
+    }
+
+    public class MessageEntity
+    {
+        [PrimaryKey]
+        public Guid Id { get; set; }
+        public Guid ConversationId { get; set; }
+        public Guid SenderId { get; set; }
+        public Guid ReceiverId { get; set; }
+
+        public string? Content { get; set; }
+        public string? MediaUrl { get; set; }
+        public string? MediaType { get; set; }
+
+        public double? Latitude { get; set; }
+        public double? Longitude { get; set; }
+
+        public bool IsRead { get; set; }
+        public bool IsRecalled { get; set; }
+
+        public DateTime SentAt { get; set; }
+
+        public int Status { get; set; }   // int để lưu enum
     }
 }

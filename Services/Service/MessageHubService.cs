@@ -18,8 +18,17 @@ namespace Sphere.Services.Service
 
         // Sự kiện frontend sẽ subscribe
         public event Action<MessageModel>? OnMessageReceived;
+
         public event Action<Guid, string>? OnError;
+
         public event Action<Guid, string>? OnMessagesMarkedAsRead;
+
+        // Event riêng để update trạng thái message đã gửi xong
+        public event Action<Guid>? OnMessageSentConfirmed;
+
+        // Event khi message được delivered/seen
+        public event Action<Guid>? OnMessageDelivered;
+        public event Action<Guid>? OnMessageSeen;
 
         public MessageHubService(HubConfig config)
         {
@@ -74,7 +83,19 @@ namespace Sphere.Services.Service
             // Optional: xác nhận gửi tin nhắn
             _connection.On<Guid>("MessageSent", messageId =>
             {
-                // Có thể dùng để scroll xuống cuối hoặc hiển thị tick
+                OnMessageSentConfirmed?.Invoke(messageId);
+            });
+
+            // Khi backend báo tin nhắn đã được delivered
+            _connection.On<Guid>("MessageDelivered", messageId =>
+            {
+                OnMessageDelivered?.Invoke(messageId);
+            });
+
+            // Khi backend báo tin nhắn đã được seen
+            _connection.On<Guid>("MessageSeen", messageId =>
+            {
+                OnMessageSeen?.Invoke(messageId);
             });
         }
 
@@ -132,14 +153,15 @@ namespace Sphere.Services.Service
         }
 
         // Gửi tin nhắn
-        public async Task SendMessage(Guid conversationId, string content)
+        public async Task SendMessage(Guid conversationId, string content, Guid messageId)
         {
             if (_connection.State != HubConnectionState.Connected)
                 await StartAsync();
 
             try
             {
-                await _connection.InvokeAsync("SendMessage", conversationId, content);
+                // Gửi messageId kèm content để backend trả lại cùng Id
+                await _connection.InvokeAsync("SendMessage", conversationId, content, messageId);
             }
             catch (Exception ex)
             {
@@ -147,7 +169,4 @@ namespace Sphere.Services.Service
             }
         }
     }
-
-
-
 }

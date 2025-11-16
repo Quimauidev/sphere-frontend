@@ -37,6 +37,12 @@ namespace Sphere
             builder.Services.AddHttpClient();
             builder.Services.RegisterServices();
             builder.Services.AddSingleton<IMediaUploadService, MediaUploadService>();
+            builder.Services.AddSingleton<SQLiteMessageService>(sp =>
+            {
+                var dbPath = Path.Combine(FileSystem.AppDataDirectory, "sphere.db3");
+                return new SQLiteMessageService(dbPath);
+            });
+
             builder.ConfigureMauiHandlers(handlers =>
             {
                 handlers.AddHandler(typeof(GlideImage), typeof(GlideImageHandler));

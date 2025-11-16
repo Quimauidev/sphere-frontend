@@ -27,7 +27,7 @@ namespace Sphere.ViewModels
         private readonly IUserSessionService _userSessionService;
         private readonly IUserProfileService _userProfileService;
         private readonly IServiceProvider _serviceProvider;
-        private readonly IMessageService _messageService;
+        private readonly IConversationService _conversationService;
 
         public ObservableCollection<DiaryFeedItemViewModel> FollowingPosts { get; } = [];
         public ObservableCollection<DiaryFeedItemViewModel> PopularPosts { get; } = [];
@@ -65,14 +65,14 @@ namespace Sphere.ViewModels
         private bool _latestLoading;
         private bool _latestHasNoMoreData;
 
-        public HomeViewModel(IDiaryService diaryService, IFollowService followService, IUserSessionService userSessionService, IUserProfileService userProfileService, IServiceProvider serviceProvider, IMessageService messageService)
+        public HomeViewModel(IDiaryService diaryService, IFollowService followService, IUserSessionService userSessionService, IUserProfileService userProfileService, IServiceProvider serviceProvider, IConversationService conversationService)
         {
             _diaryService = diaryService;
             _followService = followService;
             _userSessionService = userSessionService;
             _userProfileService = userProfileService;
             _serviceProvider = serviceProvider;
-            _messageService = messageService;
+            _conversationService= conversationService;
             // Khởi động load
             _ = LoadFollowingAsync(forceReload: true);
             _ = LoadPopularAsync(forceReload: true);
@@ -161,7 +161,7 @@ namespace Sphere.ViewModels
                     var items = response.Data?
                     .Select(d =>
                     {
-                        var vm = new DiaryFeedItemViewModel(d, currentUserId, _followService, _messageService, _serviceProvider);
+                        var vm = new DiaryFeedItemViewModel(d, currentUserId, _followService, _conversationService, _serviceProvider);
                         vm.IsOnline = PresenceService.OnlineUsersCache.ContainsKey(vm.UserId)
                          ? PresenceService.OnlineUsersCache[vm.UserId]
                          : d.UserDiaryDTO?.IsOnline ?? false;
@@ -230,7 +230,7 @@ namespace Sphere.ViewModels
                     var items = response.Data?
                     .Select(d =>
                     {
-                        var vm = new DiaryFeedItemViewModel(d, currentUserId, _followService, _messageService, _serviceProvider);
+                        var vm = new DiaryFeedItemViewModel(d, currentUserId, _followService, _conversationService, _serviceProvider);
                         vm.IsOnline = PresenceService.OnlineUsersCache.ContainsKey(vm.UserId)
                          ? PresenceService.OnlineUsersCache[vm.UserId]
                          : d.UserDiaryDTO?.IsOnline ?? false;
@@ -300,7 +300,7 @@ namespace Sphere.ViewModels
                     var items = response.Data?
                    .Select(d =>
                    {
-                       var vm = new DiaryFeedItemViewModel(d, currentUserId, _followService, _messageService, _serviceProvider);
+                       var vm = new DiaryFeedItemViewModel(d, currentUserId, _followService, _conversationService, _serviceProvider);
                        vm.IsOnline = PresenceService.OnlineUsersCache.ContainsKey(vm.UserId)
                          ? PresenceService.OnlineUsersCache[vm.UserId]
                          : d.UserDiaryDTO?.IsOnline ?? false;

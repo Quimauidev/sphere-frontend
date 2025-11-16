@@ -10,9 +10,9 @@ namespace Sphere.Services.Service
     internal class ConversationService(IApiService apiService) : IConversationService
     {
         private readonly IApiService _apiService = apiService;
-        public async Task<ApiResponse<Request.MessageStartResponse>> StartConversationAsync(Request.ChatStartRequest request)
+        public async Task<ApiResponse<MessageStartResponse>> StartConversationAsync(Guid id)
         {
-            return await _apiService.PostAsync<Request.ChatStartRequest, Request.MessageStartResponse>("/api/conversations/start", request);
+            return await _apiService.PostAsync<object, MessageStartResponse>($"/api/conversations/start/{id}", null!);
         }
 
         public async Task<ApiResponse<IEnumerable<ConversationModel>>> GetConversationsAsync()
@@ -20,11 +20,18 @@ namespace Sphere.Services.Service
             return await _apiService.GetAsync<IEnumerable<ConversationModel>>("/api/conversations");
         }
 
-        public async Task<ApiResponse<IEnumerable<MessageModel>>> GetMessagesAsync(Guid conversationId, int page = 1, int pageSize = 50)
+        public async Task<ApiResponse<IEnumerable<MessageModel>>> GetLatestMessagesAsync(Guid conversationId, int take = 50)
         {
             return await _apiService.GetAsync<IEnumerable<MessageModel>>(
-                $"/api/conversations/{conversationId}/messages?page={page}&pageSize={pageSize}");
+                $"/api/conversations/{conversationId}/messages/latest?take={take}");
         }
+
+        public async Task<ApiResponse<IEnumerable<MessageModel>>> GetMessagesBeforeAsync(Guid conversationId, Guid messageId, int take = 50)
+        {
+            return await _apiService.GetAsync<IEnumerable<MessageModel>>(
+                $"/api/conversations/{conversationId}/messages/before/{messageId}?take={take}");
+        }
+
 
         public async Task<ApiResponse<Request.SendMessageRequest>> SendMessageAsync(Guid conversationId, Request.SendMessageRequest request)
         {

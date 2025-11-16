@@ -90,7 +90,11 @@
             x:Name="MessagesList"
             Grid.Row="1"
             Margin="10,10,10,0"
+            IsGrouped="False"
             ItemsSource="{Binding Messages}"
+            RemainingItemsThreshold="1"
+            RemainingItemsThresholdReachedCommand="{Binding LoadOlderMessagesCommand}"
+            SelectionMode="None"
             VerticalOptions="Fill">
             <!--  Đặt khoảng cách giữa item  -->
             <CollectionView.ItemsLayout>
@@ -100,7 +104,14 @@
             <CollectionView.ItemTemplate>
                 <DataTemplate>
                     <Grid HorizontalOptions="{Binding IsMine, Converter={StaticResource BoolToLayoutOptionsConverter}}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="14" />
+                        </Grid.ColumnDefinitions>
+
+                        <!--  Bubble tin nhắn  -->
                         <Frame
+                            Grid.Column="0"
                             Padding="10"
                             BackgroundColor="{Binding IsMine, Converter={StaticResource BoolToColorConverter}}"
                             BorderColor="Transparent"
@@ -108,10 +119,34 @@
                             MaximumWidthRequest="250">
                             <Label Text="{Binding Content}" TextColor="{Binding IsMine, Converter={StaticResource BoolToTextColorConverter}}" />
                         </Frame>
+
+                        <!--  Status icon  -->
+
+                        <ActivityIndicator
+                            Grid.Column="1"
+                            Margin="2,0,0,0"
+                            HeightRequest="14"
+                            IsRunning="{Binding IsSending}"
+                            IsVisible="{Binding IsSending}"
+                            VerticalOptions="End"
+                            WidthRequest="14"
+                            Color="DodgerBlue" />
+                        <Label
+                            Grid.Column="1"
+                            Margin="2,0,0,0"
+                            FontAttributes="Bold"
+                            FontFamily="MaterialIcons"
+                            HorizontalTextAlignment="Center"
+                            IsVisible="{Binding ShowStatusIcon}"
+                            Text="{Binding StatusIcon}"
+                            TextColor="DodgerBlue"
+                            VerticalOptions="End" />
                     </Grid>
                 </DataTemplate>
             </CollectionView.ItemTemplate>
+
         </CollectionView>
+
 
         <!--  Thanh nhập tin nhắn  -->
         <Grid

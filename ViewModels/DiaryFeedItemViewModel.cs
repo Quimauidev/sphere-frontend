@@ -24,7 +24,7 @@ namespace Sphere.ViewModels
     {
         // Services
         private readonly IFollowService _followService;
-        private readonly IMessageService _messageService;
+        private readonly IConversationService _conversationService;
         private readonly IServiceProvider _serviceProvider;
 
         [ObservableProperty]
@@ -36,11 +36,11 @@ namespace Sphere.ViewModels
         [ObservableProperty]
         private Guid userId;
 
-        public DiaryFeedItemViewModel(UserWithDiaryModel model, Guid currentUserId, IFollowService followService, IMessageService messageService, IServiceProvider serviceProvider)
+        public DiaryFeedItemViewModel(UserWithDiaryModel model, Guid currentUserId, IFollowService followService, IConversationService conversationService, IServiceProvider serviceProvider)
         {
             Model = model ?? throw new ArgumentNullException(nameof(model));
             _followService = followService;
-            _messageService = messageService;
+            _conversationService = conversationService;
             _serviceProvider = serviceProvider;
             var user = model.UserDiaryDTO ?? throw new ArgumentNullException(nameof(model.UserDiaryDTO));
             UserId = user.Id;
@@ -103,7 +103,7 @@ namespace Sphere.ViewModels
                     return;
             }    
 
-            var response = await _messageService.StartConversationAsync(Model.UserDiaryDTO!.Id);
+            var response = await _conversationService.StartConversationAsync(Model.UserDiaryDTO!.Id);
             if (response.Errors?.Any(e => e.Code == "NotEnoughDiamonds") == true ||
                 response.Message?.Contains("kim cương", StringComparison.OrdinalIgnoreCase) == true)
             {

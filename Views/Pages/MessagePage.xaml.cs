@@ -42,7 +42,6 @@ public partial class MessagePage : ContentPage
 
                     if (height > 0)
                     {
-                        
                         InputGrid.TranslationY = -5;
 
                         // 🔹 Thêm margin dưới để không bị che tin nhắn
@@ -61,12 +60,6 @@ public partial class MessagePage : ContentPage
 
             rootView.ViewTreeObserver?.AddOnGlobalLayoutListener(_keyboardListener);
         }
-
-        this.Appearing += (s, e) =>
-        {
-            if (vm.Messages.Count > 0)
-                vm.ScrollToLastMessage?.Invoke();
-        };
     }
 
     protected override void OnDisappearing()

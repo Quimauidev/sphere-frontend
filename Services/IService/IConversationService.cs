@@ -13,9 +13,10 @@ namespace Sphere.Services.IService
     public interface IConversationService
     {
         Task<ApiResponse<IEnumerable<ConversationModel>>> GetConversationsAsync();
-        Task<ApiResponse<Request.MessageStartResponse>> StartConversationAsync(Request.ChatStartRequest request);
-        Task<ApiResponse<IEnumerable<MessageModel>>> GetMessagesAsync(Guid conversationId, int page = 1, int pageSize = 50);
-        Task<ApiResponse<Request.SendMessageRequest>> SendMessageAsync(Guid conversationId, Request.SendMessageRequest request);
+        Task<ApiResponse<MessageStartResponse>> StartConversationAsync(Guid id);
+        Task<ApiResponse<IEnumerable<MessageModel>>> GetLatestMessagesAsync(Guid conversationId, int take = 50);
+        Task<ApiResponse<IEnumerable<MessageModel>>> GetMessagesBeforeAsync(Guid conversationId, Guid messageId, int take = 50);
+        Task<ApiResponse<SendMessageRequest>> SendMessageAsync(Guid conversationId, SendMessageRequest request);
         Task<ApiResponse<object>> MarkAsReadAsync(Guid conversationId);
         Task<ApiResponse<bool>> DeleteConversationAsync(Guid targetUserId);
     }

@@ -27,7 +27,6 @@
             <local:StringIsNullOrEmptyToBoolConverter x:Key="StringIsNullOrEmptyToBoolConverter" />
             <local:StringIsNotNullOrEmptyToBoolConverter x:Key="StringIsNotNullOrEmptyToBoolConverter" />
 
-
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="Resources/Styles/Colors.xaml" />
                 <ResourceDictionary Source="Resources/Styles/Styles.xaml" />

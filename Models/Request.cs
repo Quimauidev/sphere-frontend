@@ -21,6 +21,7 @@ namespace Sphere.Models
 
         public class SendMessageRequest
         {
+            public Guid Id { get; set; }
             public string? Content { get; set; }
             public string? MediaUrl { get; set; }
             public string? MediaType { get; set; }

@@ -35,4 +35,12 @@ namespace Sphere.Common.Constans
         Error,
         Offline
     }
+
+    public enum MessageStatus
+    {
+        Sending = 0, // đang gửi
+        Sent = 1,    // đã gửi
+        Delivered = 2, // đã đến thiết bị người nhận
+        Seen = 3     // đã xem
+    }
 }
