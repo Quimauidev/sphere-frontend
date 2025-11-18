@@ -14,19 +14,21 @@ namespace Sphere.Services.Service
     public class MessageHubService
     {
         private readonly HubConnection _connection;
+
+        // Tất cả conversation đã join trên server
         private readonly HashSet<Guid> _joinedConversations = new();
 
-        // Sự kiện frontend sẽ subscribe
+        // Conversation thực sự đang mở trên UI
+        private readonly HashSet<Guid> _activeConversations = new();
+
+        // Chỉ đăng ký event 1 lần
+        private bool _eventsRegistered = false;
+
+        // Event cho frontend subscribe
         public event Action<MessageModel>? OnMessageReceived;
-
         public event Action<Guid, string>? OnError;
-
         public event Action<Guid, string>? OnMessagesMarkedAsRead;
-
-        // Event riêng để update trạng thái message đã gửi xong
         public event Action<Guid>? OnMessageSentConfirmed;
-
-        // Event khi message được delivered/seen
         public event Action<Guid>? OnMessageDelivered;
         public event Action<Guid>? OnMessageSeen;
 
@@ -36,21 +38,21 @@ namespace Sphere.Services.Service
                 .WithUrl(config.HubUrl, options =>
                 {
                     options.AccessTokenProvider = () =>
-                        Task.FromResult(PreferencesHelper.GetAuthToken() ?? string.Empty);
+                        Task.FromResult<string?>(PreferencesHelper.GetAuthToken() ?? string.Empty);
                 })
                 .WithAutomaticReconnect()
                 .Build();
 
             RegisterEvents();
 
-            // Khi reconnect, join lại các conversation đã tham gia
             _connection.Reconnected += async (_) =>
             {
-                foreach (var convId in _joinedConversations)
+                foreach (var convId in _activeConversations)
                 {
                     try
                     {
                         await _connection.InvokeAsync("JoinConversation", convId);
+                        _joinedConversations.Add(convId);
                     }
                     catch (Exception ex)
                     {
@@ -62,44 +64,18 @@ namespace Sphere.Services.Service
 
         private void RegisterEvents()
         {
-            // Nhận tin nhắn từ backend (broadcast từ service)
-            _connection.On<MessageModel>("ReceiveMessage", msg =>
-            {
-                OnMessageReceived?.Invoke(msg);
-            });
+            if (_eventsRegistered) return;
 
-            // Khi backend báo lỗi
-            _connection.On<string>("Error", msg =>
-            {
-                OnError?.Invoke(Guid.Empty, msg);
-            });
+            _connection.On<MessageModel>("ReceiveMessage", msg => OnMessageReceived?.Invoke(msg));
+            _connection.On<string>("Error", msg => OnError?.Invoke(Guid.Empty, msg));
+            _connection.On<Guid, string>("MessagesMarkedAsRead", (convId, userId) => OnMessagesMarkedAsRead?.Invoke(convId, userId));
+            _connection.On<Guid>("MessageSent", id => OnMessageSentConfirmed?.Invoke(id));
+            _connection.On<Guid>("MessageDelivered", id => OnMessageDelivered?.Invoke(id));
+            _connection.On<Guid>("MessageSeen", id => OnMessageSeen?.Invoke(id));
 
-            // Khi đánh dấu đã đọc
-            _connection.On<Guid, string>("MessagesMarkedAsRead", (conversationId, userId) =>
-            {
-                OnMessagesMarkedAsRead?.Invoke(conversationId, userId);
-            });
-
-            // Optional: xác nhận gửi tin nhắn
-            _connection.On<Guid>("MessageSent", messageId =>
-            {
-                OnMessageSentConfirmed?.Invoke(messageId);
-            });
-
-            // Khi backend báo tin nhắn đã được delivered
-            _connection.On<Guid>("MessageDelivered", messageId =>
-            {
-                OnMessageDelivered?.Invoke(messageId);
-            });
-
-            // Khi backend báo tin nhắn đã được seen
-            _connection.On<Guid>("MessageSeen", messageId =>
-            {
-                OnMessageSeen?.Invoke(messageId);
-            });
+            _eventsRegistered = true;
         }
 
-        // Kết nối hub
         public async Task StartAsync()
         {
             if (_connection.State == HubConnectionState.Connected)
@@ -115,18 +91,22 @@ namespace Sphere.Services.Service
             }
         }
 
-        // Tham gia conversation để nhận tin nhắn
+        /// <summary>Tham gia conversation để nhận tin nhắn</summary>
         public async Task JoinConversation(Guid conversationId)
         {
-            if (!_joinedConversations.Contains(conversationId))
-                _joinedConversations.Add(conversationId);
+            if (!_activeConversations.Contains(conversationId))
+                _activeConversations.Add(conversationId);
 
             if (_connection.State != HubConnectionState.Connected)
                 await StartAsync();
 
             try
             {
-                await _connection.InvokeAsync("JoinConversation", conversationId);
+                if (!_joinedConversations.Contains(conversationId))
+                {
+                    await _connection.InvokeAsync("JoinConversation", conversationId);
+                    _joinedConversations.Add(conversationId);
+                }
             }
             catch (Exception ex)
             {
@@ -134,11 +114,11 @@ namespace Sphere.Services.Service
             }
         }
 
-        // Rời khỏi conversation
+        /// <summary>Rời conversation khi đóng hoặc đổi sang conversation khác</summary>
         public async Task LeaveConversation(Guid conversationId)
         {
-            if (_joinedConversations.Contains(conversationId))
-                _joinedConversations.Remove(conversationId);
+            _activeConversations.Remove(conversationId);
+            _joinedConversations.Remove(conversationId);
 
             if (_connection.State != HubConnectionState.Connected) return;
 
@@ -152,7 +132,7 @@ namespace Sphere.Services.Service
             }
         }
 
-        // Gửi tin nhắn
+        /// <summary>Gửi message với messageId tạm thời, backend trả lại cùng Id</summary>
         public async Task SendMessage(Guid conversationId, string content, Guid messageId)
         {
             if (_connection.State != HubConnectionState.Connected)
@@ -160,13 +140,17 @@ namespace Sphere.Services.Service
 
             try
             {
-                // Gửi messageId kèm content để backend trả lại cùng Id
                 await _connection.InvokeAsync("SendMessage", conversationId, content, messageId);
             }
             catch (Exception ex)
             {
                 OnError?.Invoke(conversationId, $"SendMessage failed: {ex.Message}");
+                throw; // để ViewModel bắt lỗi và đánh dấu Failed
             }
         }
+
+        /// <summary>Kiểm tra conversation đang active hay không</summary>
+        public bool IsActiveConversation(Guid conversationId) => _activeConversations.Contains(conversationId);
     }
+
 }

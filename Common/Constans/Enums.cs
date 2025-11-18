@@ -41,6 +41,7 @@ namespace Sphere.Common.Constans
         Sending = 0, // đang gửi
         Sent = 1,    // đã gửi
         Delivered = 2, // đã đến thiết bị người nhận
-        Seen = 3     // đã xem
+        Seen = 3,     // đã xem
+        Failed = 4    // gửi thất bại
     }
 }

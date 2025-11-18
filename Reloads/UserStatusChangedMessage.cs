@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Sphere.ViewModels.Reloads
+namespace Sphere.Reloads
 {
     // 🔹 Message: Một user cụ thể thay đổi trạng thái online/offline
     public class UserStatusChangedMessage : ValueChangedMessage<(Guid UserId, bool IsOnline)>

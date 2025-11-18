@@ -15,23 +15,16 @@ namespace Sphere.Services.Service
             return await _apiService.PostAsync<object, MessageStartResponse>($"/api/conversations/start/{id}", null!);
         }
 
-        public async Task<ApiResponse<IEnumerable<ConversationModel>>> GetConversationsAsync()
+        public async Task<ApiResponse<IEnumerable<ConversationModel>>> GetConversationsAsync(int page, int pageSize)
         {
-            return await _apiService.GetAsync<IEnumerable<ConversationModel>>("/api/conversations");
+            return await _apiService.GetAsync<IEnumerable<ConversationModel>>($"/api/conversations?page={page}&pageSize={pageSize}");
         }
 
-        public async Task<ApiResponse<IEnumerable<MessageModel>>> GetLatestMessagesAsync(Guid conversationId, int take = 50)
-        {
-            return await _apiService.GetAsync<IEnumerable<MessageModel>>(
-                $"/api/conversations/{conversationId}/messages/latest?take={take}");
-        }
-
-        public async Task<ApiResponse<IEnumerable<MessageModel>>> GetMessagesBeforeAsync(Guid conversationId, Guid messageId, int take = 50)
+        public async Task<ApiResponse<IEnumerable<MessageModel>>> GetLatestMessagesAsync(Guid conversationId,int skip, int take)    
         {
             return await _apiService.GetAsync<IEnumerable<MessageModel>>(
-                $"/api/conversations/{conversationId}/messages/before/{messageId}?take={take}");
+                $"/api/conversations/{conversationId}/messages/latest?skip={skip}&take={take}");
         }
-
 
         public async Task<ApiResponse<Request.SendMessageRequest>> SendMessageAsync(Guid conversationId, Request.SendMessageRequest request)
         {

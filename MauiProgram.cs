@@ -11,6 +11,7 @@ using Sphere.Views.Controls;
 using Sphere.ViewModels;
 using Android.Content.Res;
 using Microsoft.Maui.Platform;
+using Sphere.Database.ServiceSQLite;
 
 namespace Sphere
 {
@@ -36,13 +37,8 @@ namespace Sphere
             builder.Services.AddSingleton<MediaStoreHelper>();
             builder.Services.AddHttpClient();
             builder.Services.RegisterServices();
-            builder.Services.AddSingleton<IMediaUploadService, MediaUploadService>();
-            builder.Services.AddSingleton<SQLiteMessageService>(sp =>
-            {
-                var dbPath = Path.Combine(FileSystem.AppDataDirectory, "sphere.db3");
-                return new SQLiteMessageService(dbPath);
-            });
-
+            //builder.Services.AddSingleton<IMediaUploadService, MediaUploadService>();
+            
             builder.ConfigureMauiHandlers(handlers =>
             {
                 handlers.AddHandler(typeof(GlideImage), typeof(GlideImageHandler));

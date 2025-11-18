@@ -1,7 +1,10 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+﻿using Android.Icu.Text;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Sphere;
 using Sphere.Common.Constans;
 using Sphere.Common.Responses;
+using Sphere.Database.ServiceSQLite;
 using Sphere.Models;
 using Sphere.Services.IService;
 using Sphere.Services.Service;
@@ -12,6 +15,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using static Sphere.Models.Request;
+using static System.Net.Mime.MediaTypeNames;
+using Sphere.Database.EntitySQLite;
 
 namespace Sphere.ViewModels
 {
@@ -20,9 +25,9 @@ namespace Sphere.ViewModels
         private readonly IConversationService _conversationService;
         private readonly IUserSessionService _userSessionService;
         private readonly MessageHubService _hubService;
-        private readonly SQLiteMessageService _localDb;
+        private readonly MessageSQLiteService _localMessageDb;
 
-        public ObservableCollection<MessageModel> Messages { get; set; } = new();
+        public ObservableCollection<MessageModel> Messages { get; private set; } = new();
 
         [ObservableProperty]
         private string? partnerAvatar;
@@ -30,186 +35,300 @@ namespace Sphere.ViewModels
         [ObservableProperty]
         private string? partnerFullName;
 
-        // thêm phương thức để gán dữ liệu
-        public void SetPartner(UserDiaryModel partner)
-        {
-            PartnerFullName = partner.FullName;
-            // Xác định avatar hiển thị
-            if (!string.IsNullOrWhiteSpace(partner.AvatarUrl))
-                PartnerAvatar = partner.AvatarUrl;
-            else
-                PartnerAvatar = partner.Gender == Gender.Female ? "woman.png" : "man.png";
-        }
-
         [ObservableProperty]
         private Guid conversationId;
 
         [ObservableProperty]
         private string? currentMessage;
 
-        private bool _isLoadingOlderMessages = false;
+        private int _skip = 0;
+        private const int PageSize = 100;
 
+        private Guid _previousConversationId = Guid.Empty;
 
-        public MessageViewModel(IConversationService conversationService, IUserSessionService userSessionService, MessageHubService hubService, SQLiteMessageService localDb)
+        // Hub event delegates
+        private Action<MessageModel>? _onMessageReceivedHandler;
+        private Action<Guid>? _onMessageSentConfirmedHandler;
+        private Action<Guid>? _onMessageDeliveredHandler;
+        private Action<Guid>? _onMessageSeenHandler;
+        private Action<Guid, string>? _onMessagesMarkedAsReadHandler;
+        private bool _isLoadingOlder;
+
+        public Action? ScrollToLastMessage { get; set; }
+        public Action<MessageModel>? ScrollToMessage { get; set; }
+
+        public MessageViewModel(
+            IConversationService conversationService,
+            IUserSessionService userSessionService,
+            MessageHubService hubService,
+            MessageSQLiteService localMessageDb)
         {
             _conversationService = conversationService;
             _userSessionService = userSessionService;
             _hubService = hubService;
-            _localDb = localDb;
-            // Nhận tin nhắn realtime
-            // Nhận tin nhắn mới
-            _hubService.OnMessageReceived += async msg =>
-            {
-                if (msg.ConversationId != ConversationId) return;
-
-                // Ensure IsMine is set correctly for incoming message
-                msg.IsMine = msg.SenderId == _userSessionService.CurrentUser?.UserDTO?.Id;
-
-                var existing = Messages.FirstOrDefault(m => m.Id == msg.Id);
-                if (existing != null)
-                {
-                    // Update fields and map status
-                    existing.Content = msg.Content;
-                    existing.SentAt = msg.SentAt;
-                    existing.IsRead = msg.IsRead;
-                    existing.ReceiverId = msg.ReceiverId;
-
-                    // If message is mine, backend may return Sent/Delivered/Seen
-                    if (existing.IsMine)
-                    {
-                        existing.Status = msg.Status;
-                    }
-                    else
-                    {
-                        // For incoming messages, mark as Delivered by default
-                        existing.Status = msg.Status;
-                    }
-                }
-                else
-                {
-                    msg.Status = msg.IsMine ? (msg.Status == 0 ? MessageStatus.Sent : msg.Status) : msg.Status;
-                    Messages.Add(msg);
-                    ScrollToLastMessage?.Invoke();
-                }
-                await _localDb.SaveMessagesAsync([_localDb.MapModelToEntity(msg)]);
-                UpdateLastMessageFlag();
-            };
-
-            // Xử lý xác nhận gửi xong
-            _hubService.OnMessageSentConfirmed += messageId =>
-            {
-                var tempMessage = Messages.FirstOrDefault(m => m.Id == messageId);
-                if (tempMessage != null)
-                {
-                    tempMessage.Status = MessageStatus.Sent;
-                    UpdateMessageStatusIcons();
-                }
-            };
-
-            // Khi backend báo delivered
-            _hubService.OnMessageDelivered += messageId =>
-            {
-                var m = Messages.FirstOrDefault(x => x.Id == messageId);
-                if (m != null)
-                {
-                    m.Status = MessageStatus.Delivered;
-                    UpdateMessageStatusIcons();
-                }
-            };
-
-            // Khi backend báo seen
-            _hubService.OnMessageSeen += messageId =>
-            {
-                var m = Messages.FirstOrDefault(x => x.Id == messageId);
-                if (m != null)
-                {
-                    m.Status = MessageStatus.Seen;
-                    UpdateMessageStatusIcons();
-                }
-            };
-
-            _hubService.OnMessagesMarkedAsRead += (convId, userId) =>
-            {
-                if (convId == ConversationId)
-                {
-                    foreach (var msg in Messages)
-                    {
-                        if (!msg.IsMine)
-                            msg.IsRead = true;
-                    }
-                }
-            };
+            _localMessageDb = localMessageDb;
         }
 
-        // Action để page scroll xuống cuối
-        public Action? ScrollToLastMessage { get; set; }
-        public Action<MessageModel>? ScrollToMessage { get; set; }
-
+        public void SetPartner(UserDiaryModel partner)
+        {
+            PartnerFullName = partner.FullName;
+            PartnerAvatar = !string.IsNullOrWhiteSpace(partner.AvatarUrl)
+                ? partner.AvatarUrl
+                : partner.Gender == Gender.Female ? "woman.png" : "man.png";
+        }
 
         partial void OnConversationIdChanged(Guid value)
         {
+            // Leave previous conversation
+            if (_previousConversationId != Guid.Empty && _previousConversationId != value)
+            {
+                UnregisterHubEvents();
+                _ = _hubService.LeaveConversation(_previousConversationId);
+            }
+
+            _previousConversationId = value;
+            RegisterHubEvents();
             _ = LoadMessagesAsync(value);
-            _ = _hubService.JoinConversation(value);
+        }
+
+        private void RegisterHubEvents()
+        {
+            UnregisterHubEvents();
+
+            _onMessageReceivedHandler = msg => { _ = HandleMessageReceivedAsync(msg); };
+            _hubService.OnMessageReceived += _onMessageReceivedHandler;
+
+            _onMessageSentConfirmedHandler = id => { _ = HandleMessageSentConfirmedAsync(id); };
+            _hubService.OnMessageSentConfirmed += _onMessageSentConfirmedHandler;
+
+            _onMessageDeliveredHandler = id => { _ = HandleMessageDeliveredAsync(id); };
+            _hubService.OnMessageDelivered += _onMessageDeliveredHandler;
+
+            _onMessageSeenHandler = id => { _ = HandleMessageSeenAsync(id); };
+            _hubService.OnMessageSeen += _onMessageSeenHandler;
+
+            _onMessagesMarkedAsReadHandler = (convId, userId) =>
+            {
+                if (convId == ConversationId)
+                {
+                    foreach (var m in Messages.Where(x => !x.IsMine))
+                        m.IsRead = true;
+                }
+            };
+            _hubService.OnMessagesMarkedAsRead += _onMessagesMarkedAsReadHandler;
+        }
+
+        private void UnregisterHubEvents()
+        {
+            if (_onMessageReceivedHandler != null)
+                _hubService.OnMessageReceived -= _onMessageReceivedHandler;
+            if (_onMessageSentConfirmedHandler != null)
+                _hubService.OnMessageSentConfirmed -= _onMessageSentConfirmedHandler;
+            if (_onMessageDeliveredHandler != null)
+                _hubService.OnMessageDelivered -= _onMessageDeliveredHandler;
+            if (_onMessageSeenHandler != null)
+                _hubService.OnMessageSeen -= _onMessageSeenHandler;
+            if (_onMessagesMarkedAsReadHandler != null)
+                _hubService.OnMessagesMarkedAsRead -= _onMessagesMarkedAsReadHandler;
+
+            _onMessageReceivedHandler = null;
+            _onMessageSentConfirmedHandler = null;
+            _onMessageDeliveredHandler = null;
+            _onMessageSeenHandler = null;
+            _onMessagesMarkedAsReadHandler = null;
+        }
+
+        private async Task SaveLocalAsync(MessageModel message)
+        {
+            var entity = _localMessageDb.MapModelToEntity(message);
+            await _localMessageDb.SaveMessagesAsync(new[] { entity });
+        }
+
+        private async Task HandleMessageReceivedAsync(MessageModel msg)
+        {
+            if (msg.ConversationId != ConversationId) return;
+
+            var currentUserId = _userSessionService.CurrentUser?.UserDTO?.Id ?? Guid.Empty;
+            msg.IsMine = msg.SenderId == currentUserId;
+
+            // Find by Id first
+            var existingById = Messages.FirstOrDefault(m => m.Id == msg.Id);
+
+            // If not found, try to find matching temp message (same content, mine, sending/failed)
+            var matchingTemp = Messages.FirstOrDefault(m => m.IsMine && (m.Status == MessageStatus.Sending || m.Status == MessageStatus.Failed) && m.Content == msg.Content && m.SenderId == msg.SenderId);
+
+            if (existingById != null)
+            {
+                existingById.Content = msg.Content;
+                existingById.SentAt = msg.SentAt;
+                existingById.Status = msg.Status;
+                existingById.IsRead = msg.IsRead;
+                existingById.IsRecalled = msg.IsRecalled;
+                await SaveLocalAsync(existingById);
+            }
+            else if (matchingTemp != null)
+            {
+                matchingTemp.Id = msg.Id;
+                matchingTemp.SentAt = msg.SentAt;
+                matchingTemp.Status = msg.Status;
+                matchingTemp.IsMine = msg.IsMine;
+                matchingTemp.IsRead = msg.IsRead;
+                matchingTemp.IsRecalled = msg.IsRecalled;
+                matchingTemp.Content = msg.Content;
+                await SaveLocalAsync(matchingTemp);
+            }
+            else
+            {
+                await MainThread.InvokeOnMainThreadAsync(() => Messages.Add(msg));
+                await SaveLocalAsync(msg);
+                ScrollToLastMessage?.Invoke();
+            }
+
+            UpdateLastMessageFlag();
+            UpdateMessageStatusIcons();
+        }
+
+        private async Task HandleMessageSentConfirmedAsync(Guid messageId)
+        {
+            var msg = Messages.FirstOrDefault(m => m.Id == messageId);
+            if (msg != null)
+            {
+                msg.Status = MessageStatus.Sent;
+                await SaveLocalAsync(msg);
+                UpdateMessageStatusIcons();
+            }
+        }
+
+        private async Task HandleMessageDeliveredAsync(Guid messageId)
+        {
+            var msg = Messages.FirstOrDefault(m => m.Id == messageId);
+            if (msg != null)
+            {
+                msg.Status = MessageStatus.Delivered;
+                await SaveLocalAsync(msg);
+                UpdateMessageStatusIcons();
+            }
+        }
+
+        private async Task HandleMessageSeenAsync(Guid messageId)
+        {
+            var msg = Messages.FirstOrDefault(m => m.Id == messageId);
+            if (msg != null)
+            {
+                msg.Status = MessageStatus.Seen;
+                msg.IsRead = true;
+                await SaveLocalAsync(msg);
+                UpdateMessageStatusIcons();
+            }
         }
 
         private async Task LoadMessagesAsync(Guid conversationId)
         {
             if (conversationId == Guid.Empty) return;
 
-            Messages.Clear();
-
+            _skip = 0;
             var currentUserId = _userSessionService.CurrentUser?.UserDTO?.Id ?? Guid.Empty;
 
-            // B1: Load từ SQLite (rất nhanh)
-            var localMsgs = await _localDb.GetMessagesAsync(conversationId, 50);
+            // 1) Load from local DB
+            var localEntities = await _localMessageDb.GetMessagesAsync(conversationId, 0, 20);
+            var localModels = localEntities.Select(e => _localMessageDb.MapEntityToModel(e, currentUserId))
+                                           .OrderBy(m => m.SentAt).ToList();
 
-            foreach (var e in localMsgs.OrderBy(m => m.SentAt))
+            // If some messages are still in Sending state (app died), mark them Failed
+            var changed = new List<MessageEntity>();
+            foreach (var lm in localModels.Where(x => x.IsMine && x.Status == MessageStatus.Sending).ToList())
             {
-                Messages.Add(_localDb.MapEntityToModel(e, currentUserId));
+                lm.Status = MessageStatus.Failed;
+                changed.Add(_localMessageDb.MapModelToEntity(lm));
             }
+            if (changed.Any())
+            {
+                await _localMessageDb.SaveMessagesAsync(changed);
+            }
+
+            Messages = new ObservableCollection<MessageModel>(localModels);
+            OnPropertyChanged(nameof(Messages));
+
             ScrollToLastMessage?.Invoke();
-            if (Messages.Count > 0)
+            UpdateLastMessageFlag();
+            UpdateMessageStatusIcons();
+
+            // 2) Join hub to receive realtime updates
+            await _hubService.JoinConversation(conversationId);
+
+            // 3) Load from server (latest)
+            var response = await _conversationService.GetLatestMessagesAsync(conversationId, 0, PageSize);
+            if (!response.IsSuccess || response.Data == null) return;
+
+            var entities = response.Data.Select(m => _localMessageDb.MapModelToEntity(m)).ToList();
+            await _localMessageDb.SaveMessagesAsync(entities);
+
+            await MergeServerMessagesAsync(response.Data, currentUserId);
+            ScrollToLastMessage?.Invoke();
+        }
+
+        private async Task MergeServerMessagesAsync(IEnumerable<MessageModel> serverMessages, Guid currentUserId)
+        {
+            var localById = Messages.ToDictionary(m => m.Id, m => m);
+            var toSave = new List<MessageEntity>();
+
+            foreach (var serverMsg in serverMessages)
             {
-                UpdateLastMessageFlag();
-                UpdateMessageStatusIcons();
-                ScrollToLastMessage?.Invoke();
+                serverMsg.IsMine = serverMsg.SenderId == currentUserId;
+
+                if (localById.TryGetValue(serverMsg.Id, out var local))
+                {
+                    if (local.Status != MessageStatus.Failed)
+                    {
+                        local.Content = serverMsg.Content;
+                        local.SentAt = serverMsg.SentAt;
+                        local.Status = serverMsg.Status;
+                        local.IsRead = serverMsg.IsRead;
+                        local.IsRecalled = serverMsg.IsRecalled;
+                        toSave.Add(_localMessageDb.MapModelToEntity(local));
+                    }
+                }
+                else
+                {
+                    var temp = Messages.FirstOrDefault(m => m.IsMine && (m.Status == MessageStatus.Sending || m.Status == MessageStatus.Failed) && m.Content == serverMsg.Content && m.SenderId == serverMsg.SenderId);
+                    if (temp != null)
+                    {
+                        temp.Id = serverMsg.Id;
+                        temp.SentAt = serverMsg.SentAt;
+                        temp.Status = serverMsg.Status;
+                        temp.IsMine = serverMsg.IsMine;
+                        temp.IsRead = serverMsg.IsRead;
+                        temp.IsRecalled = serverMsg.IsRecalled;
+                        temp.Content = serverMsg.Content;
+                        toSave.Add(_localMessageDb.MapModelToEntity(temp));
+                    }
+                    else
+                    {
+                        Messages.Add(serverMsg);
+                        toSave.Add(_localMessageDb.MapModelToEntity(serverMsg));
+                    }
+                }
             }
 
-            // B2: Load từ server (chỉ 1 lần)
-            var response = await _conversationService.GetLatestMessagesAsync(conversationId);
-
-            if (!response.IsSuccess || response.Data == null)
-                return;
-
-            // B3: Lưu vào SQLite
-            var entities = response.Data.Select(m => _localDb.MapModelToEntity(m)).ToList();
-            await _localDb.SaveMessagesAsync(entities);
-
-            // B4: Update UI (đẩy tin mới hơn vào nếu có)
-            Messages.Clear();
-            foreach (var m in response.Data.OrderBy(m => m.SentAt))
-            {
-                m.IsMine = m.SenderId == currentUserId;
-                Messages.Add(m);
-            }
+            if (toSave.Any())
+                await _localMessageDb.SaveMessagesAsync(toSave);
 
             UpdateLastMessageFlag();
             UpdateMessageStatusIcons();
-            ScrollToLastMessage?.Invoke();
         }
 
         [RelayCommand]
         private async Task SendMessage()
         {
-            if (ConversationId == Guid.Empty || string.IsNullOrWhiteSpace(CurrentMessage))
-                return;
+            if (ConversationId == Guid.Empty || string.IsNullOrWhiteSpace(CurrentMessage)) return;
 
-            // Tạo tin nhắn tạm thời
+            var currentUserId = _userSessionService.CurrentUser?.UserDTO?.Id ?? Guid.Empty;
+
             var tempMessage = new MessageModel
             {
-                Id = Guid.NewGuid(), // tạm thời
+                Id = Guid.NewGuid(),
                 ConversationId = ConversationId,
-                SenderId = _userSessionService.CurrentUser?.UserDTO?.Id ?? Guid.Empty,
+                SenderId = currentUserId,
                 ReceiverId = Guid.Empty,
                 Content = CurrentMessage,
                 SentAt = DateTime.UtcNow,
@@ -221,98 +340,121 @@ namespace Sphere.ViewModels
             UpdateLastMessageFlag();
             ScrollToLastMessage?.Invoke();
 
-            // Xóa text editor
             MainThread.BeginInvokeOnMainThread(() => CurrentMessage = string.Empty);
+
+            await SaveLocalAsync(tempMessage);
+
+            if (!Connectivity.Current.NetworkAccess.HasFlag(NetworkAccess.Internet))
+            {
+                tempMessage.Status = MessageStatus.Failed;
+                await SaveLocalAsync(tempMessage);
+                UpdateMessageStatusIcons();
+                return;
+            }
 
             try
             {
-                // Gửi tin nhắn kèm Id tạm thời để backend trả về cùng Id
-                await _hubService.SendMessage(ConversationId, tempMessage.Content, tempMessage.Id);
-
-                // Sau khi backend xác nhận, hub sẽ gửi lại, tempMessage.Status được cập nhật trong OnMessageReceived
+                await _hubService.SendMessage(ConversationId, tempMessage.Content ?? string.Empty, tempMessage.Id);
             }
             catch
             {
-                tempMessage.Status = MessageStatus.Sending; // giữ trạng thái gửi lỗi
+                tempMessage.Status = MessageStatus.Failed;
+                await SaveLocalAsync(tempMessage);
+                UpdateMessageStatusIcons();
             }
         }
 
-        private void UpdateMessageStatusIcons()
+        [RelayCommand]
+        private async Task RetrySendMessage(MessageModel message)
         {
-            var myMessages = Messages.Where(m => m.IsMine).ToList();
+            if (message == null || message.Status != MessageStatus.Failed) return;
 
-            if (!myMessages.Any()) return;
+            message.Status = MessageStatus.Sending;
+            await SaveLocalAsync(message);
+            UpdateMessageStatusIcons();
 
-            // tìm tin cuối chưa seen
-            var lastNotSeen = myMessages
-                .Where(m => m.Status != MessageStatus.Seen)
-                .LastOrDefault();
-
-            foreach (var m in myMessages)
+            if (!Connectivity.Current.NetworkAccess.HasFlag(NetworkAccess.Internet))
             {
-                // CHỈ cập nhật khi giá trị thực sự đổi → tránh OnPropertyChanged dư
-                bool newShow =
-                    m.Status == MessageStatus.Sending ||
-                    m.Status == MessageStatus.Seen ||
-                    m == lastNotSeen;
+                message.Status = MessageStatus.Failed;
+                await SaveLocalAsync(message);
+                UpdateMessageStatusIcons();
+                return;
+            }
 
-                if (m.ShowStatusIcon != newShow)
-                    m.ShowStatusIcon = newShow;
+            try
+            {
+                await _hubService.SendMessage(message.ConversationId, message.Content ?? string.Empty, message.Id);
+            }
+            catch
+            {
+                message.Status = MessageStatus.Failed;
+                await SaveLocalAsync(message);
+                UpdateMessageStatusIcons();
             }
         }
 
         private void UpdateLastMessageFlag()
         {
-            if (Messages.Count == 0) return;
+            if (!Messages.Any()) return;
 
-            // Tin nhắn cũ hết là false
-            if (Messages.Count > 1)
-                Messages[Messages.Count - 2].IsLastMessage = false;
+            for (int i = 0; i < Messages.Count - 1; i++)
+                Messages[i].IsLastMessage = false;
 
-            // Tin nhắn cuối cùng là true
-            Messages[Messages.Count - 1].IsLastMessage = true;
+            Messages[^1].IsLastMessage = true;
+        }
+
+        private void UpdateMessageStatusIcons()
+        {
+            MainThread.BeginInvokeOnMainThread(() =>
+            {
+                var myMessages = Messages.Where(m => m.IsMine).ToList();
+                if (!myMessages.Any()) return;
+
+                var lastNormal = myMessages.Where(m => m.Status != MessageStatus.Sending && m.Status != MessageStatus.Failed).LastOrDefault();
+
+                foreach (var m in myMessages)
+                {
+                    bool newShow = m.Status == MessageStatus.Failed || (lastNormal != null && m == lastNormal);
+                    if (m.ShowStatusIcon != newShow) m.ShowStatusIcon = newShow;
+                }
+            });
         }
 
         [RelayCommand]
-        private async Task LoadOlderMessagesAsync()
+        public async Task LoadMoreMessagesAsync()
         {
-            if (_isLoadingOlderMessages || !Messages.Any()) return;
-            _isLoadingOlderMessages = true;
+            if (_isLoadingOlder) return;
+            _isLoadingOlder = true;
 
-            var firstMessage = Messages.First();
-            var currentUserId = _userSessionService.CurrentUser?.UserDTO?.Id ?? Guid.Empty;
-
-            // Lấy Id của item đầu tiên để scroll lại sau
-            var firstVisibleMessageId = firstMessage.Id;
-
-            // 1️⃣ Load server
-            var response = await _conversationService.GetMessagesBeforeAsync(ConversationId, firstMessage.Id, 50);
-            if (response.IsSuccess && response.Data != null && response.Data.Any())
+            try
             {
-                var entities = response.Data.Select(m => _localDb.MapModelToEntity(m)).ToList();
-                await _localDb.SaveMessagesAsync(entities);
+                var currentUserId = _userSessionService.CurrentUser?.UserDTO?.Id ?? Guid.Empty;
+                var response = await _conversationService.GetLatestMessagesAsync(ConversationId, _skip + PageSize, PageSize);
 
-                // Insert lên đầu
-                foreach (var m in response.Data.OrderBy(m => m.SentAt))
+                if (!response.IsSuccess || response.Data == null || !response.Data.Any()) return;
+
+                var oldCount = Messages.Count;
+                var list = response.Data.OrderBy(m => m.SentAt).ToList();
+                await _localMessageDb.SaveMessagesAsync(list.Select(m => _localMessageDb.MapModelToEntity(m)));
+
+                foreach (var msg in list)
                 {
-                    m.IsMine = m.SenderId == currentUserId;
-                    Messages.Insert(0, m);
+                    msg.IsMine = msg.SenderId == currentUserId;
+                    if (!Messages.Any(x => x.Id == msg.Id)) Messages.Insert(0, msg);
                 }
 
-                // Delay nhỏ để CollectionView cập nhật
-                await Task.Delay(50);
+                _skip += PageSize;
 
-                // Scroll lại về item đầu tiên cũ
-                var item = Messages.FirstOrDefault(m => m.Id == firstVisibleMessageId);
-                if (item != null)
-                {
-                    ScrollToMessage?.Invoke(item);
-                }
+                UpdateLastMessageFlag();
+                UpdateMessageStatusIcons();
+                if (ScrollToMessage != null && Messages.Count > oldCount)
+                    ScrollToMessage(Messages[oldCount]);
             }
-
-            _isLoadingOlderMessages = false;
+            finally
+            {
+                _isLoadingOlder = false;
+            }
         }
-
 
         [RelayCommand]
         private void OpenGallery() => App.Current!.MainPage!.DisplayAlert("Gallery", "Open gallery", "OK");
@@ -323,4 +465,5 @@ namespace Sphere.ViewModels
         [RelayCommand]
         private void Attach() => App.Current!.MainPage!.DisplayAlert("Attach", "Open attachments", "OK");
     }
+
 }

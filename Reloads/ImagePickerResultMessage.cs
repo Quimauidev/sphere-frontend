@@ -5,10 +5,11 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Sphere.ViewModels.Reloads
+namespace Sphere.Reloads
 {
-    public class ReloadDiariesMessage : ValueChangedMessage<bool>
+    public class ImagePickerResultMessage : ValueChangedMessage<List<string>>
     {
-        public ReloadDiariesMessage(bool value) : base(value) { }
+        public ImagePickerResultMessage(List<string> value) : base(value) { }
     }
+
 }

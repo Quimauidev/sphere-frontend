@@ -93,6 +93,11 @@ namespace Sphere.ViewModels
                         // Sau khi gán CurrentUser và Preferences
                         var newUserId = profile.Data!.UserProfileDTO!.Id;
 
+                        // Xóa dữ liệu conversation cũ
+                        var convVm = _serviceProvider.GetService<ConversationsViewModel>();
+                        if (convVm != null)
+                            await convVm.ClearConversationsAsync();
+
                         // Tạo instance mới PresenceService
                         var presenceService = new PresenceService("https://sphere-iqm8.onrender.com", newUserId, _serviceProvider);
                         await presenceService.StartAsync();

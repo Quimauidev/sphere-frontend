@@ -7,15 +7,16 @@ using Microsoft.Maui.Controls;
 using Sphere.Common.Helpers;
 using Sphere.Common.Responses;
 using Sphere.Models;
+using Sphere.Reloads;
 using Sphere.Services.IService;
 using Sphere.Services.Service;
-using Sphere.ViewModels.Reloads;
 using Sphere.Views.Controls;
 using Sphere.Views.Pages;
 using System;
 using System.Net.Http;
 using System.Text.Json;
 using System.Threading.Tasks;
+using static Android.Provider.Telephony.Sms;
 using static Sphere.Models.Request;
 
 namespace Sphere.ViewModels
@@ -119,7 +120,7 @@ namespace Sphere.ViewModels
                 }
                 return;
             }
-            if (response.IsSuccess && response.Data?.ConversationId != null)
+            if (response.IsSuccess && response.Data?.ConversationId is Guid conId)
             {
                 PreferencesHelper.SetChatUnlocked(Model.UserDiaryDTO.Id, true);
                 if (!alreadyUnlocked)
@@ -128,7 +129,7 @@ namespace Sphere.ViewModels
                    $"Bạn đã mở khóa cuộc trò chuyện. Số dư còn lại: {response.Data.NewBalance} 💎", "OK");
                 }
                 
-               
+
                 var mess = _serviceProvider.GetRequiredService<MessagePage>();
                 if (mess.BindingContext is MessageViewModel vm)
                 {
@@ -142,6 +143,8 @@ namespace Sphere.ViewModels
             else
                 await ApiResponseHelper.ShowApiErrorsAsync(response, "Không thể mở chat");
         }
+
+        
 
         [RelayCommand]
         public async Task Follow()

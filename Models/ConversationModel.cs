@@ -9,6 +9,7 @@ namespace Sphere.Models
     public class ConversationModel
     {
         public Guid Id { get; set; }
+        public Guid PartnerId { get; set; }
         public string? PartnerName { get; set; }
         public string? PartnerAvatar { get; set; }
         public string? LastMessage { get; set; }

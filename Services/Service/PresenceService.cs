@@ -1,7 +1,7 @@
 ﻿using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.AspNetCore.SignalR.Client;
 using Sphere.Common.Helpers;
-using Sphere.ViewModels.Reloads;
+using Sphere.Reloads;
 using Sphere.Views.Pages;
 using System;
 using System.Collections.Generic;

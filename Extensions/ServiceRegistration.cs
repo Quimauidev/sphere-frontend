@@ -1,8 +1,10 @@
 ﻿using Sphere.Common.Constans;
+using Sphere.Database.ServiceSQLite;
 using Sphere.ViewModels;
 using Sphere.Views.Pages;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
@@ -15,6 +17,15 @@ namespace Sphere.Extensions
         public static void RegisterServices(this IServiceCollection services)
         {
             var assembly = Assembly.GetExecutingAssembly();
+
+            var dbPath = Path.Combine(FileSystem.AppDataDirectory, "sphere.db3");
+            var connection = new SQLite.SQLiteAsyncConnection(dbPath);
+            services.AddSingleton(connection);
+            services.AddSingleton<MessageSQLiteService>(sp =>
+                new MessageSQLiteService(sp.GetRequiredService<SQLite.SQLiteAsyncConnection>()));
+            services.AddSingleton<ConversationSQLiteService>(sp =>
+                new ConversationSQLiteService(sp.GetRequiredService<SQLite.SQLiteAsyncConnection>()));
+
             // 🔹 Đăng ký HubConfig trước các service cần nó
             services.AddSingleton(new HubConfig
             {
@@ -35,10 +46,8 @@ namespace Sphere.Extensions
             {
                 services.AddTransient(type);
             }
-           
 
             // 🔹 Đăng ký tất cả Service vào DI (Hỗ trợ nhiều Interface)
-
             foreach (var type in assembly.GetTypes().Where(t => t.Name.EndsWith("Service") && t.IsClass && !t.IsAbstract))
             {
                 var interfaces = type.GetInterfaces();

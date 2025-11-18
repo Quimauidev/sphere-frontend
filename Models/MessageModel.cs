@@ -46,6 +46,8 @@ namespace Sphere.Models
             // Raise change for computed property so UI updates icon when Status changes
             OnPropertyChanged(nameof(StatusIcon));
             OnPropertyChanged(nameof(IsSending));
+            OnPropertyChanged(nameof(ShowStatusIcon));
+
         }
 
         // Hiển thị icon hoặc màu cho trạng thái
@@ -62,28 +64,5 @@ namespace Sphere.Models
                 };
             }
         }
-    }
-
-    public class MessageEntity
-    {
-        [PrimaryKey]
-        public Guid Id { get; set; }
-        public Guid ConversationId { get; set; }
-        public Guid SenderId { get; set; }
-        public Guid ReceiverId { get; set; }
-
-        public string? Content { get; set; }
-        public string? MediaUrl { get; set; }
-        public string? MediaType { get; set; }
-
-        public double? Latitude { get; set; }
-        public double? Longitude { get; set; }
-
-        public bool IsRead { get; set; }
-        public bool IsRecalled { get; set; }
-
-        public DateTime SentAt { get; set; }
-
-        public int Status { get; set; }   // int để lưu enum
     }
 }
