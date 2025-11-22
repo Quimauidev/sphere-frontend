@@ -45,7 +45,7 @@ namespace Sphere.ViewModels
             _ = OnConversationSelectedAsync(value);
         }
         private int CurrentPage = 1;
-        private const int PageSize = 100;
+        private const int PageSize = 50;
         [RelayCommand]
         public async Task LoadAsync()
         {

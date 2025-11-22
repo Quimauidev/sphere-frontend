@@ -42,7 +42,7 @@ namespace Sphere.ViewModels
         private string? currentMessage;
 
         private int _skip = 0;
-        private const int PageSize = 100;
+        private const int PageSize = 50;
 
         private Guid _previousConversationId = Guid.Empty;
 
@@ -184,6 +184,14 @@ namespace Sphere.ViewModels
                 ScrollToLastMessage?.Invoke();
             }
 
+            if (!msg.IsMine) // chỉ gọi seen khi là tin của người khác
+            {
+                try
+                {
+                    await _hubService.NotifySeenAsync(msg.Id, msg.ConversationId);
+                }
+                catch { }
+            }
             UpdateLastMessageFlag();
             UpdateMessageStatusIcons();
         }
@@ -226,11 +234,10 @@ namespace Sphere.ViewModels
         {
             if (conversationId == Guid.Empty) return;
 
-            _skip = 0;
             var currentUserId = _userSessionService.CurrentUser?.UserDTO?.Id ?? Guid.Empty;
 
             // 1) Load from local DB
-            var localEntities = await _localMessageDb.GetMessagesAsync(conversationId, 0, 20);
+            var localEntities = await _localMessageDb.GetMessagesAsync(conversationId, 0, PageSize);
             var localModels = localEntities.Select(e => _localMessageDb.MapEntityToModel(e, currentUserId))
                                            .OrderBy(m => m.SentAt).ToList();
 
@@ -249,9 +256,10 @@ namespace Sphere.ViewModels
             Messages = new ObservableCollection<MessageModel>(localModels);
             OnPropertyChanged(nameof(Messages));
 
-            ScrollToLastMessage?.Invoke();
+           
             UpdateLastMessageFlag();
             UpdateMessageStatusIcons();
+            ScrollToLastMessage?.Invoke();
 
             // 2) Join hub to receive realtime updates
             await _hubService.JoinConversation(conversationId);
@@ -316,6 +324,74 @@ namespace Sphere.ViewModels
             UpdateLastMessageFlag();
             UpdateMessageStatusIcons();
         }
+
+        [RelayCommand]
+        public async Task LoadMoreMessagesAsync()
+        {
+            if (_isLoadingOlder) return;
+            _isLoadingOlder = true;
+
+            try
+            {
+                var currentUserId = _userSessionService.CurrentUser?.UserDTO?.Id ?? Guid.Empty;
+
+                // 1️⃣ Load thêm từ SQLite trước (offline)
+                var localMore = await _localMessageDb.GetMessagesAsync(
+                    ConversationId,
+                    _skip,
+                    PageSize
+                );
+
+                foreach (var msgEntity in localMore.OrderBy(m => m.SentAt))
+                {
+                    var model = _localMessageDb.MapEntityToModel(msgEntity, currentUserId);
+                    if (!Messages.Any(x => x.Id == model.Id))
+                        Messages.Insert(0, model);
+                }
+
+                // 2️⃣ Nếu có mạng → load từ API (sync tin mới nhất)
+                if (Connectivity.Current.NetworkAccess.HasFlag(NetworkAccess.Internet))
+                {
+                    var response = await _conversationService.GetLatestMessagesAsync(
+                        ConversationId,
+                        _skip,
+                        PageSize
+                    );
+
+                    if (response.IsSuccess && response.Data != null && response.Data.Any())
+                    {
+                        var toSave = new List<MessageEntity>();
+
+                        foreach (var serverMsg in response.Data)
+                        {
+                            serverMsg.IsMine = serverMsg.SenderId == currentUserId;
+
+                            // Check duplicate trong Messages
+                            if (!Messages.Any(x => x.Id == serverMsg.Id))
+                                Messages.Insert(0, serverMsg);
+
+                            // Save server message vào SQLite
+                            toSave.Add(_localMessageDb.MapModelToEntity(serverMsg));
+                        }
+
+                        if (toSave.Any())
+                            await _localMessageDb.SaveMessagesAsync(toSave);
+                    }
+                }
+
+                // 3️⃣ Cập nhật skip và UI
+                _skip += PageSize;
+                UpdateLastMessageFlag();
+                UpdateMessageStatusIcons();
+                if (Messages.Count > 0 && ScrollToMessage != null)
+                    ScrollToMessage(Messages[0]);
+            }
+            finally
+            {
+                _isLoadingOlder = false;
+            }
+        }
+
 
         [RelayCommand]
         private async Task SendMessage()
@@ -420,41 +496,9 @@ namespace Sphere.ViewModels
             });
         }
 
-        [RelayCommand]
-        public async Task LoadMoreMessagesAsync()
-        {
-            if (_isLoadingOlder) return;
-            _isLoadingOlder = true;
+        
 
-            try
-            {
-                var currentUserId = _userSessionService.CurrentUser?.UserDTO?.Id ?? Guid.Empty;
-                var response = await _conversationService.GetLatestMessagesAsync(ConversationId, _skip + PageSize, PageSize);
 
-                if (!response.IsSuccess || response.Data == null || !response.Data.Any()) return;
-
-                var oldCount = Messages.Count;
-                var list = response.Data.OrderBy(m => m.SentAt).ToList();
-                await _localMessageDb.SaveMessagesAsync(list.Select(m => _localMessageDb.MapModelToEntity(m)));
-
-                foreach (var msg in list)
-                {
-                    msg.IsMine = msg.SenderId == currentUserId;
-                    if (!Messages.Any(x => x.Id == msg.Id)) Messages.Insert(0, msg);
-                }
-
-                _skip += PageSize;
-
-                UpdateLastMessageFlag();
-                UpdateMessageStatusIcons();
-                if (ScrollToMessage != null && Messages.Count > oldCount)
-                    ScrollToMessage(Messages[oldCount]);
-            }
-            finally
-            {
-                _isLoadingOlder = false;
-            }
-        }
 
         [RelayCommand]
         private void OpenGallery() => App.Current!.MainPage!.DisplayAlert("Gallery", "Open gallery", "OK");

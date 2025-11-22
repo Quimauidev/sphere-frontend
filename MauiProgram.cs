@@ -37,7 +37,6 @@ namespace Sphere
             builder.Services.AddSingleton<MediaStoreHelper>();
             builder.Services.AddHttpClient();
             builder.Services.RegisterServices();
-            //builder.Services.AddSingleton<IMediaUploadService, MediaUploadService>();
             
             builder.ConfigureMauiHandlers(handlers =>
             {

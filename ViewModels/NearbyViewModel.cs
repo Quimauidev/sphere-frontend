@@ -34,7 +34,7 @@ namespace Sphere.ViewModels
         private bool _nearbyHasNoMoreData;
 
         [ObservableProperty]
-        private int distance = 5;
+        private int distance = 60; // khoảng cách mặc định 60 km
 
         [ObservableProperty]
         private bool isLocationEnabled;
@@ -54,7 +54,6 @@ namespace Sphere.ViewModels
             _nearbyService = nearbyService;
             _permissionService = permissionService;
 
-            // 🔹 Đọc lại trạng thái từ Preferences
             // 🔹 Đọc trạng thái đã lưu
             IsLocationEnabled = PreferencesHelper.GetLocationEnabled();
         }

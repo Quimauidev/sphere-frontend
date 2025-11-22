@@ -6,7 +6,7 @@
     xmlns:local="clr-namespace:Sphere.Views.Controls"
     Title="Mới nhất">
 
-    <Grid Padding="10">
+    <Grid>
         <!--  Loading  -->
         <ActivityIndicator
             HeightRequest="40"
@@ -77,6 +77,9 @@
                 RemainingItemsThreshold="3"
                 RemainingItemsThresholdReachedCommand="{Binding LoadMoreLatestCommand}"
                 SelectionMode="None">
+                <CollectionView.ItemsLayout>
+                    <LinearItemsLayout ItemSpacing="5" Orientation="Vertical" />
+                </CollectionView.ItemsLayout>
                 <CollectionView.ItemTemplate>
                     <DataTemplate>
                         <local:DiaryFeedItemView BindingContext="{Binding .}" />

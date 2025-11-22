@@ -6,7 +6,7 @@
     xmlns:ffimageloading="clr-namespace:FFImageLoading.Maui;assembly=FFImageLoading.Maui"
     xmlns:local="clr-namespace:Sphere.Views.Controls">
 
-    <VerticalStackLayout Padding="10">
+    <VerticalStackLayout Padding="10,0,10,5">
         <Frame
             Padding="10"
             BorderColor="LightGray"

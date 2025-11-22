@@ -6,7 +6,7 @@
     xmlns:local="clr-namespace:Sphere.Views.Controls"
     Title="Theo dõi">
 
-    <Grid Padding="10">
+    <Grid>
         <!--  Loading  -->
         <ActivityIndicator
             HeightRequest="40"
@@ -25,7 +25,8 @@
             <Label
                 FontAttributes="Bold"
                 FontSize="16"
-                Text="{Binding FollowingErrorMessage}" HorizontalTextAlignment="Center"
+                HorizontalTextAlignment="Center"
+                Text="{Binding FollowingErrorMessage}"
                 TextColor="Red" />
             <Button
                 Command="{Binding LoadFirstFollowPageCommand}"
@@ -76,6 +77,9 @@
                 RemainingItemsThreshold="3"
                 RemainingItemsThresholdReachedCommand="{Binding LoadMoreFollowingCommand}"
                 SelectionMode="None">
+                <CollectionView.ItemsLayout>
+                    <LinearItemsLayout ItemSpacing="5" Orientation="Vertical" />
+                </CollectionView.ItemsLayout>
                 <CollectionView.ItemTemplate>
                     <DataTemplate>
                         <local:DiaryFeedItemView BindingContext="{Binding .}" />

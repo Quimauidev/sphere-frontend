@@ -45,7 +45,7 @@ public partial class MessagePage : ContentPage
                         InputGrid.TranslationY = -5;
 
                         // 🔹 Thêm margin dưới để không bị che tin nhắn
-                        MessagesList.Margin = new Thickness(24, 5, 10, 10);
+                        MessagesList.Margin = new Thickness(24, 0, 10, 10);
 
                         if (vm.Messages.Count > 0)
                             vm.ScrollToLastMessage?.Invoke();
@@ -53,7 +53,7 @@ public partial class MessagePage : ContentPage
                     else
                     {
                         InputGrid.TranslationY = 0;
-                        MessagesList.Margin = new Thickness(24, 5, 10, 10);
+                        MessagesList.Margin = new Thickness(24, 0, 10, 10);
                     }
                 });
             });

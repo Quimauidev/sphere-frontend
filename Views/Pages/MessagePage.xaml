@@ -19,6 +19,7 @@
             Padding="10,5,10,5"
             BackgroundColor="#f5f5f5"
             ColumnDefinitions="Auto,*, Auto"
+            HeightRequest="56"
             VerticalOptions="Center">
 
             <!--  Avatar  -->
@@ -95,7 +96,7 @@
         <CollectionView
             x:Name="MessagesList"
             Grid.Row="1"
-            Margin="24,10,10,0"
+            Margin="24,0,10,10"
             IsGrouped="False"
             ItemsSource="{Binding Messages}"
             RemainingItemsThreshold="3"
@@ -180,6 +181,7 @@
 
             <!--  Nút vị trí  -->
             <ImageButton
+                Margin="0,0,0,10"
                 Command="{Binding SendLocationCommand}"
                 HeightRequest="25"
                 VerticalOptions="End"
@@ -196,6 +198,7 @@
             <!--  Nút bộ sưu tập  -->
             <ImageButton
                 Grid.Column="1"
+                Margin="0,0,0,10"
                 Command="{Binding OpenGalleryCommand}"
                 HeightRequest="25"
                 VerticalOptions="End"
@@ -229,6 +232,7 @@
             <!--  Nút stack (đính kèm)  -->
             <ImageButton
                 Grid.Column="3"
+                Margin="0,0,0,10"
                 Command="{Binding AttachCommand}"
                 HeightRequest="25"
                 IsVisible="{Binding CurrentMessage, Converter={StaticResource StringIsNullOrEmptyToBoolConverter}}"
@@ -246,6 +250,7 @@
             <!--  Nút gửi  -->
             <ImageButton
                 Grid.Column="3"
+                Margin="0,0,0,10"
                 Command="{Binding SendMessageCommand}"
                 HeightRequest="25"
                 IsVisible="{Binding CurrentMessage, Converter={StaticResource StringIsNotNullOrEmptyToBoolConverter}}"

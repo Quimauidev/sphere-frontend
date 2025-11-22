@@ -12,6 +12,7 @@ namespace Sphere
         private readonly IAuthService _authService;
         private readonly IPermissionService _permissionService;
         private readonly ILocationService _locationService;
+
         public App(IServiceProvider serviceProvider, IAuthService authService, IPermissionService permissionService, ILocationService locationService)
         {
             InitializeComponent();
@@ -30,9 +31,8 @@ namespace Sphere
                     WidthRequest = 40,
                     HeightRequest = 40,
                     HorizontalOptions = LayoutOptions.Center,
-                    VerticalOptions =LayoutOptions.Center
+                    VerticalOptions = LayoutOptions.Center
                 },
-               
             };
 
             InitializeAppAsync();
@@ -83,5 +83,4 @@ namespace Sphere
             });
         }
     }
-
 }

@@ -149,6 +149,14 @@ namespace Sphere.Services.Service
             }
         }
 
+        public async Task NotifySeenAsync(Guid messageId, Guid conversationId)
+        {
+            if (_connection.State != HubConnectionState.Connected)
+                return;
+
+            await _connection.InvokeAsync("NotifySeen", messageId, conversationId);
+        }
+
         /// <summary>Kiểm tra conversation đang active hay không</summary>
         public bool IsActiveConversation(Guid conversationId) => _activeConversations.Contains(conversationId);
     }

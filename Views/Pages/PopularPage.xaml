@@ -7,7 +7,7 @@
     Title="Phổ biến">
 
 
-    <Grid Padding="10">
+    <Grid >
         <!--  Loading  -->
         <ActivityIndicator
             HeightRequest="40"
@@ -76,8 +76,11 @@
             <CollectionView
                 ItemsSource="{Binding PopularPosts}"
                 RemainingItemsThreshold="3"
-                RemainingItemsThresholdReachedCommand="{Binding LoadMorePopularCommand}"
+                RemainingItemsThresholdReachedCommand="{Binding LoadMorePopularCommand}" 
                 SelectionMode="None">
+                <CollectionView.ItemsLayout>
+                    <LinearItemsLayout ItemSpacing="5" Orientation="Vertical" />
+                </CollectionView.ItemsLayout>
                 <CollectionView.ItemTemplate>
                     <DataTemplate>
                         <local:DiaryFeedItemView BindingContext="{Binding .}" />
