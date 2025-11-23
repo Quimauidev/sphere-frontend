@@ -3,6 +3,7 @@
     x:Class="Sphere.Views.Pages.NearbyPage"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:clr-namespace="clr-namespace:Sphere.Converters"
     xmlns:ffimageloading="clr-namespace:FFImageLoading.Maui;assembly=FFImageLoading.Maui"
     xmlns:fftransformations="clr-namespace:FFImageLoading.Transformations;assembly=FFImageLoading.Maui"
     Title="Lân cận">
@@ -18,158 +19,128 @@
             </ToolbarItem.IconImageSource>
         </ToolbarItem>
     </ContentPage.ToolbarItems>
-    <Grid Padding="10" RowDefinitions="Auto,*">
-        <!--  Nút bật / tắt vị trí  -->
+    <Grid Padding="10,0,10,0" RowDefinitions="Auto,*">
+        <!-- Nút bật / tắt vị trí -->
         <StackLayout
-            HorizontalOptions="End"
-            Orientation="Horizontal"
-            Spacing="20">
+        HorizontalOptions="End"
+        Orientation="Horizontal"
+        Spacing="20">
             <Label Text="Bật vị trí" VerticalOptions="Center" />
             <Switch IsToggled="{Binding IsLocationEnabled}" />
         </StackLayout>
-        <!--  Loading  -->
-        <ActivityIndicator
-            Grid.Row="1"
-            HeightRequest="40"
-            HorizontalOptions="Center"
-            IsRunning="{Binding IsRefreshing}"
-            IsVisible="{Binding NearbyState, Converter={StaticResource StateToBoolConverter}, ConverterParameter=Loading}"
-            VerticalOptions="Center"
-            WidthRequest="40" />
 
-        <!--  Error  -->
-        <StackLayout
-            Grid.Row="1"
-            HorizontalOptions="Center"
-            IsVisible="{Binding NearbyState, Converter={StaticResource StateToBoolConverter}, ConverterParameter=Error}"
-            Spacing="30"
-            VerticalOptions="Center">
-            <Label
-                FontAttributes="Bold"
-                FontSize="16"
-                HorizontalTextAlignment="Center"
-                Text="Đã xảy ra lỗi khi tải dữ liệu."
-                TextColor="Red" />
-            <Button
-                Command="{Binding LoadFirstNearbyCommand}"
-                Text="Thử lại"
-                WidthRequest="100" />
+        <!-- Nội dung khi switch tắt -->
+        <StackLayout Grid.Row="1" HorizontalOptions="Center" VerticalOptions="Center"
+                 Spacing="30"
+                 IsVisible="{Binding IsLocationEnabled, Converter={StaticResource InverseBoolConverter}}">
+            <Label Text="Hãy bật vị trí để tìm bạn bè lân cận"
+               FontAttributes="Bold"
+               FontSize="16"
+               HorizontalTextAlignment="Center" />
         </StackLayout>
 
-        <!--  Empty  -->
-        <StackLayout
-            Grid.Row="1"
-            HorizontalOptions="Center"
-            IsVisible="{Binding NearbyState, Converter={StaticResource StateToBoolConverter}, ConverterParameter=Empty}"
-            Spacing="30"
-            VerticalOptions="Center">
-            <Label
-                FontAttributes="Bold"
-                FontSize="16"
-                Text="Không có người dùng nào gần bạn." />
-            <Button
-                Command="{Binding LoadFirstNearbyCommand}"
-                Text="Thử lại"
-                WidthRequest="100" />
+        <!-- Loading -->
+        <ActivityIndicator Grid.Row="1"
+                       HeightRequest="40"
+                       HorizontalOptions="Center"
+                       IsRunning="{Binding IsRefreshing}">
+            <ActivityIndicator.IsVisible>
+                <MultiBinding Converter="{StaticResource NearbyItemVisibilityConverter}" ConverterParameter="Loading">
+                    <Binding Path="IsLocationEnabled" />
+                    <Binding Path="NearbyState" />
+                </MultiBinding>
+            </ActivityIndicator.IsVisible>
+        </ActivityIndicator>
+
+        <!-- Error -->
+        <StackLayout Grid.Row="1" HorizontalOptions="Center" Spacing="30" VerticalOptions="Center">
+            <StackLayout.IsVisible>
+                <MultiBinding Converter="{StaticResource NearbyItemVisibilityConverter}" ConverterParameter="Error">
+                    <Binding Path="IsLocationEnabled" />
+                    <Binding Path="NearbyState" />
+                </MultiBinding>
+            </StackLayout.IsVisible>
+
+            <Label FontAttributes="Bold" FontSize="16" HorizontalTextAlignment="Center"
+               Text="Đã xảy ra lỗi khi tải dữ liệu." TextColor="Red" />
+            <Button Command="{Binding LoadFirstNearbyCommand}" Text="Thử lại" WidthRequest="100" />
         </StackLayout>
 
-        <!--  Offline  -->
-        <StackLayout
-            Grid.Row="1"
-            HorizontalOptions="Center"
-            IsVisible="{Binding NearbyState, Converter={StaticResource StateToBoolConverter}, ConverterParameter=Offline}"
-            Spacing="30"
-            VerticalOptions="Center">
-            <Label
-                FontAttributes="Bold"
-                FontSize="16"
-                Text="Không có kết nối mạng."
-                TextColor="Red" />
-            <Button
-                Command="{Binding LoadFirstNearbyCommand}"
-                Text="Thử lại"
-                WidthRequest="100" />
+        <!-- Empty -->
+        <StackLayout Grid.Row="1" HorizontalOptions="Center" Spacing="30" VerticalOptions="Center">
+            <StackLayout.IsVisible>
+                <MultiBinding Converter="{StaticResource NearbyItemVisibilityConverter}" ConverterParameter="Empty">
+                    <Binding Path="IsLocationEnabled" />
+                    <Binding Path="NearbyState" />
+                </MultiBinding>
+            </StackLayout.IsVisible>
+
+            <Label FontAttributes="Bold" FontSize="16" HorizontalTextAlignment="Center"
+               Text="Không có người dùng nào gần bạn." />
+            <Button Command="{Binding LoadFirstNearbyCommand}" Text="Thử lại" WidthRequest="100" />
         </StackLayout>
 
-        <!--  Danh sách người dùng gần đây  -->
-        <RefreshView
-            Grid.Row="1"
-            Command="{Binding RefreshNearbyCommand}"
-            IsRefreshing="{Binding IsRefreshing}"
-            IsVisible="{Binding NearbyState, Converter={StaticResource StateToBoolConverter}, ConverterParameter=Success}">
+        <!-- Offline -->
+        <StackLayout Grid.Row="1" HorizontalOptions="Center" Spacing="30" VerticalOptions="Center">
+            <StackLayout.IsVisible>
+                <MultiBinding Converter="{StaticResource NearbyItemVisibilityConverter}" ConverterParameter="Offline">
+                    <Binding Path="IsLocationEnabled" />
+                    <Binding Path="NearbyState" />
+                </MultiBinding>
+            </StackLayout.IsVisible>
 
-            <CollectionView
-                x:Name="NearbyList"
-                ItemsSource="{Binding Nearby}"
-                RemainingItemsThreshold="3"
-                RemainingItemsThresholdReachedCommand="{Binding LoadMoreNearbyCommand}"
-                SelectionMode="None">
+            <Label FontAttributes="Bold" FontSize="16" HorizontalTextAlignment="Center"
+               Text="Không có kết nối mạng." TextColor="Red" />
+            <Button Command="{Binding LoadFirstNearbyCommand}" Text="Thử lại" WidthRequest="100" />
+        </StackLayout>
+
+        <!-- Success / danh sách Nearby -->
+        <RefreshView Grid.Row="1"
+                 Command="{Binding RefreshNearbyCommand}"
+                 IsRefreshing="{Binding IsRefreshing}">
+            <RefreshView.IsVisible>
+                <MultiBinding Converter="{StaticResource NearbyItemVisibilityConverter}" ConverterParameter="Success">
+                    <Binding Path="IsLocationEnabled" />
+                    <Binding Path="NearbyState" />
+                </MultiBinding>
+            </RefreshView.IsVisible>
+
+            <CollectionView x:Name="NearbyList"
+                        ItemsSource="{Binding Nearby}"
+                        RemainingItemsThreshold="3"
+                        RemainingItemsThresholdReachedCommand="{Binding LoadMoreNearbyCommand}"
+                        SelectionMode="None">
                 <CollectionView.ItemsLayout>
                     <LinearItemsLayout ItemSpacing="5" Orientation="Vertical" />
                 </CollectionView.ItemsLayout>
                 <CollectionView.ItemTemplate>
                     <DataTemplate>
-                        <Frame Padding="10" BorderColor="#ddd">
+                        <Frame Padding="5" BorderColor="#ddd">
                             <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="10">
-                                <ffimageloading:CachedImage
-                                    Aspect="AspectFill"
-                                    DownsampleToViewSize="true"
-                                    HeightRequest="50"
-                                    Source="{Binding AvatarDisplay}"
-                                    TransformPlaceholders="true"
-                                    WidthRequest="50">
+                                <ffimageloading:CachedImage Aspect="AspectFill"
+                                                        DownsampleToViewSize="true"
+                                                        HeightRequest="50"
+                                                        WidthRequest="50"
+                                                        Source="{Binding AvatarDisplay}">
                                     <ffimageloading:CachedImage.Transformations>
                                         <fftransformations:CircleTransformation />
                                     </ffimageloading:CachedImage.Transformations>
                                 </ffimageloading:CachedImage>
-                                <StackLayout
-                                    Grid.Column="1"
-                                    Orientation="Vertical"
-                                    VerticalOptions="Center">
-                                    <Label
-                                        FontAttributes="Bold"
-                                        LineBreakMode="TailTruncation"
-                                        MaxLines="1"
-                                        Text="{Binding FullName}" />
-                                    <Label
-                                        FontSize="12"
-                                        Text="{Binding DistanceDisplay}"
-                                        TextColor="DodgerBlue" />
+
+                                <StackLayout Grid.Column="1" Orientation="Vertical" VerticalOptions="Center">
+                                    <Label FontAttributes="Bold" LineBreakMode="TailTruncation" MaxLines="1"
+                                       Text="{Binding FullName}" />
+                                    <Label FontSize="12" Text="{Binding DistanceDisplay}" TextColor="DodgerBlue" />
                                 </StackLayout>
 
-                                <Label
-                                    Grid.Column="2"
-                                    Text="{Binding Age}"
-                                    TextColor="{Binding Gender, Converter={StaticResource GenderToColorConverter}}"
-                                    VerticalOptions="Center" />
+                                <Label Grid.Column="2" Text="{Binding Age}" VerticalOptions="Center"
+                                   TextColor="{Binding Gender, Converter={StaticResource GenderToColorConverter}}" />
 
-                                <StackLayout
-                                    Grid.Column="3"
-                                    HeightRequest="40"
-                                    Orientation="Horizontal"
-                                    Spacing="5"
-                                    VerticalOptions="Center">
-                                    <Button
-                                        x:Name="FollowButton"
-                                        Padding="0"
-                                        BackgroundColor="#5795ea"
-                                        CornerRadius="18"
-                                        FontSize="12"
-                                        HeightRequest="30"
-                                        Text="Theo dõi"
-                                        TextColor="White"
-                                        VerticalOptions="Center"
-                                        WidthRequest="70" />
-                                    <Button
-                                        Padding="0"
-                                        BackgroundColor="#e357ea"
-                                        CornerRadius="18"
-                                        FontSize="12"
-                                        HeightRequest="30"
-                                        Text="Nhắn tin"
-                                        TextColor="White"
-                                        VerticalOptions="Center"
-                                        WidthRequest="70" />
+                                <StackLayout Grid.Column="3" Orientation="Horizontal" Spacing="5" VerticalOptions="Center" HeightRequest="40">
+                                    <Button Padding="0" BackgroundColor="#5795ea" CornerRadius="18" FontSize="12"
+                                        HeightRequest="30" Text="Theo dõi" TextColor="White" WidthRequest="70" />
+                                    <Button Padding="0" BackgroundColor="#e357ea" CornerRadius="18" FontSize="12"
+                                        HeightRequest="30" Text="Nhắn tin" TextColor="White" WidthRequest="70" />
                                 </StackLayout>
                             </Grid>
                         </Frame>
@@ -178,4 +149,5 @@
             </CollectionView>
         </RefreshView>
     </Grid>
+
 </ContentPage>

@@ -26,6 +26,8 @@
             <local:GenderToIconConverter x:Key="GenderToIconConverter" />
             <local:StringIsNullOrEmptyToBoolConverter x:Key="StringIsNullOrEmptyToBoolConverter" />
             <local:StringIsNotNullOrEmptyToBoolConverter x:Key="StringIsNotNullOrEmptyToBoolConverter" />
+            <local:NearbyItemVisibilityConverter x:Key="NearbyItemVisibilityConverter" />
+
 
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="Resources/Styles/Colors.xaml" />

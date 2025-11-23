@@ -9,6 +9,7 @@ using Sphere.Common.Constans;
 using Sphere.Extensions;
 using Sphere.Platforms.Android;
 using Sphere.Services.IService;
+using Sphere.ViewModels;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -31,11 +32,14 @@ namespace Sphere.Services.Service
 
         // 🔁 Sự kiện sẽ bắn ra khi người dùng quay lại từ Settings
         public event Action? ReturnedFromSettings;
+        public event Action? GpsTurnedOff;
+
 
         public PermissionService()
         {
             Instance = this;
         }
+        
 
         public async Task<bool> EnsureGrantedAsync(AppPermission permissionType)
         {
@@ -52,30 +56,17 @@ namespace Sphere.Services.Service
 
             var activity = Platform.CurrentActivity!;
 
-            // 1️⃣ Kiểm tra quyền
+            // Kiểm tra quyền
             if (ContextCompat.CheckSelfPermission(activity, permission) != Permission.Granted)
             {
-                var prefKey = $"FirstRequest_{permission}";
-                bool isFirstRequest = Preferences.Get(prefKey, true);
+                _tcs = new TaskCompletionSource<bool>();
+                MainActivityHelpers.PermissionCallback = granted => _tcs?.TrySetResult(granted);
 
-                if (isFirstRequest)
+                if (ActivityCompat.ShouldShowRequestPermissionRationale(activity, permission))
                 {
-                    Preferences.Set(prefKey, false);
-                    _tcs = new TaskCompletionSource<bool>();
-                    MainActivityHelpers.PermissionCallback = granted => _tcs?.TrySetResult(granted);
-
+                    // Hệ thống còn hiển thị popup → request quyền bình thường
                     ActivityCompat.RequestPermissions(activity, new[] { permission }, 1234);
-                    if (!await _tcs.Task)
-                        return false;
-                }
-                else if (ActivityCompat.ShouldShowRequestPermissionRationale(activity, permission))
-                {
-                    _tcs = new TaskCompletionSource<bool>();
-                    MainActivityHelpers.PermissionCallback = granted => _tcs?.TrySetResult(granted);
-
-                    ActivityCompat.RequestPermissions(activity, new[] { permission }, 1234);
-                    if (!await _tcs.Task)
-                        return false;
+                    return await _tcs.Task; // true nếu người dùng cấp, false nếu từ chối
                 }
                 else
                 {
@@ -124,6 +115,12 @@ namespace Sphere.Services.Service
 
             if (isGpsEnabled)
                 return true; // ✅ GPS đang bật
+                             // ❌ GPS tắt → tắt switch ngay
+            if (!isGpsEnabled)
+            {
+                GpsTurnedOff?.Invoke();
+            }
+
             if (_gpsDialogOpen)
                 return false; // ❗ Không mở thêm popup nếu đã có
             _gpsDialogOpen = true;
@@ -165,7 +162,12 @@ namespace Sphere.Services.Service
             return false;
         }
 
-
+        public bool IsGpsEnabled()
+        {
+            var lm = (LocationManager?)Platform.CurrentActivity?.GetSystemService(Context.LocationService);
+            if (lm == null) return false;
+            return lm.IsProviderEnabled(LocationManager.GpsProvider) || lm.IsProviderEnabled(LocationManager.NetworkProvider);
+        }
         public void NotifyReturnedFromSettings()
         {
             // ✅ Gọi khi quay lại từ Settings (trong MainActivity.OnResume)

@@ -14,5 +14,8 @@ namespace Sphere.Services.IService
 
         // 👇 Thêm dòng này
         event Action? ReturnedFromSettings;
+        bool IsGpsEnabled();
+        // 🔹 Thêm event
+        event Action? GpsTurnedOff;
     }
 }

@@ -28,44 +28,19 @@ namespace Sphere
             _permissionService = permissionService;
             _locationService = locationService;
             _presenceService = presenceService;
-            
+            // Khi AppShell load lần đầu, yêu cầu quyền
+            RequestLocationPermissionFirstTime();
         }
 
-        protected override async void OnAppearing()
+        private async void RequestLocationPermissionFirstTime()
         {
-            base.OnAppearing();
-
-            await UpdateUserLocationAsync();
-        }
-
-        private async Task<Location?> GetStableLocationAsync(int samples = 5, int maxAccuracyMeters = 50)
-        {
-            var locs = new List<Location>();
-            var request = new GeolocationRequest(GeolocationAccuracy.High, TimeSpan.FromSeconds(10));
-
-            for (int i = 0; i < samples; i++)
+            // Nếu lần đầu mở app sau Login + Intro
+            if (!Preferences.Get("LocationAsked", false))
             {
-                try
-                {
-                    var loc = await Geolocation.Default.GetLocationAsync(request);
-                    if (loc != null && loc.Accuracy <= maxAccuracyMeters)
-                        locs.Add(loc);
+                Preferences.Set("LocationAsked", true);
 
-                    await Task.Delay(500); // đợi GPS fix lại
-                }
-                catch
-                {
-                    await Task.Delay(500);
-                }
+                await _permissionService.EnsureGrantedAsync(AppPermission.Location);
             }
-
-            if (!locs.Any()) return null;
-
-            // Lấy trung bình để giảm sai số
-            double avgLat = locs.Average(l => l.Latitude);
-            double avgLon = locs.Average(l => l.Longitude);
-
-            return new Location(avgLat, avgLon);
         }
 
         private async void OnLogoutClicked(object sender, EventArgs e)
@@ -83,37 +58,6 @@ namespace Sphere
             
                Application.Current!.MainPage = new NavigationPage(login);
         }
-        private async Task UpdateUserLocationAsync()
-        {
-            try
-            {
-                var granted = await _permissionService.EnsureGrantedAsync(AppPermission.Location);
-                if (!granted) return;
-
-                var location = await GetStableLocationAsync();
-                if (location == null)
-                {
-                    await Application.Current!.MainPage!.DisplayAlert("Vị trí", "Không lấy được vị trí từ thiết bị", "OK");
-                    return;
-                }
-
-                var dto = new UserLocationModel
-                {
-                    Latitude = location.Latitude,
-                    Longitude = location.Longitude,
-                    LastUpdated = DateTime.UtcNow,
-                    IsVisible = true
-                };
-
-                await _locationService.UpdateLocationAsync(dto);
-            }
-            catch (Exception ex)
-            {
-                await Application.Current!.MainPage!.DisplayAlert(
-                    "Lỗi",
-                    $"Có lỗi xảy ra khi lấy hoặc gửi vị trí: {ex.Message}",
-                    "OK");
-            }
-        }
+        
     }
 }

@@ -106,9 +106,12 @@ namespace Sphere.ViewModels
                 IsRefreshing = true;
 
                 var granted = await _permissionService.EnsureGrantedAsync(AppPermission.Location);
-                if (!granted || token.IsCancellationRequested || !IsLocationEnabled)
+                var gpsEnabled = _permissionService.IsGpsEnabled();
+                if (!granted || !gpsEnabled || token.IsCancellationRequested || !IsLocationEnabled)
                 {
-                    NearbyState = UiViewState.Offline;
+                    // ⚠ Đồng bộ switch với permission/GPS
+                    if (IsLocationEnabled)
+                        IsLocationEnabled = false;
                     return;
                 }
                 var now = DateTime.UtcNow;
@@ -317,15 +320,22 @@ namespace Sphere.ViewModels
             try
             {
                 bool granted = await _permissionService.EnsureGrantedAsync(AppPermission.Location);
-                if (granted)
+                bool gpsEnabled = await _permissionService.CheckGpsStatusAsync();
+                if (granted && gpsEnabled)
                 {
-                    // ✅ Nếu quyền OK, bật lại switch và load danh sách
-                    IsLocationEnabled = true;
+
+                    // ✅ Nếu quyền OK và GPS bật → bật switch
+                    if (!IsLocationEnabled) IsLocationEnabled = true;
                     _locationCts?.Cancel();
                     _locationCts?.Dispose();
                     _locationCts = new CancellationTokenSource();
 
                     await LoadNearbyInternalAsync(_locationCts.Token);
+                }
+                else
+                {
+                    // ❌ Nếu permission/GPS không OK → tắt switch
+                    if (IsLocationEnabled) IsLocationEnabled = false;
                 }
             }
             finally
@@ -395,5 +405,12 @@ namespace Sphere.ViewModels
                 IsRefreshing = false;
             }
         }
+        public void ForceDisableLocationSwitch()
+        {
+            if (IsLocationEnabled)
+                IsLocationEnabled = false;
+        }
+
+
     }
 }
