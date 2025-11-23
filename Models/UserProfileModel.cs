@@ -14,7 +14,6 @@ namespace Sphere.Models
         public string? AvatarUrl { get; set; }
         public string? Bio { get; set; }
         public long Coins { get; set; } // kim cương
-        public int VipLevel { get; set; } // víp
     }
 
     public class BioProfileModel

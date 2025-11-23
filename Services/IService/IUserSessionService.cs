@@ -9,7 +9,7 @@ namespace Sphere.Services.IService
 {
     public interface IUserSessionService
     {
-        UserWithUserProfileModel CurrentUser { get; set; }
+        UserWithUserProfileModel? CurrentUser { get; set; }
 
     }
 }

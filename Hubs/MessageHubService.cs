@@ -9,7 +9,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Sphere.Services.Service
+namespace Sphere.Hubs
 {
     public class MessageHubService
     {

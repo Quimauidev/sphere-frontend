@@ -7,7 +7,6 @@ using Sphere.Common.Responses;
 using Sphere.Database.ServiceSQLite;
 using Sphere.Models;
 using Sphere.Services.IService;
-using Sphere.Services.Service;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -17,6 +16,7 @@ using System.Threading.Tasks;
 using static Sphere.Models.Request;
 using static System.Net.Mime.MediaTypeNames;
 using Sphere.Database.EntitySQLite;
+using Sphere.Hubs;
 
 namespace Sphere.ViewModels
 {

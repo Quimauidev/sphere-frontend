@@ -10,6 +10,7 @@ namespace Sphere.Models
     public class UserModel
     {
         public Guid Id { get; set; } // ID người dùng
+        public long UserIdNumber { get; set; } // ID định danh người dùng 16 số
         public string? FullName { get; set; }
         public Gender Gender { get; set; }
         public DateTime? BirthDay { get; set; }

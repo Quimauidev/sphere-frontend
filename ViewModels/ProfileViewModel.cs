@@ -76,8 +76,8 @@ namespace Sphere.ViewModels
         public partial UserWithUserProfileModel? CurrentUser { get; set; }
 
         public string FullNameDisplay => CurrentUser?.UserDTO?.FullName ?? string.Empty;
-        
 
+        public long UserIdNumberDisplay => CurrentUser?.UserDTO?.UserIdNumber ?? 0;
         public string GenderDisplay => CurrentUser?.UserDTO?.Gender switch
         {
             Gender.Male => "Nam",
@@ -92,9 +92,6 @@ namespace Sphere.ViewModels
         public partial bool IsBioExpanded { get; set; }
         [ObservableProperty]
         public partial bool IsLoading { get; set; }
-
-        public int VipLevel => CurrentUser?.UserProfileDTO?.VipLevel ?? 0;
-
 
         [RelayCommand]
         public async Task EditBio()
@@ -313,9 +310,9 @@ namespace Sphere.ViewModels
         partial void OnCurrentUserChanged(UserWithUserProfileModel? oldValue, UserWithUserProfileModel? newValue)
         {
             OnPropertyChanged(nameof(FullNameDisplay));
+            OnPropertyChanged(nameof(UserIdNumberDisplay));
             OnPropertyChanged(nameof(GenderDisplay));
             OnPropertyChanged(nameof(BirthDayDisplay));
-            OnPropertyChanged(nameof(VipLevel));
             OnPropertyChanged(nameof(CreatedAtDisplay));
             OnPropertyChanged(nameof(AvatarDisplay));
             OnPropertyChanged(nameof(CoverPhotoDisplay));

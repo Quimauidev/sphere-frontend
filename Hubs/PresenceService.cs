@@ -10,7 +10,7 @@ using System.Text;
 using System.Threading.Tasks;
 using static Android.Graphics.ColorSpace;
 
-namespace Sphere.Services.Service
+namespace Sphere.Hubs
 {
     public class PresenceService
     {

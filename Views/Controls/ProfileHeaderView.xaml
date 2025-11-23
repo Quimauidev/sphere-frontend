@@ -15,7 +15,6 @@
                     <TapGestureRecognizer Command="{Binding ShowImageOptionsCommand}" CommandParameter="cover" />
                 </Image.GestureRecognizers>
             </Image>
-
             <StackLayout
                 Margin="0,30,0,0"
                 HorizontalOptions="Center"
@@ -54,10 +53,21 @@
                         TextColor="{Binding CurrentUser.UserDTO.Gender, Converter={StaticResource GenderToColorConverter}}"
                         VerticalOptions="Center" />
                 </StackLayout>
+
             </StackLayout>
         </Grid>
         <VerticalStackLayout HorizontalOptions="Center">
-
+            <HorizontalStackLayout Spacing="10">
+                <Label Text="{Binding CurrentUser.UserDTO.UserIdNumber, StringFormat='ID: {0}'}" TextColor="#666" />
+                <ImageButton HeightRequest="18" WidthRequest="18">
+                    <ImageButton.Source>
+                        <FontImageSource
+                            FontFamily="MaterialIcons"
+                            Glyph="&#xF018F;"
+                            Color="#666" />
+                    </ImageButton.Source>
+                </ImageButton>
+            </HorizontalStackLayout>
             <!--  Ngày sinh  -->
             <HorizontalStackLayout>
                 <Label Text="Ngày sinh: " />
@@ -76,82 +86,117 @@
                 <Label Text="{Binding CreatedAtDisplay}" />
             </HorizontalStackLayout>
         </VerticalStackLayout>
-        <HorizontalStackLayout
-            Padding="10"
-            HorizontalOptions="Center"
-            Spacing="20">
-
-            <!--  Frame Kim cương  -->
+        <HorizontalStackLayout Padding="0" HorizontalOptions="Center">
+            <!--  Frame Kim Cương  -->
             <Frame
-                Margin="0"
-                Padding="5"
-                BackgroundColor="#f0f6f6"
-                BorderColor="#f0f6f6"
+                Padding="0"
+                BackgroundColor="White"
+                BorderColor="#DADADA"
+                CornerRadius="20"
                 HasShadow="True"
-                HeightRequest="50"
+                HeightRequest="40"
                 WidthRequest="150">
 
-                <Grid ColumnDefinitions="Auto,*,Auto">
+                <HorizontalStackLayout
+                    HorizontalOptions="Center"
+                    Spacing="30"
+                    VerticalOptions="Center">
 
+                    <!--  Icon Kim Cương  -->
                     <Image
                         HeightRequest="30"
                         Source="kimcuong.png"
+                        VerticalOptions="Center"
                         WidthRequest="30" />
 
+                    <!--  Số Kim Cương  -->
                     <Label
-                        Grid.Column="1"
                         FontAttributes="Bold"
                         FontSize="16"
-                        HorizontalTextAlignment="Center"
+                        HorizontalOptions="Center"
                         Text="{Binding Coins, Converter={StaticResource CoinsFormatterConverter}}"
                         TextColor="#512BD4"
-                        VerticalOptions="Center"
-                        WidthRequest="60" />
+                        VerticalOptions="Center" />
 
-                    <Image Grid.Column="2">
+                    <!--  Nút Hành động / Icon thêm  -->
+                    <Frame
+                        Padding="5"
+                        BackgroundColor="#E5F0FF"
+                        CornerRadius="15"
+                        HasShadow="False"
+                        VerticalOptions="Center">
+                        <Image HeightRequest="20" WidthRequest="20">
+                            <Image.Source>
+                                <FontImageSource
+                                    FontFamily="MaterialIcons"
+                                    Glyph="&#xF11EC;"
+                                    Color="#1877F2" />
+                            </Image.Source>
+                        </Image>
+                    </Frame>
+
+                </HorizontalStackLayout>
+            </Frame>
+        </HorizontalStackLayout>
+
+        <HorizontalStackLayout
+            Padding="10"
+            HorizontalOptions="Center"
+            Spacing="15">
+
+            <!--  Nút Theo dõi  -->
+            <Frame
+                Padding="10"
+                BackgroundColor="#1DA1F2"
+                CornerRadius="20"
+                HorizontalOptions="Center">
+                <HorizontalStackLayout
+                    HorizontalOptions="Center"
+                    Spacing="8"
+                    VerticalOptions="Center">
+                    <Image HeightRequest="20" WidthRequest="20">
                         <Image.Source>
                             <FontImageSource
                                 FontFamily="MaterialIcons"
                                 Glyph="&#xF11EC;"
-                                Color="#1877F2" />
+                                Color="White" />
                         </Image.Source>
                     </Image>
-                </Grid>
+                    <Label
+                        FontAttributes="Bold"
+                        Text="Theo dõi"
+                        TextColor="White" />
+                </HorizontalStackLayout>
             </Frame>
 
-            <!--  Frame VIP  -->
+            <!--  Nút Nhắn tin  -->
             <Frame
-                Padding="5"
-                BackgroundColor="#fdf2e6"
-                BorderColor="#fdf2e6"
-                HasShadow="True"
-                HeightRequest="50"
-                WidthRequest="150">
-                <StackLayout Orientation="Horizontal" VerticalOptions="Center">
-                    <Image
-                        HeightRequest="30"
-                        Source="vip.png"
-                        WidthRequest="30" />
-
+                Padding="10"
+                BackgroundColor="White"
+                BorderColor="#1DA1F2"
+                CornerRadius="20"
+                HorizontalOptions="Center">
+                <HorizontalStackLayout
+                    HorizontalOptions="Center"
+                    Spacing="8"
+                    VerticalOptions="Center">
+                    <Image HeightRequest="20" WidthRequest="20">
+                        <Image.Source>
+                            <FontImageSource
+                                FontFamily="MaterialIcons"
+                                Glyph="&#xF020E;"
+                                Color="#1DA1F2" />
+                        </Image.Source>
+                    </Image>
                     <Label
-                        Margin="5,0,0,0"
                         FontAttributes="Bold"
-                        FontSize="16"
-                        Text="VIP"
-                        TextColor="#512BD4"
-                        VerticalOptions="Center" />
-
-                    <Label
-                        Margin="5,0,0,0"
-                        FontAttributes="Bold"
-                        FontSize="16"
-                        Text="{Binding VipLevel}"
-                        TextColor="#512BD4"
-                        VerticalOptions="Center"
-                        WidthRequest="50" />
-                </StackLayout>
+                        Text="Nhắn tin"
+                        TextColor="#1DA1F2" />
+                </HorizontalStackLayout>
             </Frame>
+
         </HorizontalStackLayout>
+
 
         <Grid Padding="10" ColumnDefinitions="Auto,Auto,Auto">
             <Label FontAttributes="Bold" Text="Tiểu sử: " />
