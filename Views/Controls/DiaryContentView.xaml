@@ -44,6 +44,7 @@
 
         <!--  Ảnh nếu có  -->
         <FlexLayout
+            x:Name="FlexImages"
             BindableLayout.ItemsSource="{Binding Images}"
             Direction="Row"
             IsVisible="{Binding HasImages}"

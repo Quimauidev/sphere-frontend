@@ -78,7 +78,7 @@
                 RemainingItemsThresholdReachedCommand="{Binding LoadMoreLatestCommand}"
                 SelectionMode="None">
                 <CollectionView.ItemsLayout>
-                    <LinearItemsLayout ItemSpacing="5" Orientation="Vertical" />
+                    <LinearItemsLayout ItemSpacing="10" Orientation="Vertical" />
                 </CollectionView.ItemsLayout>
                 <CollectionView.ItemTemplate>
                     <DataTemplate>

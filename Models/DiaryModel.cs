@@ -1,4 +1,5 @@
-﻿using Sphere.Common.Constans;
+﻿using CommunityToolkit.Mvvm.ComponentModel;
+using Sphere.Common.Constans;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace Sphere.Models
 {
-    public class DiaryModel
+    public class DiaryModel : ObservableObject
     {
         public Guid Id { get; set; } // ID nhật ký
 
@@ -26,7 +27,6 @@ namespace Sphere.Models
         public Privacy Privacy { get; set; } 
 
         public bool HasImages => (Images?.Count ?? 0) > 0;
-
         public double ImageItemHeight
         {
             get
@@ -47,16 +47,48 @@ namespace Sphere.Models
                 if (count == 0) return 0;
                 double screenWidth = DeviceDisplay.MainDisplayInfo.Width / DeviceDisplay.MainDisplayInfo.Density;
                 // Trừ margin ngoài và padding trong Frame
-                double actualWidth = screenWidth - 50; 
-               
+                double actualWidth = screenWidth - 46;
+
                 return count switch
                 {
                     <= 1 => 250,
                     2 => actualWidth / 2,
-                    _ => actualWidth / 3
+                    _ => (actualWidth - 2) / 3
                 };
             }
         }
+        //private double _containerWidth;
+        //public double ContainerWidth
+        //{
+        //    get => _containerWidth;
+        //    set
+        //    {
+        //        if (_containerWidth != value)
+        //        {
+        //            _containerWidth = value;
+        //            OnPropertyChanged(nameof(ImageItemWidth));
+        //        }
+        //    }
+        //}
+
+        //public double ImageItemWidth
+        //{
+        //    get
+        //    {
+        //        int count = Images?.Count ?? 0;
+        //        if (count == 0 || ContainerWidth <= 0) return 0;
+
+        //        double spacing = 10; // 3 ảnh → 2 khoảng trống
+
+        //        return count switch
+        //        {
+        //            <= 1 => ContainerWidth,
+        //            2 => (ContainerWidth - 1 - spacing) / 2,
+        //            _ => (ContainerWidth - 2 - spacing) / 3
+        //        };
+        //    }
+        //}
+
     }
 
     public class DiaryImageDTO

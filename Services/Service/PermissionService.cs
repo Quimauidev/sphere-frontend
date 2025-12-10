@@ -21,7 +21,6 @@ namespace Sphere.Services.Service
     public class PermissionService : IPermissionService
     {
         private TaskCompletionSource<bool>? _tcs;
-        private const string ReadMediaImages = "android.permission.READ_MEDIA_IMAGES";
 
         // 🔔 Event khi người dùng bật GPS xong quay lại app
         // 🧠 Singleton để MainActivity và ViewModel có thể truy cập
@@ -46,8 +45,11 @@ namespace Sphere.Services.Service
             string permission = permissionType switch
             {
                 AppPermission.ReadImages => Build.VERSION.SdkInt >= BuildVersionCodes.Tiramisu
-                    ? ReadMediaImages
-                    : Manifest.Permission.ReadExternalStorage,
+                ? "android.permission.READ_MEDIA_VISUAL_USER_SELECTED"          // Android 14–15
+                : Build.VERSION.SdkInt >= BuildVersionCodes.Tiramisu
+                    ? "android.permission.READ_MEDIA_IMAGES"      // Android 13
+                    : Manifest.Permission.ReadExternalStorage,     // Android 12-
+
                 AppPermission.Camera => Manifest.Permission.Camera,
                 AppPermission.Location => Manifest.Permission.AccessFineLocation,
                 AppPermission.Microphone => Manifest.Permission.RecordAudio,

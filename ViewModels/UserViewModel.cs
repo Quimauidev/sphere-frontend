@@ -95,7 +95,7 @@ namespace Sphere.ViewModels
             }
             if (IsLoading) return;
             IsLoading = true;
-            PopupHelper.ShowLoadingAsync();
+            PopupHelper.ShowLoading();
             try
             {
                 var response = await _userService.UpdateProfileAsync(UserModel!.Id, patchData);

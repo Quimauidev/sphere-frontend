@@ -37,15 +37,14 @@ namespace Sphere.ViewModels
             return Task.CompletedTask;
         }
 
-        private static async Task ShowAlertAsync(string message)
-       => await Application.Current!.MainPage!.DisplayAlert("Thông báo", message, "OK");
+        
 
         [RelayCommand]
         private async Task RegisterAsync()
         {
             if (string.IsNullOrWhiteSpace(RegisterModel.FullName))
             {
-                await ShowAlertAsync("Vui lòng nhập Họ và Tên.");
+                await ApiResponseHelper.ShowAlertAsync("Vui lòng nhập Họ và Tên.");
                 return;
             }
 
@@ -54,43 +53,43 @@ namespace Sphere.ViewModels
 
             if (birthday > today)
             {
-                await ShowAlertAsync("Ngày sinh không thể là ngày trong tương lai.");
+                await ApiResponseHelper.ShowAlertAsync("Ngày sinh không thể là ngày trong tương lai.");
                 return;
             }
 
             if (birthday > today.AddYears(-15))
             {
-                await ShowAlertAsync("Bạn phải từ 16 tuổi trở lên để đăng ký.");
+                await ApiResponseHelper.ShowAlertAsync("Bạn phải từ 16 tuổi trở lên để đăng ký.");
                 return;
             }
 
             if (string.IsNullOrWhiteSpace(RegisterModel.PhoneNumber))
             {
-                await ShowAlertAsync("Vui lòng nhập số điện thoại.");
+                await ApiResponseHelper.ShowAlertAsync("Vui lòng nhập số điện thoại.");
                 return;
             }
 
             if (string.IsNullOrWhiteSpace(RegisterModel.Password) || string.IsNullOrWhiteSpace(RegisterModel.ConfirmPassword))
             {
-                await ShowAlertAsync("Vui lòng nhập mật khẩu.");
+                await ApiResponseHelper.ShowAlertAsync("Vui lòng nhập mật khẩu.");
                 return;
             }
 
             if (RegisterModel.Password.Length < 6 || RegisterModel.ConfirmPassword.Length < 6)
             {
-                await ShowAlertAsync("Mật khẩu có ít nhất 6 ký tự.");
+                await ApiResponseHelper.ShowAlertAsync("Mật khẩu có ít nhất 6 ký tự.");
                 return;
             }
 
             if (RegisterModel.Password != RegisterModel.ConfirmPassword)
             {
-                await ShowAlertAsync("Mật khẩu không khớp.");
+                await ApiResponseHelper.ShowAlertAsync("Mật khẩu không khớp.");
                 return;
             }
 
             if (!Regex.IsMatch(RegisterModel.FullName, @"^[a-zA-ZÀ-ỹ0-9\s]+$"))
             {
-                await ShowAlertAsync("Họ và tên không được chứa ký tự đặc biệt.");
+                await ApiResponseHelper.ShowAlertAsync("Họ và tên không được chứa ký tự đặc biệt.");
                 return;
             }
 
@@ -98,7 +97,7 @@ namespace Sphere.ViewModels
             _ = RegisterModel.GetFormattedBirthDate(); // Định dạng ISO 8601
             if (IsLoading) return;
             IsLoading = true;
-            PopupHelper.ShowLoadingAsync();
+            PopupHelper.ShowLoading();
 
             try
             {

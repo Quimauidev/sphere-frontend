@@ -31,7 +31,7 @@ namespace Sphere.ViewModels.DiaryViewModels
 
         [ObservableProperty]
         public bool isDiaryLoading;
-
+       
 
         private int _currentPage = 1;
         private const int PageSize = 20;

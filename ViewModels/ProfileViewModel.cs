@@ -46,9 +46,9 @@ namespace Sphere.ViewModels
             }
             CurrentUser = _userSession.CurrentUser;
             DiaryListVM = new DiaryListViewModel(diaryService);
-              _ =  DiaryListVM.LoadFirstPage();
+            _ = DiaryListVM.LoadFirstPage();
         }
-       
+
         public string? AvatarDisplay => string.IsNullOrWhiteSpace(CurrentUser?.UserProfileDTO?.AvatarUrl) ? (CurrentUser?.UserDTO?.Gender == Gender.Female ? "woman.png" : "man.png") : CurrentUser.UserProfileDTO.AvatarUrl;
 
         public string BioDisplay => string.IsNullOrWhiteSpace(CurrentUser?.UserProfileDTO?.Bio) ? "Xin chào! Tôi là người bí ẩn mới tham gia" : CurrentUser.UserProfileDTO.Bio;
@@ -137,7 +137,7 @@ namespace Sphere.ViewModels
                 return;
 
             IsLoading = true;
-            PopupHelper.ShowLoadingAsync();
+            PopupHelper.ShowLoading();
             try
             {
                 Guid id = CurrentUser!.UserDTO!.Id;
@@ -220,7 +220,7 @@ namespace Sphere.ViewModels
             if (!confirm) return;
 
             IsLoading = true;
-            PopupHelper.ShowLoadingAsync();
+            PopupHelper.ShowLoading();
 
             try
             {
@@ -264,7 +264,7 @@ namespace Sphere.ViewModels
             if (string.IsNullOrEmpty(result)) return;
 
             IsLoading = true;
-            PopupHelper.ShowLoadingAsync();
+            PopupHelper.ShowLoading();
             try
             {
                 Guid id = CurrentUser!.UserDTO!.Id;
@@ -321,5 +321,13 @@ namespace Sphere.ViewModels
             CheckBioLength();
             OnPropertyChanged(nameof(CanEditProfile));
         }
-    }
+
+        [RelayCommand]
+        // chuyeden trang quan ly coin
+        public async Task ManageCoins()
+        {
+            var page = _serviceProvider.GetRequiredService<DiamondPage>();
+            await Application.Current!.MainPage!.Navigation.PushModalAsync(page);
+        }
+    } 
 }

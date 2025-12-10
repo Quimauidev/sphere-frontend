@@ -13,7 +13,7 @@ namespace Sphere.Common.Helpers
         private static LoadingPopup? _loadingPopup;
         private static bool _isShowing = false;
 
-        public static void ShowLoadingAsync()
+        public static void ShowLoading()
         {
             if (_isShowing)
                 return;

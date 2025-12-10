@@ -25,6 +25,9 @@
         RemainingItemsThresholdReachedCommand="{Binding DiaryListVM.LoadMoreDiariesCommand}"
         SelectionMode="None">
 
+        <CollectionView.ItemsLayout>
+            <LinearItemsLayout ItemSpacing="10" Orientation="Vertical" />
+        </CollectionView.ItemsLayout>
         <CollectionView.Header>
             <local:ProfileHeaderView />
         </CollectionView.Header>

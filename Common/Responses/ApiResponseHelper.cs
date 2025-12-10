@@ -53,5 +53,8 @@ namespace Sphere.Common.Responses
                 await page.DisplayAlert(title, message, "OK");
             }
         }
+
+        public static async Task ShowAlertAsync(string message)
+        => await Application.Current!.MainPage!.DisplayAlert("Thông báo", message, "OK");
     }
 }

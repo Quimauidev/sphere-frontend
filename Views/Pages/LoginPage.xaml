@@ -30,13 +30,12 @@
                 <ImageButton
                     Grid.Column="1"
                     Command="{Binding TogglePasswordCommand}"
-                    HeightRequest="30"
-                    WidthRequest="30">
+                    HeightRequest="28"
+                    WidthRequest="28">
                     <ImageButton.Source>
                         <FontImageSource
                             FontFamily="MaterialIcons"
                             Glyph="{Binding PasswordIcon}"
-                            Size="24"
                             Color="Black" />
                     </ImageButton.Source>
                 </ImageButton>
@@ -47,6 +46,11 @@
             Command="{Binding LoginCommand}"
             FontAttributes="Bold"
             Text="Đăng nhập" />
+        <Button
+            BackgroundColor="Green"
+            Command="{Binding RegisterCommand}"
+            FontAttributes="Bold"
+            Text="Tạo tài khoản mới" />
 
         <Label
             HorizontalOptions="Center"
@@ -56,11 +60,5 @@
                 <TapGestureRecognizer Command="{Binding ForgotPasswordCommand}" />
             </Label.GestureRecognizers>
         </Label>
-
-        <Button
-            BackgroundColor="Green"
-            Command="{Binding RegisterCommand}"
-            FontAttributes="Bold"
-            Text="Tạo tài khoản mới" />
     </VerticalStackLayout>
 </ContentPage>

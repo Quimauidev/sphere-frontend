@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="Sphere.Views.Pages.DiamondPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    Title="Nạp Kim Cương">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="10" Spacing="20">
+
+            <!--  Header tổng kim cương  -->
+            <Frame
+                Padding="5,10,0,10"
+                BackgroundColor="#f0f7ff"
+                CornerRadius="8"
+                HasShadow="True"
+                HorizontalOptions="Center">
+
+
+                <VerticalStackLayout>
+                    <Label
+                        FontAttributes="Bold"
+                        FontSize="16"
+                        HorizontalOptions="Center"
+                        Text="Số kim cương hiện tại"
+                        TextColor="#555" />
+                    <HorizontalStackLayout>
+                        <Label
+                            FontAttributes="Bold"
+                            FontSize="30"
+                            Text="{Binding Coins, StringFormat='{0:N0}'}"
+                            TextColor="#1877F2" />
+                        <Image
+                            HeightRequest="40"
+                            Source="kimcuong.png"
+                            WidthRequest="40" />
+                    </HorizontalStackLayout>
+
+                </VerticalStackLayout>
+
+            </Frame>
+
+            <!--  Tiêu đề  -->
+            <Label
+                FontAttributes="Bold"
+                FontSize="22"
+                HorizontalOptions="Center"
+                Text="Các gói nạp"
+                TextColor="#222" />
+
+            <!--  Danh sách các gói nạp  -->
+            <CollectionView ItemsSource="{Binding Packages}" SelectionMode="None">
+                <CollectionView.ItemsLayout>
+                    <GridItemsLayout Orientation="Vertical" Span="2" />
+                </CollectionView.ItemsLayout>
+
+                <CollectionView.ItemTemplate>
+                    <DataTemplate>
+                        <Frame
+                            Margin="2"
+                            Padding="5"
+                            BackgroundColor="White"
+                            CornerRadius="20"
+                            HasShadow="True">
+                            <VerticalStackLayout Spacing="5">
+
+                                <Label
+                                    FontAttributes="Bold"
+                                    FontSize="18"
+                                    HorizontalOptions="Center"
+                                    Text="{Binding Coins, StringFormat='{0} 💎'}" />
+
+                                <Label
+                                    HorizontalOptions="Center"
+                                    Text="{Binding Price, StringFormat='{0:N0} VND'}"
+                                    TextColor="#1877F2" />
+
+                                <Frame
+                                    Padding="10"
+                                    BackgroundColor="#1877F2"
+                                    CornerRadius="15"
+                                    WidthRequest="100">
+                                    <Label
+                                        FontAttributes="Bold"
+                                        HorizontalOptions="Center"
+                                        Text="Nạp"
+                                        TextColor="White" />
+                                    <Frame.GestureRecognizers>
+                                        <TapGestureRecognizer Command="{Binding BindingContext.SelectPackageCommand, Source={x:Reference PageRoot}}" CommandParameter="{Binding .}" />
+                                    </Frame.GestureRecognizers>
+                                </Frame>
+                            </VerticalStackLayout>
+                        </Frame>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

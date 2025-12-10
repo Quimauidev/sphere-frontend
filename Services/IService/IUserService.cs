@@ -12,5 +12,6 @@ namespace Sphere.Services.IService
     {
         Task<ApiResponse<UserModel>> GetUserAsync();
         Task<ApiResponse<UserModel>> UpdateProfileAsync(Guid id, List<JsonPatchOperation> patchData);
+        Task<ApiResponse<string>> PhoneExist(string phone);
     }
 }

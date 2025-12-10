@@ -57,19 +57,19 @@ namespace Sphere.ViewModels
         {
             if (string.IsNullOrWhiteSpace(LoginModel.PhoneNumber))
             {
-                await ShowAlertAsync("Thông báo", "Vui lòng nhập số điện thoại.");
+                await ApiResponseHelper.ShowAlertAsync("Vui lòng nhập số điện thoại.");
                 return;
             }
 
             if (string.IsNullOrWhiteSpace(LoginModel.Password))
             {
-                await ShowAlertAsync("Thông báo", "Vui lòng nhập mật khẩu.");
+                await ApiResponseHelper.ShowAlertAsync("Vui lòng nhập mật khẩu.");
                 return;
             }
 
             if (IsLoading) return;
             IsLoading = true;
-            PopupHelper.ShowLoadingAsync();
+            PopupHelper.ShowLoading();
             try
             {
                 var response = await _authService.LoginAsync(LoginModel);
@@ -154,9 +154,6 @@ namespace Sphere.ViewModels
             OnPropertyChanged(nameof(PasswordIcon));
             return Task.CompletedTask;
         }
-
-        private static async Task ShowAlertAsync(string title, string message)
-                => await Application.Current!.MainPage!.DisplayAlert(title, message, "OK");
 
         private async Task<Location?> GetStableLocationAsync(int samples = 5, int maxAccuracyMeters = 50)
         {

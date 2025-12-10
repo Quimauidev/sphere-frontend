@@ -115,8 +115,12 @@
                         FontSize="16"
                         HorizontalOptions="Center"
                         Text="{Binding Coins, Converter={StaticResource CoinsFormatterConverter}}"
-                        TextColor="#512BD4"
-                        VerticalOptions="Center" />
+                        TextColor="#1877F2"
+                        VerticalOptions="Center">
+                        <Label.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding ManageCoinsCommand}" />
+                        </Label.GestureRecognizers>
+                    </Label>
 
                     <!--  Nút Hành động / Icon thêm  -->
                     <Frame
@@ -125,6 +129,9 @@
                         CornerRadius="15"
                         HasShadow="False"
                         VerticalOptions="Center">
+                        <Frame.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding ManageCoinsCommand}" />
+                        </Frame.GestureRecognizers>
                         <Image HeightRequest="20" WidthRequest="20">
                             <Image.Source>
                                 <FontImageSource
@@ -140,9 +147,9 @@
         </HorizontalStackLayout>
 
         <HorizontalStackLayout
-            Padding="10"
+            Padding="5"
             HorizontalOptions="Center"
-            Spacing="15">
+            Spacing="10">
 
             <!--  Nút Theo dõi  -->
             <Frame

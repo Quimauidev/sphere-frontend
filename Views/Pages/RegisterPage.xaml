@@ -59,9 +59,9 @@
         <StackLayout Orientation="Horizontal" Spacing="10">
             <ImageButton
                 Command="{Binding TogglePasswordCommand}"
-                HeightRequest="30"
+                HeightRequest="28"
                 VerticalOptions="Center"
-                WidthRequest="30">
+                WidthRequest="28">
                 <ImageButton.Source>
                     <FontImageSource
                         FontFamily="MaterialIcons"
