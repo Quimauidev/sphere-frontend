@@ -1,6 +1,10 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+﻿using CommunityToolkit.Maui.Views;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using Sphere.Models;
 using Sphere.Services.IService;
+using Sphere.Services.Service;
+using Sphere.Views.Controls.Popups;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -13,18 +17,18 @@ namespace Sphere.ViewModels
     partial class DiamondViewModel : ObservableObject
     {
         private readonly IDiamondsService _diamondsService;
-        private readonly IUserSessionService _userSession;
+        private readonly IUserSessionService _userSessionService;
         [ObservableProperty]
         private ObservableCollection<DiamondModel> packages = new();
         [ObservableProperty]
         private bool isLoading;
         [ObservableProperty]
         private long coins;
-        public DiamondViewModel(IDiamondsService diamondsService, IUserSessionService userSession)
+        public DiamondViewModel(IDiamondsService diamondsService, IUserSessionService userSessionService)
         {
             _diamondsService= diamondsService;
-            _userSession = userSession;
-            Coins = _userSession.CurrentUser!.UserProfileDTO!.Coins;
+            _userSessionService = userSessionService;
+            Coins = _userSessionService.CurrentUser!.UserProfileDTO!.Coins;
             _ = LoadPackagesAsync();
         }
         
@@ -46,5 +50,19 @@ namespace Sphere.ViewModels
                 IsLoading = false;  
             }
         }
+
+        [RelayCommand]
+        public async Task SelectPackage(DiamondModel package)
+        {
+            // QR của admin – bạn tự đổi đường dẫn ảnh
+            string qrImagePath = "vietcombank.jpg";
+
+            var popup = new RechargePopup(package, qrImagePath, _userSessionService);
+            // Giống y như popup edit bio
+            var result = await Application.Current!.MainPage!.ShowPopupAsync(popup);
+
+            
+        }
+
     }
 }

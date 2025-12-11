@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<toolkit:Popup
+    x:Class="Sphere.Views.Controls.Popups.RechargePopup"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:toolkit="clr-namespace:CommunityToolkit.Maui.Views;assembly=CommunityToolkit.Maui"
+    Size="350,600">
+    <VerticalStackLayout Padding="10" Spacing="5">
+
+        <Label
+            FontAttributes="Bold"
+            FontSize="22"
+            HorizontalOptions="Center"
+            Text="Hướng dẫn nạp" />
+
+        <!--  QR  -->
+        <Image
+            Aspect="AspectFit"
+            HeightRequest="200"
+            Source="{Binding QrImage}"
+            WidthRequest="200" />
+
+        <Label
+            FontAttributes="Bold"
+            FontSize="18"
+            HorizontalOptions="Center"
+            Text="{Binding PriceText}"
+            TextColor="#1877F2" />
+
+
+        <!--  STK  -->
+        <Frame
+            Padding="10"
+            BackgroundColor="#f0f0f0"
+            CornerRadius="12">
+            <Grid ColumnDefinitions="*, Auto" ColumnSpacing="10">
+                <Label
+                    Grid.Column="0"
+                    LineBreakMode="WordWrap"
+                    Text="{Binding BankInfo}"
+                    VerticalOptions="Center" />
+                <ImageButton
+                    Grid.Column="1"
+                    BackgroundColor="Transparent"
+                    Command="{Binding CopyBankCommand}"
+                    HeightRequest="20"
+                    WidthRequest="20">
+                    <ImageButton.Source>
+                        <FontImageSource
+                            FontFamily="MaterialIcons"
+                            Glyph="&#xF018F;"
+                            Color="#666" />
+                    </ImageButton.Source>
+                </ImageButton>
+            </Grid>
+        </Frame>
+
+
+        <!--  Số tài khoản  -->
+        <Frame
+            Padding="10"
+            BackgroundColor="#f0f0f0"
+            CornerRadius="12">
+            <Grid ColumnDefinitions="*, Auto" ColumnSpacing="10">
+                <Label
+                    Grid.Column="0"
+                    LineBreakMode="WordWrap"
+                    Text="{Binding AccountNumber}"
+                    VerticalOptions="Center" />
+                <ImageButton
+                    Grid.Column="1"
+                    BackgroundColor="Transparent"
+                    Command="{Binding CopyAccountNumberCommand}"
+                    HeightRequest="20"
+                    WidthRequest="20">
+                    <ImageButton.Source>
+                        <FontImageSource
+                            FontFamily="MaterialIcons"
+                            Glyph="&#xF018F;"
+                            Color="#666" />
+                    </ImageButton.Source>
+                </ImageButton>
+            </Grid>
+        </Frame>
+
+
+        <!--  Tên chủ tài khoản  -->
+        <Frame
+            Padding="10"
+            BackgroundColor="#f0f0f0"
+            CornerRadius="12">
+            <Label Text="{Binding AccountName}" VerticalOptions="Center" />
+        </Frame>
+
+
+        <!--  Số tiền  -->
+        <Frame
+            Padding="10"
+            BackgroundColor="#f0f0f0"
+            CornerRadius="12">
+            <Grid ColumnDefinitions="*, Auto" ColumnSpacing="10">
+                <Label
+                    Grid.Column="0"
+                    LineBreakMode="WordWrap"
+                    Text="{Binding PriceText}"
+                    VerticalOptions="Center" />
+                <ImageButton
+                    Grid.Column="1"
+                    BackgroundColor="Transparent"
+                    Command="{Binding CopyAccountNameCommand}"
+                    HeightRequest="20"
+                    WidthRequest="20">
+                    <ImageButton.Source>
+                        <FontImageSource
+                            FontFamily="MaterialIcons"
+                            Glyph="&#xF018F;"
+                            Color="#666" />
+                    </ImageButton.Source>
+                </ImageButton>
+            </Grid>
+        </Frame>
+
+
+        <!--  Nội dung chuyển khoản  -->
+        <Frame
+            Padding="10"
+            BackgroundColor="#f0f0f0"
+            CornerRadius="12">
+            <Grid ColumnDefinitions="*, Auto" ColumnSpacing="10">
+                <Label
+                    Grid.Column="0"
+                    LineBreakMode="WordWrap"
+                    Text="{Binding TransferNote}"
+                    VerticalOptions="Center" />
+                <ImageButton
+                    Grid.Column="1"
+                    BackgroundColor="Transparent"
+                    Command="{Binding CopyNoteCommand}"
+                    HeightRequest="20"
+                    WidthRequest="20">
+                    <ImageButton.Source>
+                        <FontImageSource
+                            FontFamily="MaterialIcons"
+                            Glyph="&#xF018F;"
+                            Color="#666" />
+                    </ImageButton.Source>
+                </ImageButton>
+            </Grid>
+        </Frame>
+
+        <Button Command="{Binding SaveQrCommand}" Text="Lưu QR về máy" />
+
+    </VerticalStackLayout>
+
+</toolkit:Popup>

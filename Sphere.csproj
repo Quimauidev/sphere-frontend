@@ -51,6 +51,11 @@
 		<MauiAsset Include="Resources\Raw\**" LogicalName="%(RecursiveDir)%(Filename)%(Extension)" />
 	</ItemGroup>
 
+
+	<ItemGroup>
+	  <MauiImage Include="Resources\Raw\vietcombank.jpg" />
+	</ItemGroup>
+
 	
 
 	
@@ -79,7 +84,7 @@
 	    <AutoGen>True</AutoGen>
 	    <DependentUpon>Resources.resx</DependentUpon>
 	  </Compile>
-	  <Compile Update="Views\Controls\BottomSheetPopup.xaml.cs">
+	  <Compile Update="Views\Controls\Popups\BottomSheetPopup.xaml.cs">
 	    <DependentUpon>BottomSheetPopup.xaml</DependentUpon>
 	  </Compile>
 	  <Compile Update="Views\Pages\PostDiaryPage.xaml.cs">
@@ -95,7 +100,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <MauiXaml Update="Views\Controls\BioEditPopup.xaml">
+	  <MauiXaml Update="Views\Controls\Popups\BioEditPopup.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>
 	  <MauiXaml Update="Views\Controls\DiaryContentView.xaml">
@@ -113,13 +118,16 @@
 	  <MauiXaml Update="Views\Controls\LoadingPopup.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>
-	  <MauiXaml Update="Views\Controls\BottomSheetPopup.xaml">
+	  <MauiXaml Update="Views\Controls\Popups\BottomSheetPopup.xaml">
+	    <Generator>MSBuild:Compile</Generator>
+	  </MauiXaml>
+	  <MauiXaml Update="Views\Controls\Popups\RechargePopup.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>
 	  <MauiXaml Update="Views\Controls\ProfileHeaderView.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>
-	  <MauiXaml Update="Views\Controls\TopUpRequiredPopup.xaml">
+	  <MauiXaml Update="Views\Controls\Popups\TopUpRequiredPopup.xaml">
 	    <Generator>MSBuild:Compile</Generator>
 	  </MauiXaml>
 	  <MauiXaml Update="Views\Pages\DiamondPage.xaml">
