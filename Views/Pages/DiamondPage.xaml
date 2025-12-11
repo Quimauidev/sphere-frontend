@@ -14,17 +14,13 @@
                 BackgroundColor="#f0f7ff"
                 CornerRadius="8"
                 HasShadow="True">
-                <HorizontalStackLayout HorizontalOptions="Center">
-                    <Label
-                        FontAttributes="Bold"
-                        FontSize="30"
-                        Text="{Binding Coins, StringFormat='{0:N0}'}"
-                        TextColor="#1877F2" />
-                    <Image
-                        HeightRequest="40"
-                        Source="kimcuong.png"
-                        WidthRequest="40" />
-                </HorizontalStackLayout>
+
+                <Label
+                    FontAttributes="Bold"
+                    FontSize="30"
+                    HorizontalOptions="Center"
+                    Text="{Binding Coins, StringFormat='{0:N0} 💎'}"
+                    TextColor="#1877F2" />
             </Frame>
 
             <!--  Tiêu đề  -->

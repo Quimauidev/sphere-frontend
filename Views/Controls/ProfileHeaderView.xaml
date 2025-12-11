@@ -99,20 +99,19 @@
 
                 <HorizontalStackLayout
                     HorizontalOptions="Center"
-                    Spacing="30"
+                    Spacing="40"
                     VerticalOptions="Center">
 
                     <!--  Icon Kim Cương  -->
-                    <Image
-                        HeightRequest="30"
-                        Source="kimcuong.png"
-                        VerticalOptions="Center"
-                        WidthRequest="30" />
+                    <Label
+                        FontSize="20"
+                        Text="💎"
+                        VerticalOptions="Center" />
 
                     <!--  Số Kim Cương  -->
                     <Label
                         FontAttributes="Bold"
-                        FontSize="16"
+                        FontSize="20"
                         HorizontalOptions="Center"
                         Text="{Binding Coins, Converter={StaticResource CoinsFormatterConverter}}"
                         TextColor="#1877F2"
@@ -127,7 +126,6 @@
                         Padding="5"
                         BackgroundColor="#E5F0FF"
                         CornerRadius="15"
-                        HasShadow="False"
                         VerticalOptions="Center">
                         <Frame.GestureRecognizers>
                             <TapGestureRecognizer Command="{Binding ManageCoinsCommand}" />
