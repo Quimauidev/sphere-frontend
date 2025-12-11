@@ -86,63 +86,66 @@
                 <Label Text="{Binding CreatedAtDisplay}" />
             </HorizontalStackLayout>
         </VerticalStackLayout>
-        <HorizontalStackLayout Padding="0" HorizontalOptions="Center">
-            <!--  Frame Kim Cương  -->
-            <Frame
-                Padding="0"
-                BackgroundColor="White"
-                BorderColor="#DADADA"
-                CornerRadius="20"
-                HasShadow="True"
-                HeightRequest="40"
-                WidthRequest="150">
 
-                <HorizontalStackLayout
+        <!--  Frame Kim Cương  -->
+        <Frame
+            Padding="0"
+            BackgroundColor="White"
+            BorderColor="#DADADA"
+            CornerRadius="20"
+            HasShadow="True"
+            HeightRequest="40"
+            WidthRequest="150">
+            <Grid ColumnDefinitions="40,*,40">
+
+
+
+
+                <!--  Icon Kim Cương  -->
+                <Label
+                    FontSize="20"
                     HorizontalOptions="Center"
-                    Spacing="40"
+                    Text="💎"
+                    VerticalOptions="Center" />
+
+                <!--  Số Kim Cương  -->
+                <Label
+                    Grid.Column="1"
+                    FontAttributes="Bold"
+                    FontSize="20"
+                    HorizontalOptions="Center"
+                    Text="{Binding Coins, Converter={StaticResource CoinsFormatterConverter}}"
+                    TextColor="#1877F2"
                     VerticalOptions="Center">
+                    <Label.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding ManageCoinsCommand}" />
+                    </Label.GestureRecognizers>
+                </Label>
 
-                    <!--  Icon Kim Cương  -->
-                    <Label
-                        FontSize="20"
-                        Text="💎"
-                        VerticalOptions="Center" />
+                <!--  Nút Hành động / Icon thêm  -->
+                <Frame
+                    Grid.Column="2"
+                    Padding="5"
+                    BackgroundColor="#E5F0FF"
+                    CornerRadius="15"
+                    HorizontalOptions="Center"
+                    VerticalOptions="Center">
+                    <Frame.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding ManageCoinsCommand}" />
+                    </Frame.GestureRecognizers>
+                    <Image HeightRequest="20" WidthRequest="20">
+                        <Image.Source>
+                            <FontImageSource
+                                FontFamily="MaterialIcons"
+                                Glyph="&#xF11EC;"
+                                Color="#1877F2" />
+                        </Image.Source>
+                    </Image>
+                </Frame>
+            </Grid>
 
-                    <!--  Số Kim Cương  -->
-                    <Label
-                        FontAttributes="Bold"
-                        FontSize="20"
-                        HorizontalOptions="Center"
-                        Text="{Binding Coins, Converter={StaticResource CoinsFormatterConverter}}"
-                        TextColor="#1877F2"
-                        VerticalOptions="Center">
-                        <Label.GestureRecognizers>
-                            <TapGestureRecognizer Command="{Binding ManageCoinsCommand}" />
-                        </Label.GestureRecognizers>
-                    </Label>
+        </Frame>
 
-                    <!--  Nút Hành động / Icon thêm  -->
-                    <Frame
-                        Padding="5"
-                        BackgroundColor="#E5F0FF"
-                        CornerRadius="15"
-                        VerticalOptions="Center">
-                        <Frame.GestureRecognizers>
-                            <TapGestureRecognizer Command="{Binding ManageCoinsCommand}" />
-                        </Frame.GestureRecognizers>
-                        <Image HeightRequest="20" WidthRequest="20">
-                            <Image.Source>
-                                <FontImageSource
-                                    FontFamily="MaterialIcons"
-                                    Glyph="&#xF11EC;"
-                                    Color="#1877F2" />
-                            </Image.Source>
-                        </Image>
-                    </Frame>
-
-                </HorizontalStackLayout>
-            </Frame>
-        </HorizontalStackLayout>
 
         <HorizontalStackLayout
             Padding="5"
