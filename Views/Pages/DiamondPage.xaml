@@ -10,34 +10,21 @@
 
             <!--  Header tổng kim cương  -->
             <Frame
-                Padding="5,10,0,10"
+                Padding="0"
                 BackgroundColor="#f0f7ff"
                 CornerRadius="8"
-                HasShadow="True"
-                HorizontalOptions="Center">
-
-
-                <VerticalStackLayout>
+                HasShadow="True">
+                <HorizontalStackLayout HorizontalOptions="Center">
                     <Label
                         FontAttributes="Bold"
-                        FontSize="16"
-                        HorizontalOptions="Center"
-                        Text="Số kim cương hiện tại"
-                        TextColor="#555" />
-                    <HorizontalStackLayout>
-                        <Label
-                            FontAttributes="Bold"
-                            FontSize="30"
-                            Text="{Binding Coins, StringFormat='{0:N0}'}"
-                            TextColor="#1877F2" />
-                        <Image
-                            HeightRequest="40"
-                            Source="kimcuong.png"
-                            WidthRequest="40" />
-                    </HorizontalStackLayout>
-
-                </VerticalStackLayout>
-
+                        FontSize="30"
+                        Text="{Binding Coins, StringFormat='{0:N0}'}"
+                        TextColor="#1877F2" />
+                    <Image
+                        HeightRequest="40"
+                        Source="kimcuong.png"
+                        WidthRequest="40" />
+                </HorizontalStackLayout>
             </Frame>
 
             <!--  Tiêu đề  -->
