@@ -19,6 +19,8 @@ namespace Sphere.Common.Helpers
         private const string ChatUnlockedKeyPrefix = "ChatUnlocked_";
         // 🔹 Vị trí tìm quanh đây
         private const string LocationEnabledKey = "LocationEnabled";
+        private const string DiamondPackagesKey = "DiamondPackages";
+
 
         // Lưu trạng thái đã mở khóa
         public static void SetChatUnlocked(Guid conversationId, bool unlocked)
@@ -81,6 +83,20 @@ namespace Sphere.Common.Helpers
 
             return null; // Không parse được cũng trả null
         }
+        public static List<DiamondModel>? LoadDiamondPackages()
+        {
+            var json = Preferences.Get(DiamondPackagesKey, null);
+            if (string.IsNullOrEmpty(json))
+                return null;
+
+            return JsonSerializer.Deserialize<List<DiamondModel>>(json);
+        }
+        public static void SaveDiamondPackages(IEnumerable<DiamondModel> packages)
+        {
+            var json = JsonSerializer.Serialize(packages);
+            Preferences.Set(DiamondPackagesKey, json);
+        }
+
 
         public static void SetRefreshToken(string token) => Preferences.Set(RefreshTokenKey, token);
         public static void SetAuthToken(string token) => Preferences.Set(AuthTokenKey, token);
@@ -92,6 +108,9 @@ namespace Sphere.Common.Helpers
 
         public static void ClearRefreshToken() => Preferences.Remove(RefreshTokenKey);
         public static void ClearAuthToken() => Preferences.Remove(AuthTokenKey);
+        public static void ClearDiamondPackages() =>  Preferences.Remove(DiamondPackagesKey);
+        
+
 
         // 👤 User Profile
         public static void SaveCurrentUser(UserWithUserProfileModel user)
@@ -118,7 +137,7 @@ namespace Sphere.Common.Helpers
             ClearCurrentUser();
             ClearRefreshTokenId();
             ClearLocationEnabled();
-
+            ClearDiamondPackages();
         }
     }
 }

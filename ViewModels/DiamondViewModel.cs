@@ -1,6 +1,7 @@
 ﻿using CommunityToolkit.Maui.Views;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Sphere.Common.Helpers;
 using Sphere.Models;
 using Sphere.Services.IService;
 using Sphere.Services.Service;
@@ -23,6 +24,8 @@ namespace Sphere.ViewModels
         [ObservableProperty]
         private bool isLoading;
         [ObservableProperty]
+        private bool isRefreshing;
+        [ObservableProperty]
         private long coins;
         public DiamondViewModel(IDiamondsService diamondsService, IUserSessionService userSessionService)
         {
@@ -32,22 +35,37 @@ namespace Sphere.ViewModels
             _ = LoadPackagesAsync();
         }
         
-        public async Task LoadPackagesAsync()
+        public async Task LoadPackagesAsync(bool forceRefresh = false)
         {
             if(IsLoading) return;
             IsLoading = true;
             try
             {
+                // Lấy từ cache trước
+                if (!forceRefresh)
+                {
+                    var cached = PreferencesHelper.LoadDiamondPackages();
+                    if (cached != null)
+                    {
+                        Packages = new ObservableCollection<DiamondModel>(cached);
+                        return;
+                    }
+                }
+
+                // Gọi API nếu chưa cache hoặc forceRefresh
                 var response = await _diamondsService.GetUserDiamondsAsync();
                 if (response.IsSuccess && response.Data != null)
                 {
                     Packages = new ObservableCollection<DiamondModel>(response.Data);
+
+                    // Lưu vào Preferences
+                    PreferencesHelper.SaveDiamondPackages(response.Data);
                 }
             }
-           
             finally
             {
-                IsLoading = false;  
+                IsLoading = false;
+                IsRefreshing = false; // đảm bảo refresh view tắt sau khi load xong
             }
         }
 
@@ -63,6 +81,25 @@ namespace Sphere.ViewModels
 
             
         }
+        [RelayCommand]
+        private async Task RefreshPackagesAsync()
+        {
+            try
+            {
+                IsRefreshing = true;
+                // Xóa cache gói nạp
+                PreferencesHelper.ClearDiamondPackages();
+
+                // Tải lại từ API
+                await LoadPackagesAsync(forceRefresh: true);
+            }
+            finally
+            {
+                isRefreshing = false;
+            }
+            
+        }
+
 
     }
 }

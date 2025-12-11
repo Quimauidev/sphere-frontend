@@ -5,79 +5,81 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     x:Name="PageRoot"
     Title="Nạp Kim Cương">
+    <RefreshView Command="{Binding RefreshPackagesCommand}" IsRefreshing="{Binding IsRefreshing}">
+        <VerticalStackLayout Padding="10" Spacing="20">
 
-    <VerticalStackLayout Padding="10" Spacing="20">
+            <!--  Header tổng kim cương  -->
+            <Frame
+                Padding="0"
+                BackgroundColor="#f0f7ff"
+                CornerRadius="8"
+                HasShadow="True">
 
-        <!--  Header tổng kim cương  -->
-        <Frame
-            Padding="0"
-            BackgroundColor="#f0f7ff"
-            CornerRadius="8"
-            HasShadow="True">
+                <Label
+                    FontAttributes="Bold"
+                    FontSize="30"
+                    HorizontalOptions="Center"
+                    Text="{Binding Coins, StringFormat='{0:N0} 💎'}"
+                    TextColor="#1877F2" />
+            </Frame>
 
+            <!--  Tiêu đề  -->
             <Label
                 FontAttributes="Bold"
-                FontSize="30"
+                FontSize="22"
                 HorizontalOptions="Center"
-                Text="{Binding Coins, StringFormat='{0:N0} 💎'}"
-                TextColor="#1877F2" />
-        </Frame>
+                Text="Các gói nạp"
+                TextColor="#222" />
+            <!--  RefreshView bọc CollectionView  -->
 
-        <!--  Tiêu đề  -->
-        <Label
-            FontAttributes="Bold"
-            FontSize="22"
-            HorizontalOptions="Center"
-            Text="Các gói nạp"
-            TextColor="#222" />
+            <!--  Danh sách các gói nạp  -->
+            <CollectionView ItemsSource="{Binding Packages}" SelectionMode="None">
+                <CollectionView.ItemsLayout>
+                    <GridItemsLayout Orientation="Vertical" Span="2" />
+                </CollectionView.ItemsLayout>
 
-        <!--  Danh sách các gói nạp  -->
-        <CollectionView ItemsSource="{Binding Packages}" SelectionMode="None">
-            <CollectionView.ItemsLayout>
-                <GridItemsLayout Orientation="Vertical" Span="2" />
-            </CollectionView.ItemsLayout>
+                <CollectionView.ItemTemplate>
+                    <DataTemplate>
+                        <Frame
+                            Margin="2"
+                            Padding="5"
+                            BackgroundColor="White"
+                            CornerRadius="20"
+                            HasShadow="True">
+                            <VerticalStackLayout Spacing="5">
 
-            <CollectionView.ItemTemplate>
-                <DataTemplate>
-                    <Frame
-                        Margin="2"
-                        Padding="5"
-                        BackgroundColor="White"
-                        CornerRadius="20"
-                        HasShadow="True">
-                        <VerticalStackLayout Spacing="5">
-
-                            <Label
-                                FontAttributes="Bold"
-                                FontSize="18"
-                                HorizontalOptions="Center"
-                                Text="{Binding Coins, StringFormat='{0} 💎'}" />
-
-                            <Label
-                                HorizontalOptions="Center"
-                                Text="{Binding Price, StringFormat='{0:N0} VND'}"
-                                TextColor="#1877F2" />
-
-                            <Frame
-                                Padding="10"
-                                BackgroundColor="#1877F2"
-                                CornerRadius="15"
-                                WidthRequest="100">
                                 <Label
                                     FontAttributes="Bold"
+                                    FontSize="18"
                                     HorizontalOptions="Center"
-                                    Text="Nạp"
-                                    TextColor="White" />
-                                <Frame.GestureRecognizers>
-                                    <TapGestureRecognizer Command="{Binding BindingContext.SelectPackageCommand, Source={x:Reference PageRoot}}" CommandParameter="{Binding .}" />
+                                    Text="{Binding Coins, StringFormat='{0} 💎'}" />
 
-                                </Frame.GestureRecognizers>
-                            </Frame>
-                        </VerticalStackLayout>
-                    </Frame>
-                </DataTemplate>
-            </CollectionView.ItemTemplate>
-        </CollectionView>
+                                <Label
+                                    HorizontalOptions="Center"
+                                    Text="{Binding Price, StringFormat='{0:N0} VND'}"
+                                    TextColor="#1877F2" />
 
-    </VerticalStackLayout>
+                                <Frame
+                                    Padding="10"
+                                    BackgroundColor="#1877F2"
+                                    CornerRadius="15"
+                                    WidthRequest="100">
+                                    <Label
+                                        FontAttributes="Bold"
+                                        HorizontalOptions="Center"
+                                        Text="Nạp"
+                                        TextColor="White" />
+                                    <Frame.GestureRecognizers>
+                                        <TapGestureRecognizer Command="{Binding BindingContext.SelectPackageCommand, Source={x:Reference PageRoot}}" CommandParameter="{Binding .}" />
+
+                                    </Frame.GestureRecognizers>
+                                </Frame>
+                            </VerticalStackLayout>
+                        </Frame>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+
+        </VerticalStackLayout>
+    </RefreshView>
 </ContentPage>
