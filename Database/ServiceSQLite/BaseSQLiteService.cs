@@ -13,9 +13,9 @@ namespace Sphere.Database.ServiceSQLite
     {
         protected readonly SQLiteAsyncConnection _db;
 
-        public BaseSQLiteService(string dbPath)
+        public BaseSQLiteService(SQLiteAsyncConnection db)
         {
-            _db = new SQLiteAsyncConnection(dbPath);
+            _db = db;
         }
 
         public async Task InitAsync()

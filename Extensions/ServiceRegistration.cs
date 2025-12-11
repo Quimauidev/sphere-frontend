@@ -2,6 +2,7 @@
 using Sphere.Database.ServiceSQLite;
 using Sphere.ViewModels;
 using Sphere.Views.Pages;
+using SQLite;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -19,12 +20,13 @@ namespace Sphere.Extensions
             var assembly = Assembly.GetExecutingAssembly();
 
             var dbPath = Path.Combine(FileSystem.AppDataDirectory, "sphere.db3");
-            var connection = new SQLite.SQLiteAsyncConnection(dbPath);
+            var connection = new SQLiteAsyncConnection(dbPath);
             services.AddSingleton(connection);
-            services.AddSingleton<MessageSQLiteService>(sp =>
-                new MessageSQLiteService(sp.GetRequiredService<SQLite.SQLiteAsyncConnection>()));
-            services.AddSingleton<ConversationSQLiteService>(sp =>
-                new ConversationSQLiteService(sp.GetRequiredService<SQLite.SQLiteAsyncConnection>()));
+            // đăng ký BaseSQLiteService
+            services.AddSingleton<BaseSQLiteService>();
+            // đăng ký các service SQLite
+            services.AddSingleton<MessageSQLiteService>();
+            services.AddSingleton<ConversationSQLiteService>();
 
             // 🔹 Đăng ký HubConfig trước các service cần nó
             services.AddSingleton(new HubConfig

@@ -1,4 +1,5 @@
 ﻿using Sphere.Common.Helpers;
+using Sphere.Database.ServiceSQLite;
 using Sphere.Hubs;
 using Sphere.Services.IService;
 using Sphere.Views.Pages;
@@ -34,7 +35,9 @@ namespace Sphere
                     VerticalOptions = LayoutOptions.Center
                 },
             };
-
+            // ① Khởi tạo SQLite table trước khi làm gì khác
+            var initializer = _serviceProvider.GetRequiredService<BaseSQLiteService>();
+            Task.Run(() => initializer.InitAsync()).Wait(); // đồng bộ để đảm bảo table đã tồn tại
             InitializeAppAsync();
         }
 
