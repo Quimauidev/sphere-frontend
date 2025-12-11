@@ -21,7 +21,7 @@
         <StackLayout
             HorizontalOptions="Center"
             IsVisible="{Binding PopularState, Converter={StaticResource StateToBoolConverter}, ConverterParameter=Error}"
-            Spacing="30"
+            Spacing="20"
             VerticalOptions="Center">
             <Label
                 FontAttributes="Bold"
@@ -31,6 +31,7 @@
                 TextColor="Red" />
             <Button
                 Command="{Binding LoadFirstPopularPageCommand}"
+                CornerRadius="25"
                 Text="Thử lại"
                 WidthRequest="100" />
         </StackLayout>
@@ -39,7 +40,7 @@
         <StackLayout
             HorizontalOptions="Center"
             IsVisible="{Binding PopularState, Converter={StaticResource StateToBoolConverter}, ConverterParameter=Empty}"
-            Spacing="30"
+            Spacing="20"
             VerticalOptions="Center">
             <Label
                 FontAttributes="Bold"
@@ -47,6 +48,7 @@
                 Text="{Binding PopularErrorMessage}" />
             <Button
                 Command="{Binding LoadFirstPopularPageCommand}"
+                CornerRadius="25"
                 Text="Thử lại"
                 WidthRequest="100" />
         </StackLayout>
@@ -55,7 +57,7 @@
         <StackLayout
             HorizontalOptions="Center"
             IsVisible="{Binding PopularState, Converter={StaticResource StateToBoolConverter}, ConverterParameter=Offline}"
-            Spacing="30"
+            Spacing="20"
             VerticalOptions="Center">
             <Label
                 FontAttributes="Bold"
@@ -64,6 +66,7 @@
                 TextColor="Red" />
             <Button
                 Command="{Binding LoadFirstPopularPageCommand}"
+                CornerRadius="25"
                 Text="Thử lại"
                 WidthRequest="100" />
         </StackLayout>
