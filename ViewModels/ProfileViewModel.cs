@@ -20,6 +20,7 @@ using System.Linq;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
+using static Android.Graphics.ColorSpace;
 
 namespace Sphere.ViewModels
 {
@@ -85,6 +86,7 @@ namespace Sphere.ViewModels
             null => string.Empty,
             _ => throw new NotImplementedException(),
         };
+        //public string GenderDisplay => CurrentUser?.UserDTO?.Gender == Gender.Male ? "Nam" : "Nữ";
 
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(BioMaxLines))]
@@ -137,7 +139,8 @@ namespace Sphere.ViewModels
                 return;
 
             IsLoading = true;
-            PopupHelper.ShowLoading();
+            await PopupHelper.ShowLoadingAsync();
+
             try
             {
                 Guid id = CurrentUser!.UserDTO!.Id;
@@ -157,7 +160,7 @@ namespace Sphere.ViewModels
             }
             finally
             {
-                PopupHelper.HideLoading();
+                await PopupHelper.HideLoadingAsync();
                 IsLoading = false;
             }
         }
@@ -220,7 +223,8 @@ namespace Sphere.ViewModels
             if (!confirm) return;
 
             IsLoading = true;
-            PopupHelper.ShowLoading();
+            await PopupHelper.ShowLoadingAsync();
+
 
             try
             {
@@ -252,7 +256,7 @@ namespace Sphere.ViewModels
             }
             finally
             {
-                PopupHelper.HideLoading();
+                await PopupHelper.HideLoadingAsync();
                 IsLoading = false;
             }
         }
@@ -264,7 +268,8 @@ namespace Sphere.ViewModels
             if (string.IsNullOrEmpty(result)) return;
 
             IsLoading = true;
-            PopupHelper.ShowLoading();
+            await PopupHelper.ShowLoadingAsync();
+
             try
             {
                 Guid id = CurrentUser!.UserDTO!.Id;
@@ -294,7 +299,7 @@ namespace Sphere.ViewModels
             }
             finally
             {
-                PopupHelper.HideLoading();
+                await PopupHelper.HideLoadingAsync();
                 IsLoading = false;
             }
         }

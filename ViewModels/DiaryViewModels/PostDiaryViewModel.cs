@@ -111,7 +111,7 @@ namespace Sphere.ViewModels
         {
             if (!ValidatePostDiary()) return;
             IsLoading = true;
-            PopupHelper.ShowLoading();
+            await PopupHelper.ShowLoadingAsync();
             try
             {
                 PostDiaryModel.Privacy = SelectedPrivacy;
@@ -136,7 +136,7 @@ namespace Sphere.ViewModels
             }
             finally
             {
-                PopupHelper.HideLoading();
+                await PopupHelper.HideLoadingAsync();
                 IsLoading = false;
             }
         }

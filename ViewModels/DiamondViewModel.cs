@@ -2,6 +2,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Sphere.Common.Helpers;
+using Sphere.Common.Responses;
 using Sphere.Models;
 using Sphere.Services.IService;
 using Sphere.Services.Service;
@@ -15,12 +16,12 @@ using System.Threading.Tasks;
 
 namespace Sphere.ViewModels
 {
-    partial class DiamondViewModel : ObservableObject
+    public partial class DiamondViewModel : ObservableObject
     {
         private readonly IDiamondsService _diamondsService;
         private readonly IUserSessionService _userSessionService;
         [ObservableProperty]
-        private ObservableCollection<DiamondModel> packages = new();
+        private ObservableCollection<DiamondModel> packages = [];
         [ObservableProperty]
         private bool isLoading;
         [ObservableProperty]
@@ -35,10 +36,12 @@ namespace Sphere.ViewModels
             _ = LoadPackagesAsync();
         }
         
-        public async Task LoadPackagesAsync(bool forceRefresh = false)
+        public async Task LoadPackagesAsync(bool forceRefresh = false, bool showLoading = true)
         {
             if(IsLoading) return;
             IsLoading = true;
+            if (showLoading)
+                await PopupHelper.ShowLoadingAsync();
             try
             {
                 // Lấy từ cache trước
@@ -61,9 +64,13 @@ namespace Sphere.ViewModels
                     // Lưu vào Preferences
                     PreferencesHelper.SaveDiamondPackages(response.Data);
                 }
+                else
+                   await ApiResponseHelper.ShowApiErrorsAsync(response);
             }
             finally
             {
+                if (showLoading)
+                    await PopupHelper.HideLoadingAsync();
                 IsLoading = false;
                 IsRefreshing = false; // đảm bảo refresh view tắt sau khi load xong
             }
@@ -91,11 +98,11 @@ namespace Sphere.ViewModels
                 PreferencesHelper.ClearDiamondPackages();
 
                 // Tải lại từ API
-                await LoadPackagesAsync(forceRefresh: true);
+                await LoadPackagesAsync(forceRefresh: true, showLoading: false);
             }
             finally
             {
-                isRefreshing = false;
+                IsRefreshing = false;
             }
             
         }

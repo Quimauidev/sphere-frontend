@@ -167,7 +167,7 @@ namespace Sphere.ViewModels
             }
             finally
             {
-                PopupHelper.HideLoading();
+                await PopupHelper.HideLoadingAsync();
                 IsLoading = false;
             }
         }

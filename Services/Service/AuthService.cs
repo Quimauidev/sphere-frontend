@@ -17,8 +17,8 @@ namespace Sphere.Services.Service
     internal class AuthService(IApiService apiService) : IAuthService
     {
        
-        public Task<ApiResponse<AuthResponse>> LoginAsync(LoginModel model)
-        => apiService.SendRequestAsync<LoginModel, AuthResponse>(HttpMethod.Post,"/api/auth/login", model, requireAuth: false);
+        public Task<ApiResponse<TokenResponse>> LoginAsync(LoginModel model)
+        => apiService.SendRequestAsync<LoginModel, TokenResponse>(HttpMethod.Post,"/api/auth/login", model, requireAuth: false);
 
         public Task<ApiResponse<UserModel>> RegisterAsync(RegisterModel model)
             => apiService.SendRequestAsync <RegisterModel, UserModel>(HttpMethod.Post,"/api/auth/register", model, requireAuth: false);

@@ -59,21 +59,14 @@
                                     Text="{Binding Price, StringFormat='{0:N0} VND'}"
                                     TextColor="#1877F2" />
 
-                                <Frame
-                                    Padding="10"
+                                <Button
                                     BackgroundColor="#1877F2"
-                                    CornerRadius="15"
-                                    WidthRequest="100">
-                                    <Label
-                                        FontAttributes="Bold"
-                                        HorizontalOptions="Center"
-                                        Text="Nạp"
-                                        TextColor="White" />
-                                    <Frame.GestureRecognizers>
-                                        <TapGestureRecognizer Command="{Binding BindingContext.SelectPackageCommand, Source={x:Reference PageRoot}}" CommandParameter="{Binding .}" />
-
-                                    </Frame.GestureRecognizers>
-                                </Frame>
+                                    Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.SelectPackageCommand}"
+                                    CommandParameter="{Binding .}"
+                                    CornerRadius="25"
+                                    FontAttributes="Bold"
+                                    HeightRequest="40"
+                                    Text="Nạp ngay" />
                             </VerticalStackLayout>
                         </Frame>
                     </DataTemplate>

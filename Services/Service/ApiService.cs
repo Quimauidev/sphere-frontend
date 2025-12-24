@@ -80,7 +80,6 @@ namespace Sphere.Services.Service
                 return ApiResponse<TResponse>.Fail(fallbackMessage, new List<ErrorDetail> { new ErrorDetail { Code = "DeserializeError", Description = fallbackMessage } });
             }
         }
-
         private HttpRequestMessage BuildRequest<TRequest>(HttpMethod method, string endpoint, TRequest? data, bool requireAuth)
         {
             HttpRequestMessage request = new(method, endpoint);

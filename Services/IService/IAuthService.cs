@@ -12,7 +12,7 @@ namespace Sphere.Services.IService
 {
     public interface IAuthService
     {
-        Task<ApiResponse<AuthResponse>> LoginAsync(LoginModel model);
+        Task<ApiResponse<TokenResponse>> LoginAsync(LoginModel model);
 
         Task<ApiResponse<UserModel>> RegisterAsync(RegisterModel model);
 

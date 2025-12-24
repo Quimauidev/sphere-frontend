@@ -43,7 +43,7 @@ namespace Sphere.Services.Service
 
             try
             {
-                var result = JsonSerializer.Deserialize<ApiResponse<AuthResponse>>(body,
+                var result = JsonSerializer.Deserialize<ApiResponse<TokenResponse>>(body,
                     new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
 
                 if (result == null || !result.IsSuccess || result.Data == null)

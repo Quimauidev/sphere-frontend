@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Sphere.Common.Constans
 {
-    public class AuthResponse
+    public class TokenResponse
     {
         public string Token { get; set; } = string.Empty;
         public string RefreshToken { get; set; } = string.Empty;

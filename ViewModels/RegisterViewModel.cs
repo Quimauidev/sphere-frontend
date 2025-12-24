@@ -97,7 +97,8 @@ namespace Sphere.ViewModels
             _ = RegisterModel.GetFormattedBirthDate(); // Định dạng ISO 8601
             if (IsLoading) return;
             IsLoading = true;
-            PopupHelper.ShowLoading();
+            await PopupHelper.ShowLoadingAsync();
+
 
             try
             {
@@ -115,7 +116,7 @@ namespace Sphere.ViewModels
             }
             finally
             {
-                PopupHelper.HideLoading();
+                await PopupHelper.HideLoadingAsync();
                 IsLoading = false;  // Dừng loading
             }
         }

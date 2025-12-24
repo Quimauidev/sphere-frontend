@@ -26,7 +26,7 @@ namespace Sphere.ViewModels
         public string AccountNumber { get; } = "0281000479532";
         public string AccountName { get; } = "HA VAN QUI";
 
-        private string _qrFileName;
+        private readonly string _qrFileName;
 
         public RechargePopupViewModel(DiamondModel package, string qrImage, IUserSessionService userSessionService)
         {
@@ -38,7 +38,7 @@ namespace Sphere.ViewModels
             PriceText = $"{package.Price:N0} VND";
             _userSessionService = userSessionService;
             // Nội dung CK
-            TransferNote = $"NAP_{package.Coins}_SPHERE_{_userSessionService.CurrentUser!.UserDTO!.UserIdNumber}";
+            TransferNote = $"NAP_{package.Coins}_SPHERE_ID{_userSessionService.CurrentUser!.UserDTO!.UserIdNumber}";
         }
         // Copy ngân hàng
         [RelayCommand]

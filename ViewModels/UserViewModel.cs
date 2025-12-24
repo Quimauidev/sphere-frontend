@@ -95,7 +95,8 @@ namespace Sphere.ViewModels
             }
             if (IsLoading) return;
             IsLoading = true;
-            PopupHelper.ShowLoading();
+            await PopupHelper.ShowLoadingAsync();
+
             try
             {
                 var response = await _userService.UpdateProfileAsync(UserModel!.Id, patchData);
@@ -121,7 +122,7 @@ namespace Sphere.ViewModels
             }
             finally
             {
-                PopupHelper.HideLoading();
+                await PopupHelper.HideLoadingAsync();
                 IsLoading = false;
             }
         }
