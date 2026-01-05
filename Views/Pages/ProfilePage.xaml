@@ -17,120 +17,79 @@
             </ToolbarItem.IconImageSource>
         </ToolbarItem>
     </ContentPage.ToolbarItems>
-
-    <CollectionView
-        Footer="{Binding DiaryListVM.FooterKey}"
-        ItemsSource="{Binding DiaryListVM.Diaries}"
-        RemainingItemsThreshold="3"
-        RemainingItemsThresholdReachedCommand="{Binding DiaryListVM.LoadMoreDiariesCommand}"
-        SelectionMode="None">
-
-        <CollectionView.ItemsLayout>
-            <LinearItemsLayout ItemSpacing="10" Orientation="Vertical" />
-        </CollectionView.ItemsLayout>
-        <CollectionView.Header>
-            <local:ProfileHeaderView />
-        </CollectionView.Header>
-
-        <CollectionView.ItemTemplate>
-            <DataTemplate>
-                <local:DiaryItemView />
-            </DataTemplate>
-        </CollectionView.ItemTemplate>
-
-        <CollectionView.EmptyView>
-            <Grid HorizontalOptions="Center" VerticalOptions="Center">
-
-                <!--  Loading  -->
-                <ActivityIndicator
-                    HeightRequest="40"
-                    IsRunning="True"
-                    IsVisible="{Binding DiaryListVM.DiaryState, Converter={StaticResource StateToBoolConverter}, ConverterParameter=Loading}"
-                    WidthRequest="40" />
-
-                <!--  Error  -->
-                <StackLayout
-                    HorizontalOptions="Center"
-                    IsVisible="{Binding DiaryListVM.DiaryState, Converter={StaticResource StateToBoolConverter}, ConverterParameter=Error}"
-                    Spacing="30">
-                    <Label
-                        FontAttributes="Bold"
-                        FontSize="16"
-                        HorizontalTextAlignment="Center"
-                        Text="{Binding DiaryListVM.ErrorMessage}" />
-                    <Button
-                        Command="{Binding DiaryListVM.LoadFirstPageCommand}"
-                        HorizontalOptions="Center"
-                        Text="Thử lại"
-                        WidthRequest="120" />
-                </StackLayout>
-
-                <!--  Empty  -->
-                <StackLayout
-                    HorizontalOptions="Center"
-                    IsVisible="{Binding DiaryListVM.DiaryState, Converter={StaticResource StateToBoolConverter}, ConverterParameter=Empty}"
-                    Spacing="30">
-                    <Label
-                        FontAttributes="Bold"
-                        FontSize="16"
-                        HorizontalTextAlignment="Center"
-                        Text="{Binding DiaryListVM.ErrorMessage}" />
-                    <Button
-                        Command="{Binding DiaryListVM.LoadFirstPageCommand}"
-                        HorizontalOptions="Center"
-                        Text="Thử lại"
-                        WidthRequest="100" />
-                </StackLayout>
-
-                <!--  Offline  -->
-                <StackLayout
-                    HorizontalOptions="Center"
-                    IsVisible="{Binding DiaryListVM.DiaryState, Converter={StaticResource StateToBoolConverter}, ConverterParameter=Offline}"
-                    Spacing="30">
-                    <Label
-                        FontAttributes="Bold"
-                        FontSize="16"
-                        HorizontalTextAlignment="Center"
-                        Text="{Binding DiaryListVM.ErrorMessage}"
-                        TextColor="Red" />
-                    <Button
-                        Command="{Binding DiaryListVM.LoadFirstPageCommand}"
-                        HorizontalOptions="Center"
-                        Text="Thử lại"
-                        WidthRequest="100" />
-                </StackLayout>
-            </Grid>
-        </CollectionView.EmptyView>
-        <CollectionView.FooterTemplate>
-            <DataTemplate>
-                <Grid Padding="10" RowSpacing="10">
-                    <ActivityIndicator
-                        Margin="0,0,0,20"
-                        HeightRequest="30"
-                        HorizontalOptions="Center"
-                        IsRunning="{Binding DiaryListVM.IsDiaryLoading}"
-                        IsVisible="{Binding DiaryListVM.IsDiaryLoading}"
-                        VerticalOptions="Center"
-                        WidthRequest="30" />
-                    <Label
-                        FontAttributes="Bold"
-                        FontSize="12"
-                        HorizontalOptions="Center"
-                        Text="__ Hết __"
-                        TextColor="Gray"
-                        VerticalOptions="Center">
-                        <Label.IsVisible>
-                            <MultiBinding Converter="{StaticResource ShowEndOfListConverter}">
-                                <Binding Path="BindingContext.DiaryListVM.HasNoMoreData" Source="{RelativeSource AncestorType={x:Type ContentPage}}" />
-                                <Binding Path="BindingContext.DiaryListVM.IsDiaryLoading" Source="{RelativeSource AncestorType={x:Type ContentPage}}" />
-                                <Binding Path="BindingContext.DiaryListVM.HasAnyData" Source="{RelativeSource AncestorType={x:Type ContentPage}}" />
-                            </MultiBinding>
-                        </Label.IsVisible>
-                    </Label>
-                </Grid>
-            </DataTemplate>
-        </CollectionView.FooterTemplate>
-    </CollectionView>
+    <Grid RowDefinitions="Auto, *">
 
 
+        <CollectionView
+            Footer="{Binding DiaryListVM.FooterKey}"
+            ItemsSource="{Binding DiaryListVM.Diaries}"
+            RemainingItemsThreshold="3"
+            RemainingItemsThresholdReachedCommand="{Binding DiaryListVM.LoadMoreDiariesCommand}"
+            SelectionMode="None">
+
+            <CollectionView.ItemsLayout>
+                <LinearItemsLayout ItemSpacing="10" Orientation="Vertical" />
+            </CollectionView.ItemsLayout>
+            <CollectionView.Header>
+                <local:ProfileHeaderView />
+            </CollectionView.Header>
+
+            <CollectionView.ItemTemplate>
+                <DataTemplate>
+                    <local:DiaryItemView />
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+            <CollectionView.FooterTemplate>
+                <DataTemplate>
+                    <Grid Padding="20" RowSpacing="10">
+                        <ActivityIndicator
+                            Margin="0,0,0,20"
+                            HeightRequest="30"
+                            HorizontalOptions="Center"
+                            IsRunning="{Binding DiaryListVM.IsDiaryLoading}"
+                            IsVisible="{Binding DiaryListVM.IsDiaryLoading}"
+                            VerticalOptions="Center"
+                            WidthRequest="30" />
+                        <Label
+                            FontAttributes="Bold"
+                            FontSize="12"
+                            HorizontalOptions="Center"
+                            Text="__ Hết __"
+                            TextColor="Gray"
+                            VerticalOptions="Center">
+                            <Label.IsVisible>
+                                <MultiBinding Converter="{StaticResource ShowEndOfListConverter}">
+                                    <Binding Path="BindingContext.DiaryListVM.HasNoMoreData" Source="{RelativeSource AncestorType={x:Type ContentPage}}" />
+                                    <Binding Path="BindingContext.DiaryListVM.IsDiaryLoading" Source="{RelativeSource AncestorType={x:Type ContentPage}}" />
+                                    <Binding Path="BindingContext.DiaryListVM.HasAnyData" Source="{RelativeSource AncestorType={x:Type ContentPage}}" />
+                                </MultiBinding>
+                            </Label.IsVisible>
+                        </Label>
+                    </Grid>
+                </DataTemplate>
+            </CollectionView.FooterTemplate>
+        </CollectionView>
+        <!--  Error nếu lỗi API  -->
+        <!--  Frame thông báo lỗi chồng lên CollectionView  -->
+
+
+        <StackLayout
+            Margin="10"
+            IsVisible="{Binding DiaryListVM.ErrorMessage}"
+            Spacing="20"
+            VerticalOptions="End">
+            <Label
+                FontAttributes="Bold"
+                HorizontalTextAlignment="Center"
+                Text="{Binding DiaryListVM.ErrorMessage}"
+                TextColor="DarkRed" />
+            <Button
+                Command="{Binding DiaryListVM.RetryCommand}"
+                CornerRadius="5"
+                HeightRequest="40"
+                HorizontalOptions="Center"
+                Text="Thử lại" />
+        </StackLayout>
+
+    </Grid>
 </ContentPage>

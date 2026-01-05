@@ -7,8 +7,6 @@ using System.Threading.Tasks;
 
 namespace Sphere.Reloads
 {
-    public class ReloadDiariesMessage : ValueChangedMessage<bool>
-    {
-        public ReloadDiariesMessage(bool value) : base(value) { }
-    }
+    public record DiaryDeletedMessage(Guid DiaryId);
+
 }

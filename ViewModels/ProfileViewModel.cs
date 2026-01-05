@@ -1,12 +1,14 @@
 ﻿using CommunityToolkit.Maui.Views;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.Extensions.DependencyInjection;
 using Sphere.Common.Constans;
 using Sphere.Common.Helpers;
 using Sphere.Common.Responses;
 using Sphere.Extensions;
 using Sphere.Models;
+using Sphere.Reloads;
 using Sphere.Services.IService;
 using Sphere.Services.Service;
 using Sphere.ViewModels.DiaryViewModels;
@@ -46,7 +48,7 @@ namespace Sphere.ViewModels
                 _userSession.CurrentUser = restoredUser;
             }
             CurrentUser = _userSession.CurrentUser;
-            DiaryListVM = new DiaryListViewModel(diaryService);
+            DiaryListVM = new DiaryListViewModel(diaryService,serviceProvider);
             _ = DiaryListVM.LoadFirstPage();
         }
 

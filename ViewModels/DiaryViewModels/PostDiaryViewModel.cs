@@ -1,4 +1,5 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+﻿using Android.Net;
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using Sphere.Common.Constans;
@@ -57,6 +58,20 @@ namespace Sphere.ViewModels
         [ObservableProperty]
         public partial Privacy SelectedPrivacy { get; set; }
 
+        [ObservableProperty]
+        private bool isEditMode;
+
+        [ObservableProperty]
+        private Guid? editingDiaryId;
+
+        private DiaryModel? _originalDiary;
+        public string PostButtonText => IsEditMode ? "Lưu" : "Đăng";
+
+        partial void OnIsEditModeChanged(bool value)
+        {
+            OnPropertyChanged(nameof(PostButtonText));
+        }
+
         private void OnImagePicked(object recipient, ImagePickerResultMessage message)
         {
             // Xử lý kết quả
@@ -87,6 +102,19 @@ namespace Sphere.ViewModels
             PostDiaryModel.Privacy = value;
         }
 
+        public Task LoadForEditAsync(DiaryModel diary)
+        {
+            IsEditMode = true;
+            EditingDiaryId = diary.Id;
+            _originalDiary = diary;
+            PostDiaryModel.Content = diary.Content;
+            PostDiaryModel.ImagePaths = new ObservableCollection<string>(diary.Images?.Select(img => img.Url) ?? []);
+            SelectedPrivacy = diary.Privacy;
+            RefreshGalleryItems();
+            OnPropertyChanged(nameof(PostDiaryModel));
+            return Task.CompletedTask;
+        }
+
         [RelayCommand]
         private async Task OpenImagePicker()
         {
@@ -107,31 +135,57 @@ namespace Sphere.ViewModels
         }
 
         [RelayCommand]
-        private async Task PostDiaryAsync()
+        private async Task SaveEditDiaryAsync()
         {
-            if (!ValidatePostDiary()) return;
+            if (_originalDiary == null || EditingDiaryId == null)
+                return;
+            // 1️ Ảnh cũ bị xóa → lấy ID
+            var removeImageIds = _originalDiary.Images!
+                .Where(img => !PostDiaryModel.ImagePaths.Contains(img.Url))
+                .Select(img => img.Id)
+                .ToList();
+
+
+            // 2️ Ảnh mới local cần upload
+            var newImagePaths = PostDiaryModel.ImagePaths
+                .Where(p => !p.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+            // Kiểm tra thay đổi nội dung và quyền riêng tư
+            bool isContentChanged = PostDiaryModel.Content != _originalDiary.Content;
+            bool isPrivacyChanged = SelectedPrivacy != _originalDiary.Privacy;
+            bool isImagesChanged = removeImageIds.Any() || newImagePaths.Any();
+
+            if (!isContentChanged && !isPrivacyChanged && !isImagesChanged)
+            {
+                await Shell.Current.DisplayAlert("Thông báo", "Bạn chưa thay đổi dữ liệu mới nào", "OK");
+                return;
+            }
+            // 4️ Không cho lưu nếu cả nội dung + ảnh đều trống
+            bool hasAnyImage = (_originalDiary.Images!.Count - removeImageIds.Count) > 0 || newImagePaths.Any();
+            // 4 Kiểm tra: nếu cả nội dung và ảnh đều trống
+            if (string.IsNullOrWhiteSpace(PostDiaryModel.Content) && !hasAnyImage)
+            {
+                await Shell.Current.DisplayAlert("Thông báo", "Nội dung hoặc ảnh không được để trống", "OK");
+                return;
+            }
+            if(IsLoading) return;
             IsLoading = true;
             await PopupHelper.ShowLoadingAsync();
             try
             {
-                PostDiaryModel.Privacy = SelectedPrivacy;
-                var imageUrls = await _mediaUploadService.ResizeAndUploadImagesAsync(PostDiaryModel.ImagePaths.ToList());
-                PostDiaryModel.ImagePaths = new ObservableCollection<string>(imageUrls);
-                var response = await _diaryService.CreateDiaryAsync(PostDiaryModel);
-                if (response.Data != null && response.IsSuccess)
+                //gọi service
+                var response = await _diaryService.PatchFormDiaryByIdAsync(EditingDiaryId.Value, PostDiaryModel.Content,SelectedPrivacy, removeImageIds, newImagePaths);
+                if (response.IsSuccess && response.Data != null)
                 {
-                    PostDiaryModel.Content = null;
-                    PostDiaryModel.ImagePaths.Clear();
-                    SelectedPrivacy = Privacy.Public;
-                    OnPropertyChanged(nameof(CanAddMoreImages));
-                    OnPropertyChanged(nameof(PostDiaryModel));
-                    // Gửi message:
-                    WeakReferenceMessenger.Default.Send(new ReloadDiariesMessage(true));
+                    // Gửi message cập nhật diary
+                    WeakReferenceMessenger.Default.Send(new DiaryUpdatedMessage(response.Data));
+
                     await Shell.Current.Navigation.PopModalAsync();
                 }
                 else
                 {
-                    await ApiResponseHelper.ShowApiErrorsAsync(response, "Đăng thất bại");
+                    await ApiResponseHelper.ShowApiErrorsAsync(response);
                 }
             }
             finally
@@ -140,6 +194,48 @@ namespace Sphere.ViewModels
                 IsLoading = false;
             }
         }
+
+        [RelayCommand]
+        private async Task PostDiaryAsync()
+        {
+            if (IsEditMode)
+            {
+                await SaveEditDiaryAsync();
+                return;
+            }
+
+            if (!ValidatePostDiary())
+                return;
+           
+            IsLoading = true;
+            await PopupHelper.ShowLoadingAsync();
+            try
+            {
+                PostDiaryModel.Privacy = SelectedPrivacy;
+                var imageUrls = await _mediaUploadService.ResizeAndUploadImagesAsync(PostDiaryModel.ImagePaths.ToList());
+                PostDiaryModel.ImagePaths = new ObservableCollection<string>(imageUrls);
+                var response = await _diaryService.CreateDiaryAsync(PostDiaryModel);
+                if(response.IsSuccess && response.Data != null)
+                {
+                    
+                    WeakReferenceMessenger.Default.Send(new DiaryPostedMessage(true));
+                    PostDiaryModel.Content = null;
+                    PostDiaryModel.ImagePaths.Clear();
+                    SelectedPrivacy = Privacy.Public;
+                    OnPropertyChanged(nameof(CanAddMoreImages));
+                    OnPropertyChanged(nameof(PostDiaryModel));
+                    await Shell.Current.Navigation.PopModalAsync();
+
+                }
+
+            }
+            finally
+            {
+                await PopupHelper.HideLoadingAsync();
+                IsLoading = false;
+            }
+        }
+        
 
         private void RefreshGalleryItems()
         {

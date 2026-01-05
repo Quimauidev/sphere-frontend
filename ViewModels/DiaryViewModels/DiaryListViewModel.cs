@@ -21,16 +21,17 @@ namespace Sphere.ViewModels.DiaryViewModels
     public partial class DiaryListViewModel : ObservableObject
     {
         private readonly IDiaryService _diaryService;
+        private readonly IServiceProvider _serviceProvider;
 
         [ObservableProperty]
-        public partial ObservableCollection<DiaryModel> Diaries { get; set; } = new ObservableCollection<DiaryModel>();
+        public partial ObservableCollection<DiaryContentViewModel> Diaries { get; set; } = new ObservableCollection<DiaryContentViewModel>();
 
 
         [ObservableProperty]
         public partial UiViewState DiaryState { get; set; }
 
         [ObservableProperty]
-        public bool isDiaryLoading;
+        public bool isLoading;
        
 
         private int _currentPage = 1;
@@ -49,13 +50,30 @@ namespace Sphere.ViewModels.DiaryViewModels
         [ObservableProperty]
         private string footerKey = Guid.NewGuid().ToString();
 
-        public DiaryListViewModel(IDiaryService diaryService)
+        public DiaryListViewModel(IDiaryService diaryService, IServiceProvider serviceProvider)
         {
             _diaryService = diaryService;
-            // Lắng nghe message:
-            WeakReferenceMessenger.Default.Register<ReloadDiariesMessage>(this, async (r, m) =>
+            _serviceProvider = serviceProvider;
+
+            WeakReferenceMessenger.Default.Register<DiaryPostedMessage>(this, async (r, m) =>
             {
-                await LoadDiaries(forceReload: true);
+                await ReloadFirstPageAsync();
+            });
+            WeakReferenceMessenger.Default.Register<DiaryUpdatedMessage>(this, async (r, m) =>
+            {
+                await ReloadFirstPageAsync();
+            });
+
+            //Không reload, Không reset page, Không nhảy scroll, Xóa liên tiếp mượt như Facebook
+            WeakReferenceMessenger.Default.Register<DiaryDeletedMessage>(this, (r, msg) =>
+            {
+                var item = Diaries.FirstOrDefault(d => d.Model.Id == msg.DiaryId);
+                if (item != null)
+                {
+                    Diaries.Remove(item);
+                }
+                if (Diaries.Count == 0)
+                    DiaryState = UiViewState.Empty;
             });
         }
 
@@ -66,19 +84,50 @@ namespace Sphere.ViewModels.DiaryViewModels
             Diaries.Clear();
             await LoadDiaries(forceReload: true);
         }
+        private async Task ReloadFirstPageAsync()
+        {
+            if (IsLoading) return;
+            IsLoading = true;
 
+            try
+            {
+                var response = await _diaryService.GetListDiaryAsync(1, PageSize);
+                if (!response.IsSuccess)
+                    return;
+
+                var items = response.Data?.ToList() ?? [];
+                Diaries.Clear();
+                if (items.Count == 0)
+                {
+                    HasNoMoreData = true;
+                    return;
+                }
+
+                foreach (var item in items)
+                {
+                    Diaries.Add(new DiaryContentViewModel( _diaryService, _serviceProvider, item));
+                }
+
+                _currentPage = 2;
+                HasNoMoreData = items.Count < PageSize;
+            }
+            finally
+            {
+                IsLoading = false;
+            }
+        }
         public async Task LoadDiaries(bool forceReload = false)
         {
-            if (IsDiaryLoading || (HasNoMoreData && !forceReload)) return;
+            if (IsLoading || (HasNoMoreData && !forceReload)) return;
 
-            IsDiaryLoading = true;
+            IsLoading = true;
 
             if (forceReload)
             {
                 _currentPage = 1;
                 HasNoMoreData = false;
                 Diaries.Clear();
-                    DiaryState = UiViewState.Loading; // chỉ lần đầu
+                DiaryState = UiViewState.Loading; // chỉ lần đầu
             }
 
             try
@@ -93,7 +142,7 @@ namespace Sphere.ViewModels.DiaryViewModels
                         Diaries.Clear();
 
                     foreach (var item in items)
-                        Diaries.Add(item);
+                        Diaries.Add(new DiaryContentViewModel(_diaryService,_serviceProvider,item));
 
                     HasNoMoreData = items.Count < PageSize;
                     _currentPage++;
@@ -128,7 +177,7 @@ namespace Sphere.ViewModels.DiaryViewModels
             }
             finally
             {
-                IsDiaryLoading = false;
+                IsLoading = false;
             }
         }
 
