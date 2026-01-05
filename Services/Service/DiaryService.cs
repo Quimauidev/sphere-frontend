@@ -54,7 +54,7 @@ namespace Sphere.Services.Service
             return await apiService.GetAsync<IEnumerable<DiaryModel>>($"api/diary?page={page}&pageSize={pageSize}");
         }
 
-        public async Task<ApiResponse<DiaryModel>> PatchFormDiaryByIdAsync(Guid id, string? content, Privacy privacy, IEnumerable<string> oldImageUrls, IEnumerable<string> newImagePaths)
+        public async Task<ApiResponse<DiaryModel>> PatchFormDiaryByIdAsync(Guid id, string? content, Privacy privacy, IEnumerable<Guid> removeImageIds, IEnumerable<string> newImagePaths)
         {
             var formData = new MultipartFormDataContent();
 
@@ -67,9 +67,9 @@ namespace Sphere.Services.Service
             // Convert Privacy enum to string before adding
             formData.Add(new StringContent(privacy.ToString()), "Privacy");
 
-            foreach (var url in oldImageUrls)
+            foreach (var imageId in removeImageIds)
             {
-                formData.Add(new StringContent(url), "Images");
+                formData.Add(new StringContent(imageId.ToString()), "RemoveImageIds");
             }
             // Add images (if any)
             foreach (var imagePath in newImagePaths)
@@ -82,7 +82,7 @@ namespace Sphere.Services.Service
                     var fileContent = new StreamContent(stream);
                     fileContent.Headers.ContentType = new MediaTypeHeaderValue("image/jpeg"); // or appropriate MIME type
 
-                    formData.Add(fileContent, "Images", fileName);
+                    formData.Add(fileContent, "NewImages", fileName);
                 }
                 catch
                 {

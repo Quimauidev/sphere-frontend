@@ -25,7 +25,7 @@ namespace Sphere.Models
         public int CommentCount { get; set; } = 0; // Lượt bình luận
 
         public Privacy Privacy { get; set; } 
-
+        public bool IsOwNer { get; set; }
         public bool HasImages => (Images?.Count ?? 0) > 0;
         public double ImageItemHeight
         {
@@ -57,38 +57,6 @@ namespace Sphere.Models
                 };
             }
         }
-        //private double _containerWidth;
-        //public double ContainerWidth
-        //{
-        //    get => _containerWidth;
-        //    set
-        //    {
-        //        if (_containerWidth != value)
-        //        {
-        //            _containerWidth = value;
-        //            OnPropertyChanged(nameof(ImageItemWidth));
-        //        }
-        //    }
-        //}
-
-        //public double ImageItemWidth
-        //{
-        //    get
-        //    {
-        //        int count = Images?.Count ?? 0;
-        //        if (count == 0 || ContainerWidth <= 0) return 0;
-
-        //        double spacing = 10; // 3 ảnh → 2 khoảng trống
-
-        //        return count switch
-        //        {
-        //            <= 1 => ContainerWidth,
-        //            2 => (ContainerWidth - 1 - spacing) / 2,
-        //            _ => (ContainerWidth - 2 - spacing) / 3
-        //        };
-        //    }
-        //}
-
     }
 
     public class DiaryImageDTO

@@ -117,6 +117,7 @@
                 VerticalOptions="Center" />
             <ImageButton
                 Grid.Column="4"
+                Command="{Binding ShowMenuCommand}"
                 HeightRequest="20"
                 WidthRequest="20">
                 <ImageButton.Source>
