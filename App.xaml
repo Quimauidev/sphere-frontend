@@ -6,7 +6,6 @@
     xmlns:local="clr-namespace:Sphere.Converters">
     <Application.Resources>
         <ResourceDictionary>
-            <local:InverseBooleanConverter x:Key="InverseBooleanConverter" />
             <local:InverseBoolConverter x:Key="InverseBoolConverter" />
             <local:GenderToBoolConverter x:Key="GenderToBoolConverter" />
             <local:PrivacyConverter x:Key="PrivacyConverter" />

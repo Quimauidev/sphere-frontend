@@ -45,7 +45,8 @@ namespace Sphere.ViewModels.DiaryViewModels
         public partial string? ErrorMessage { get; set; }
 
         [ObservableProperty]
-        private bool hasNoMoreData; // đúng
+        private bool hasNoMoreData;
+        public bool HasError => !string.IsNullOrEmpty(ErrorMessage);
 
         [ObservableProperty]
         private string footerKey = Guid.NewGuid().ToString();
@@ -73,10 +74,15 @@ namespace Sphere.ViewModels.DiaryViewModels
                     Diaries.Remove(item);
                 }
                 if (Diaries.Count == 0)
-                    DiaryState = UiViewState.Empty;
+                    ErrorMessage = Diaries.Count == 0 ? "Chưa có bài viết nào" : null;
+
             });
         }
-
+        [RelayCommand]
+        public async Task RetryAsync()
+        {
+            await LoadDiaries(forceReload: true);
+        }
         [RelayCommand]
         public async Task LoadFirstPage()
         {
@@ -92,17 +98,15 @@ namespace Sphere.ViewModels.DiaryViewModels
             try
             {
                 var response = await _diaryService.GetListDiaryAsync(1, PageSize);
+                
                 if (!response.IsSuccess)
+                {
+                    ErrorMessage = response.Errors?.FirstOrDefault()?.Description ?? response.Message ?? "Có lỗi xảy ra";
                     return;
+                }    
 
                 var items = response.Data?.ToList() ?? [];
                 Diaries.Clear();
-                if (items.Count == 0)
-                {
-                    HasNoMoreData = true;
-                    return;
-                }
-
                 foreach (var item in items)
                 {
                     Diaries.Add(new DiaryContentViewModel( _diaryService, _serviceProvider, item));
@@ -110,6 +114,9 @@ namespace Sphere.ViewModels.DiaryViewModels
 
                 _currentPage = 2;
                 HasNoMoreData = items.Count < PageSize;
+                //Set trạng thái UI chuẩn
+               
+                ErrorMessage = Diaries.Count == 0 ? response.Message ?? "Chưa có bài viết nào" : null;
             }
             finally
             {
@@ -127,7 +134,6 @@ namespace Sphere.ViewModels.DiaryViewModels
                 _currentPage = 1;
                 HasNoMoreData = false;
                 Diaries.Clear();
-                DiaryState = UiViewState.Loading; // chỉ lần đầu
             }
 
             try
@@ -148,29 +154,13 @@ namespace Sphere.ViewModels.DiaryViewModels
                     _currentPage++;
 
                     // Set trạng thái UI chuẩn
-                    if (Diaries.Count == 0)
-                    {
-                        DiaryState = UiViewState.Empty;
-                        ErrorMessage = response.Message;
-                    }
-                    else
-                    {
-                        DiaryState = UiViewState.Success;
-                        ErrorMessage = null;
-                    }
+                    ErrorMessage = Diaries.Count == 0 ? response.Message ?? "Chưa có bài viết nào" : null;
                 }
                 else
                 {
-                    // Cách 2: gán ErrorMessage trước, set state sau
-                    var msg = response.Errors?.FirstOrDefault()?.Description
+                    ErrorMessage = response.Errors?.FirstOrDefault()?.Description
                               ?? response.Message
                               ?? "Có lỗi xảy ra";
-                    ErrorMessage = msg;
-
-                    if (response.Errors?.Any(e => e.Code is "NetworkError" or "Timeout" or "UnhandledException") == true)
-                        DiaryState = UiViewState.Offline;
-                    else
-                        DiaryState = UiViewState.Error;
                 }
 
                 FooterKey = Guid.NewGuid().ToString(); // ép render lại Footer
