@@ -76,7 +76,7 @@ namespace Sphere.ViewModels.DiaryViewModels
                 if (Diaries.Count == 0)
                     ErrorMessage = Diaries.Count == 0 ? "Chưa có bài viết nào" : null;
 
-            });
+            });     
         }
         [RelayCommand]
         public async Task RetryAsync()

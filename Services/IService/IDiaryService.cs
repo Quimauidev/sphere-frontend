@@ -16,5 +16,6 @@ namespace Sphere.Services.IService
         Task<ApiResponse<DiaryModel>> PatchFormDiaryByIdAsync(Guid id, string? content, Privacy privacy, IEnumerable<Guid> removeImageIds, IEnumerable<string> newImagePaths);
         Task<ApiResponse<bool>> DeleteDiaryAsync(Guid id);
         Task<ApiResponse<IEnumerable<UserWithDiaryModel>>> GetHomeDiariesAsync(string type, int page, int pageSize);
+        Task<ApiResponse<DiaryLikeStatusDTO>> SetLikeAsync(Guid diaryId);
     }
 }

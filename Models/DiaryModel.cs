@@ -21,7 +21,7 @@ namespace Sphere.Models
         public int ViewCount { get; set; } = 0; // Lượt xem
 
         public int LikeCount { get; set; } = 0; // Lượt thích
-
+        public bool IsLiked { get; set; } // Đã thích hay chưa
         public int CommentCount { get; set; } = 0; // Lượt bình luận
 
         public Privacy Privacy { get; set; } 
@@ -79,5 +79,10 @@ namespace Sphere.Models
         public bool IsOnline { get; set; }
         public bool IsFollow { get; set; }
         public Gender Gender { get; set; }
+    }
+    public class DiaryLikeStatusDTO
+    {
+        public bool IsLiked { get; set; }
+        public int LikeCount { get; set; }
     }
 }

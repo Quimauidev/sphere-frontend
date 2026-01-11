@@ -1,14 +1,17 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
+using IntelliJ.Lang.Annotations;
 using Kotlin.Jvm;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Maui;
 using Sphere.Common.Constans;
 using Sphere.Common.Helpers;
 using Sphere.Common.Responses;
 using Sphere.Models;
 using Sphere.Reloads;
 using Sphere.Services.IService;
+using Sphere.Services.Service;
 using Sphere.Views.Pages;
 using System;
 using System.Threading.Tasks;
@@ -26,11 +29,13 @@ namespace Sphere.ViewModels.DiaryViewModels
             _serviceProvider = serviceProvider;
             Model = model;
             IsOwnMess = Model.IsOwNer;
+            LikeCount = Model.LikeCount;
+            IsLiked = Model.IsLiked;
         }
 
         public DiaryModel Model { get; private set; }
         public DateTime CreatedAt => Model.CreatedAt;
-
+        public Privacy Privacy => Model.Privacy;
         public string? Content => Model.Content;
 
         public List<DiaryImageDTO>? Images => Model.Images ?? [];
@@ -115,5 +120,59 @@ namespace Sphere.ViewModels.DiaryViewModels
         {
             await Application.Current!.MainPage!.DisplayAlert("Tố cáo", "Chức năng tố cáo sẽ được phát triển sau.", "OK");
         }
+
+        [ObservableProperty]
+        private bool isLiked;
+
+        [ObservableProperty]
+        private int likeCount;
+
+        [ObservableProperty]
+        private bool isBusy;
+
+        // like bài viết
+        [RelayCommand]
+        public async Task LikeAsync()
+        {
+            if (IsBusy)
+                return;
+
+            IsBusy = true;
+
+            // 🔥 UI đổi NGAY
+            IsLiked = !IsLiked;
+            LikeCount += IsLiked ? 1 : -1;
+
+            try
+            {
+                var res = await _diaryService.SetLikeAsync(Model.Id);
+
+                if (!res.IsSuccess)
+                   await ApiResponseHelper.ShowApiErrorsAsync(res, "Thao tác thích thất bại");
+
+                // ✅ Sync nhẹ (chỉ khi lệch)
+                if (IsLiked != res.Data!.IsLiked)
+                    IsLiked = res.Data.IsLiked;
+
+                LikeCount = res.Data.LikeCount;
+            }
+            catch
+            {
+                // ❌ rollback nếu fail
+                IsLiked = !IsLiked;
+                LikeCount += IsLiked ? 1 : -1;
+            }
+            finally
+            {
+                IsBusy = false;
+            }
+        }
+
+        //[RelayCommand]
+        //public async Task CommentAsync()
+        //{
+        //    // TODO: Hiển thị giao diện bình luận hoặc chuyển trang bình luận
+        //    await Application.Current!.MainPage!.DisplayAlert("Bình luận", "Chức năng bình luận sẽ được phát triển.", "OK");
+        //}
     }
 }

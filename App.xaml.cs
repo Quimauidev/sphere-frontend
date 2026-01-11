@@ -2,6 +2,7 @@
 using Sphere.Database.ServiceSQLite;
 using Sphere.Hubs;
 using Sphere.Services.IService;
+using Sphere.Services.Service;
 using Sphere.Views.Pages;
 
 namespace Sphere

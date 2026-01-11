@@ -1,4 +1,5 @@
-﻿using Sphere.Common.Constans;
+﻿using Microsoft.Maui;
+using Sphere.Common.Constans;
 using Sphere.Common.Responses;
 using Sphere.Models;
 using Sphere.Services.IService;
@@ -91,6 +92,11 @@ namespace Sphere.Services.Service
             }
 
             return await apiService.PatchFormAsync<DiaryModel>($"api/diary/{id}", formData);
+        }
+
+        public async Task<ApiResponse<DiaryLikeStatusDTO>> SetLikeAsync(Guid diaryId)
+        {
+            return await apiService.PostAsync<object, DiaryLikeStatusDTO>( $"api/diary/{diaryId}/like",null!);
         }
     }
 }

@@ -9,12 +9,4 @@ public partial class DiaryContentView : ContentView
 	{
 		InitializeComponent();
     }
-
-    //private void FlexImages_SizeChanged(object sender, EventArgs e)
-    //{
-    //    if (BindingContext is DiaryModel vm)
-    //    {
-    //        vm.ContainerWidth = FlexImages.Width;
-    //    }
-    //}
 }

@@ -15,24 +15,7 @@
                 TextColor="Gray"
                 VerticalOptions="Center" />
 
-            <!--  Cột 2: nút menu  -->
-            <!--<ImageButton
-                Grid.Column="1"
-                BackgroundColor="Transparent"
-                Clicked="OnMenuButtonClicked"
-                CommandParameter="{Binding}"
-                HeightRequest="25"
-                HorizontalOptions="End"
-                IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBooleanConverter}}"
-                VerticalOptions="Center"
-                WidthRequest="25">
-                <ImageButton.Source>
-                    <FontImageSource
-                        FontFamily="MaterialIcons"
-                        Glyph="&#xF01D9;"
-                        Color="Gray" />
-                </ImageButton.Source>
-            </ImageButton>-->
+
         </Grid>
 
         <!--  Nội dung  -->
@@ -85,21 +68,30 @@
                 Grid.Column="1"
                 Orientation="Horizontal"
                 Spacing="2">
-                <ImageButton HeightRequest="20" WidthRequest="20">
-                    <ImageButton.Source>
-                        <FontImageSource
-                            FontFamily="MaterialIcons"
-                            Glyph="&#xF0971;"
-                            Color="Gray" />
-                    </ImageButton.Source>
-                </ImageButton>
+
+                <!--  ICON LIKE  -->
+                <Label
+                    FontFamily="MaterialIcons"
+                    FontSize="20"
+                    Text="&#xF0971;"
+                    TextColor="{Binding IsLiked, Converter={StaticResource BoolToLikeColorConverter}}">
+                    <Label.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding LikeCommand}" />
+                    </Label.GestureRecognizers>
+                </Label>
+
+                <!--  COUNT  -->
                 <Label Text="{Binding LikeCount}" VerticalOptions="Center" />
             </StackLayout>
+
             <StackLayout
                 Grid.Column="2"
                 Orientation="Horizontal"
                 Spacing="2">
-                <ImageButton HeightRequest="20" WidthRequest="20">
+                <ImageButton
+                    Command="{Binding CommentCommand}"
+                    HeightRequest="20"
+                    WidthRequest="20">
                     <ImageButton.Source>
                         <FontImageSource
                             FontFamily="MaterialIcons"

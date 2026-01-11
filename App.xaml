@@ -26,6 +26,7 @@
             <local:StringIsNullOrEmptyToBoolConverter x:Key="StringIsNullOrEmptyToBoolConverter" />
             <local:StringIsNotNullOrEmptyToBoolConverter x:Key="StringIsNotNullOrEmptyToBoolConverter" />
             <local:NearbyItemVisibilityConverter x:Key="NearbyItemVisibilityConverter" />
+            <local:BoolToLikeColorConverter x:Key="BoolToLikeColorConverter" />
 
 
             <ResourceDictionary.MergedDictionaries>

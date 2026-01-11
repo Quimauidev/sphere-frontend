@@ -87,6 +87,41 @@ namespace Sphere.ViewModels
         public bool ShouldShowChatButton => !IsOwnMess; // ẩn nếu là bài của chính mình
         public bool ShouldShowFollowButton => !IsOwnFollow && !IsFollowing;
 
+        //// Lượt xem, thích, bình luận
+        //public int ViewCount => Model.DiaryDTO?.ViewCount ?? 0;
+        //public int LikeCount => Model.DiaryDTO?.LikeCount ?? 0;
+        //public int CommentCount => Model.DiaryDTO?.CommentCount ?? 0;
+
+        //// Command cho View, Like, Comment
+        //[RelayCommand]
+        //public async Task IncreaseViewAsync()
+        //{
+        //    // TODO: Gọi API tăng lượt xem nếu cần
+        //    if (Model.DiaryDTO != null)
+        //    {
+        //        Model.DiaryDTO.ViewCount++;
+        //        OnPropertyChanged(nameof(ViewCount));
+        //    }
+        //}
+
+        //[RelayCommand]
+        //public async Task LikeAsync()
+        //{
+        //    // TODO: Gọi API like
+        //    if (Model.DiaryDTO != null)
+        //    {
+        //        Model.DiaryDTO.LikeCount++;
+        //        OnPropertyChanged(nameof(LikeCount));
+        //    }
+        //}
+
+        //[RelayCommand]
+        //public async Task CommentAsync()
+        //{
+        //    // TODO: Hiển thị giao diện bình luận hoặc chuyển trang bình luận
+        //    await Application.Current!.MainPage!.DisplayAlert("Bình luận", "Chức năng bình luận sẽ được phát triển.", "OK");
+        //}
+
         // Thêm property lưu id user cần follow
         [RelayCommand]
         public async Task ChatAsync()
