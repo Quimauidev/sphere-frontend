@@ -9,21 +9,21 @@
 
     <Grid RowDefinitions="*,Auto">
 
-        <!--  ================= LIST COMMENTS =================  -->
-        <CollectionView x:Name="CommentsCollection" ItemsSource="{Binding Comments}">
+        <CollectionView x:Name="CommentsCollection" ItemsSource="{Binding FlatComments}">
 
             <CollectionView.ItemTemplate>
                 <DataTemplate>
                     <Grid
+                        Margin="{Binding Level, Converter={StaticResource LevelToMarginConverter}}"
                         Padding="10"
                         ColumnDefinitions="40,*"
-                        ColumnSpacing="10"
-                        RowSpacing="2">
+                        ColumnSpacing="10">
+
                         <ffimageloading:CachedImage
                             Aspect="AspectFill"
                             DownsampleToViewSize="true"
                             HeightRequest="40"
-                            Source="{Binding AvatarUrl, Converter={StaticResource AvatarGenderConverter}}"
+                            Source="{Binding Comment.AvatarUrl, Converter={StaticResource AvatarGenderConverter}}"
                             TransformPlaceholders="true"
                             VerticalOptions="Start"
                             WidthRequest="40">
@@ -31,26 +31,11 @@
                                 <fftransformations:CircleTransformation />
                             </ffimageloading:CachedImage.Transformations>
                         </ffimageloading:CachedImage>
+
                         <VerticalStackLayout Grid.Column="1" Spacing="4">
+                            <Label FontAttributes="Bold" Text="{Binding Comment.FullName}" />
 
-                            <!--  Header  -->
-                            <HorizontalStackLayout>
-                                <Label
-                                    FontAttributes="Bold"
-                                    FontSize="14"
-                                    Text="{Binding FullName}" />
-
-                                <Label
-                                    FontSize="12"
-                                    IsVisible="{Binding ReplyToFullName, Converter={StaticResource StringIsNotNullOrEmptyToBoolConverter}}"
-                                    Text="{Binding ReplyToFullName, StringFormat='@{0}'}"
-                                    TextColor="Gray" />
-                            </HorizontalStackLayout>
-
-                            <!--  Content  -->
-                            <Label FontSize="14" Text="{Binding Content}" />
-
-                            <!--  Actions  -->
+                            <Label Text="{Binding Comment.Content}" />
 
                             <Grid ColumnDefinitions="*,Auto">
 
@@ -77,74 +62,12 @@
                                         TextColor="Grey" />
                                 </HorizontalStackLayout>
                             </Grid>
-
-                            <!--  Tree replies  -->
-                            <CollectionView
-                                Margin="0,8,0,0"
-                                IsVisible="{Binding Replies.Count, Converter={StaticResource NullToBoolConverter}}"
-                                ItemsSource="{Binding Replies}">
-                                <CollectionView.ItemTemplate>
-                                    <DataTemplate>
-                                        <Grid Padding="0,0,0,8" ColumnDefinitions="32,*">
-                                            <ffimageloading:CachedImage
-                                                Aspect="AspectFill"
-                                                DownsampleToViewSize="true"
-                                                HeightRequest="32"
-                                                Source="{Binding AvatarUrl, Converter={StaticResource AvatarGenderConverter}}"
-                                                TransformPlaceholders="true"
-                                                VerticalOptions="Start"
-                                                WidthRequest="32">
-                                                <ffimageloading:CachedImage.Transformations>
-                                                    <fftransformations:CircleTransformation />
-                                                </ffimageloading:CachedImage.Transformations>
-                                            </ffimageloading:CachedImage>
-                                            <VerticalStackLayout Grid.Column="1" Spacing="2">
-                                                <HorizontalStackLayout>
-                                                    <Label
-                                                        FontAttributes="Bold"
-                                                        FontSize="13"
-                                                        Text="{Binding FullName}"
-                                                        TextColor="#1976D2" />
-                                                </HorizontalStackLayout>
-                                                <Label
-                                                    FontSize="13"
-                                                    Text="{Binding Content}"
-                                                    TextColor="Black" />
-                                                <Grid ColumnDefinitions="*,Auto">
-
-                                                    <Label
-                                                        FontSize="12"
-                                                        Text="Trả lời"
-                                                        TextColor="Gray">
-                                                        <Label.GestureRecognizers>
-                                                            <TapGestureRecognizer Command="{Binding BindingContext.ReplyCommand, Source={RelativeSource AncestorType={x:Type ContentPage}}}" CommandParameter="{Binding .}" />
-                                                        </Label.GestureRecognizers>
-                                                    </Label>
-
-                                                    <HorizontalStackLayout
-                                                        Grid.Column="1"
-                                                        Padding="0,0,10,0"
-                                                        Spacing="10">
-                                                        <Label
-                                                            FontSize="12"
-                                                            Text="Thích"
-                                                            TextColor="Gray" />
-                                                        <Label
-                                                            FontSize="12"
-                                                            Text="12"
-                                                            TextColor="Grey" />
-                                                    </HorizontalStackLayout>
-                                                </Grid>
-                                            </VerticalStackLayout>
-                                        </Grid>
-                                    </DataTemplate>
-                                </CollectionView.ItemTemplate>
-                            </CollectionView>
                         </VerticalStackLayout>
                     </Grid>
                 </DataTemplate>
             </CollectionView.ItemTemplate>
         </CollectionView>
+
 
         <!--  ================= INPUT =================  -->
         <Grid

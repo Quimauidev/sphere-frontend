@@ -21,29 +21,16 @@ public partial class DiaryCommentPage : ContentPage
                 CommentEntry.Focus();
             });
         };
-       
-        _vm.ScrollToIndex = async index =>
+
+        _vm.ScrollToFlatItem = item =>
         {
-            // Đợi keyboard hiển thị (RequestFocus gọi trước trong ViewModel)
-            await Task.Delay(400);
-            MainThread.BeginInvokeOnMainThread(() =>
+            MainThread.BeginInvokeOnMainThread(async () =>
             {
-                var items = CommentsCollection.ItemsSource as System.Collections.IEnumerable;
-                // an toàn: nếu không có ItemsSource hoặc index không hợp lệ thì không làm gì
-                if (items == null) return;
-
-                // tính số phần tử để kiểm tra index
-                int count = 0;
-                foreach (var _ in items) count++;
-
-                if (index >= 0 && index < count)
-                {
-                    // Dùng MakeVisible để đảm bảo item không bị che bởi keyboard
-                    CommentsCollection.ScrollTo(
-                        index,
-                        position: ScrollToPosition.MakeVisible,
-                        animate: true);
-                }
+                await Task.Delay(400); // đợi keyboard
+                CommentsCollection.ScrollTo(
+                    item,
+                    position: ScrollToPosition.MakeVisible,
+                    animate: true);
             });
         };
 

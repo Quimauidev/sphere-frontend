@@ -29,6 +29,7 @@
             <local:BoolToLikeColorConverter x:Key="BoolToLikeColorConverter" />
             <local:IntGreaterThanZeroConverter x:Key="IntGreaterThanZeroConverter" />
             <local:LikeEmojiConverter x:Key="LikeEmojiConverter" />
+            <local:LevelToMarginConverter x:Key="LevelToMarginConverter" />
 
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="Resources/Styles/Colors.xaml" />

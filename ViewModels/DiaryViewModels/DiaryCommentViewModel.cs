@@ -23,6 +23,8 @@ namespace Sphere.ViewModels.DiaryViewModels
         private Guid _diaryId;
 
         public ObservableCollection<DiaryCommentUIModel> Comments { get; } = [];
+        public ObservableCollection<DiaryCommentFlatItem> FlatComments { get; } = [];
+
         public DiaryCommentViewModel(IDiaryService diaryService)
         {
             _diaryService = diaryService;
@@ -48,7 +50,7 @@ namespace Sphere.ViewModels.DiaryViewModels
         private string? newCommentContent;
 
         public Action<int>? ScrollToIndex { get; set; }
-        //public Action<DiaryCommentUIModel>? ScrollToComment { get; set; }
+        public Action<DiaryCommentFlatItem>? ScrollToFlatItem { get; set; }
 
         public Action? RequestFocusCommentEditor { get; set; }
 
@@ -65,15 +67,33 @@ namespace Sphere.ViewModels.DiaryViewModels
             Comments.Clear();
             foreach (var c in res.Data!)
                 Comments.Add(c);
+            BuildFlatComments();
         }
-
-        // hàm này đúng chỉ 2 cấp bình luận
-        private DiaryCommentUIModel? FindRootComment(Guid id)
+        private void BuildFlatComments()
         {
-            return Comments.FirstOrDefault(c =>
-                c.Id == id ||
-                c.Replies.Any(r => r.Id == id)
-            );
+            FlatComments.Clear();
+
+            foreach (var parent in Comments)
+            {
+                FlatComments.Add(new DiaryCommentFlatItem
+                {
+                    Id = parent.Id,
+                    Comment = parent,
+                    Level = 0,
+                    RootCommentId = parent.Id
+                });
+
+                foreach (var reply in parent.Replies)
+                {
+                    FlatComments.Add(new DiaryCommentFlatItem
+                    {
+                        Id = reply.Id,
+                        Comment = reply,
+                        Level = 1,
+                        RootCommentId = parent.Id
+                    });
+                }
+            }
         }
 
         [RelayCommand]
@@ -94,29 +114,31 @@ namespace Sphere.ViewModels.DiaryViewModels
                     if (replyId == null)
                     {
                         Comments.Insert(0, res.Data!);
-                        ScrollToIndex?.Invoke(0);
                     }
                     else
                     {
-                        var replyTo = ReplyToComment!;
+                        
+                        // 1️⃣ xác định comment gốc
+                        var rootId = ReplyToComment!.ParentCommentId ?? ReplyToComment.Id;
 
-                        // xác định comment gốc
-                        var rootId = replyTo.ParentCommentId ?? replyTo.Id;
+                        var root = Comments.FirstOrDefault(c => c.Id == rootId);
+                        if (root == null)
+                            throw new InvalidOperationException("Root comment not found");
 
-                        var root = FindRootComment(rootId);
-                        if (root != null)
-                        {
-                            root.Replies.Insert(0, res.Data!);
-                        }
-                        else
-                        {
-                            // fallback an toàn
-                            Comments.Insert(0, res.Data!);
-                            ScrollToIndex?.Invoke(0);
-                        }
+                        // 2️⃣ ÉP ParentCommentId về root (QUAN TRỌNG)
+                        res.Data!.ParentCommentId = root.Id;
+
+                        // 3️⃣ thêm vào Replies của root
+                        root.Replies.Insert(0, res.Data!);
+
                     }
 
-
+                    BuildFlatComments();
+                    var flatItem = FlatComments.FirstOrDefault(x => x.Id == res.Data!.Id);
+                    if (flatItem != null)
+                    {
+                        ScrollToFlatItem?.Invoke(flatItem);
+                    }
                     NewCommentContent = string.Empty;
                     ReplyToComment = null;
                 }
@@ -133,31 +155,12 @@ namespace Sphere.ViewModels.DiaryViewModels
         }
 
         [RelayCommand]
-        public void Reply(DiaryCommentUIModel comment)
+        public void Reply(DiaryCommentFlatItem item)
         {
-            ReplyToComment = comment;
+            ReplyToComment = item.Comment;
             NewCommentContent = string.Empty;
             RequestFocusCommentEditor?.Invoke();
-            DiaryCommentUIModel? targetRoot;
-
-            if (comment.ParentCommentId == null)
-            {
-                // reply comment cha
-                targetRoot = comment;
-            }
-            else
-            {
-                // reply comment con → scroll CHA và scroll reply trong replies
-                targetRoot = FindRootComment(comment.ParentCommentId.Value);
-                
-            }
-
-            if (targetRoot != null)
-            {
-                var index = Comments.IndexOf(targetRoot);
-                if (index >= 0)
-                    ScrollToIndex?.Invoke(index);
-            }
+            ScrollToFlatItem?.Invoke(item);
 
         }
 
