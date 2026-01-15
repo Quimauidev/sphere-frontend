@@ -31,11 +31,27 @@
                                 <fftransformations:CircleTransformation />
                             </ffimageloading:CachedImage.Transformations>
                         </ffimageloading:CachedImage>
-
                         <VerticalStackLayout Grid.Column="1" Spacing="4">
-                            <Label FontAttributes="Bold" Text="{Binding Comment.FullName}" />
+                            <Grid ColumnDefinitions="*,*" ColumnSpacing="4">
+                                <Label
+                                    FontAttributes="Bold"
+                                    LineBreakMode="TailTruncation"
+                                    MaxLines="1"
+                                    Text="{Binding Comment.FullName}" />
+                                <Label
+                                    Grid.Column="1"
+                                    FontAttributes="Bold"
+                                    FontSize="14"
+                                    IsVisible="{Binding Comment.ReplyToFullName}"
+                                    LineBreakMode="TailTruncation"
+                                    MaxLines="1"
+                                    Text="{Binding Comment.ReplyToFullName}"
+                                    TextColor="#1976D2" />
+                            </Grid>
+
 
                             <Label Text="{Binding Comment.Content}" />
+
 
                             <Grid ColumnDefinitions="*,Auto">
 
@@ -63,6 +79,7 @@
                                 </HorizontalStackLayout>
                             </Grid>
                         </VerticalStackLayout>
+
                     </Grid>
                 </DataTemplate>
             </CollectionView.ItemTemplate>
