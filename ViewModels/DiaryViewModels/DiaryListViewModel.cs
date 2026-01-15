@@ -22,6 +22,7 @@ namespace Sphere.ViewModels.DiaryViewModels
     {
         private readonly IDiaryService _diaryService;
         private readonly IServiceProvider _serviceProvider;
+        private readonly IShellNavigationService _nv;
 
         [ObservableProperty]
         public partial ObservableCollection<DiaryContentViewModel> Diaries { get; set; } = new ObservableCollection<DiaryContentViewModel>();
@@ -51,10 +52,11 @@ namespace Sphere.ViewModels.DiaryViewModels
         [ObservableProperty]
         private string footerKey = Guid.NewGuid().ToString();
 
-        public DiaryListViewModel(IDiaryService diaryService, IServiceProvider serviceProvider)
+        public DiaryListViewModel(IDiaryService diaryService, IServiceProvider serviceProvider, IShellNavigationService nv)
         {
             _diaryService = diaryService;
             _serviceProvider = serviceProvider;
+            _nv = nv;
 
             WeakReferenceMessenger.Default.Register<DiaryPostedMessage>(this, async (r, m) =>
             {
@@ -109,7 +111,7 @@ namespace Sphere.ViewModels.DiaryViewModels
                 Diaries.Clear();
                 foreach (var item in items)
                 {
-                    Diaries.Add(new DiaryContentViewModel( _diaryService, _serviceProvider, item));
+                    Diaries.Add(new DiaryContentViewModel( _diaryService, _serviceProvider, item, _nv));
                 }
 
                 _currentPage = 2;
@@ -148,7 +150,7 @@ namespace Sphere.ViewModels.DiaryViewModels
                         Diaries.Clear();
 
                     foreach (var item in items)
-                        Diaries.Add(new DiaryContentViewModel(_diaryService,_serviceProvider,item));
+                        Diaries.Add(new DiaryContentViewModel(_diaryService,_serviceProvider,item,_nv));
 
                     HasNoMoreData = items.Count < PageSize;
                     _currentPage++;

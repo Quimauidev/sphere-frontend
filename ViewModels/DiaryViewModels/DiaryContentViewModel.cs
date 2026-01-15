@@ -14,7 +14,10 @@ using Sphere.Services.IService;
 using Sphere.Services.Service;
 using Sphere.Views.Pages;
 using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Threading.Tasks;
+using Xamarin.Google.Crypto.Tink.Shaded.Protobuf;
 
 namespace Sphere.ViewModels.DiaryViewModels
 {
@@ -22,8 +25,9 @@ namespace Sphere.ViewModels.DiaryViewModels
     {
         private readonly IDiaryService _diaryService;
         private readonly IServiceProvider _serviceProvider;
-       
-        public DiaryContentViewModel(IDiaryService diaryService, IServiceProvider serviceProvider, DiaryModel model)
+        private readonly IShellNavigationService _nv;
+
+        public DiaryContentViewModel(IDiaryService diaryService, IServiceProvider serviceProvider, DiaryModel model, IShellNavigationService nv)
         {
             _diaryService = diaryService;
             _serviceProvider = serviceProvider;
@@ -31,6 +35,7 @@ namespace Sphere.ViewModels.DiaryViewModels
             IsOwnMess = Model.IsOwNer;
             LikeCount = Model.LikeCount;
             IsLiked = Model.IsLiked;
+            _nv = nv;
         }
 
         public DiaryModel Model { get; private set; }
@@ -38,7 +43,7 @@ namespace Sphere.ViewModels.DiaryViewModels
         public Privacy Privacy => Model.Privacy;
         public string? Content => Model.Content;
 
-        public List<DiaryImageDTO>? Images => Model.Images ?? [];
+        public List<DiaryImageDTO>? Images => Model.Images ?? new List<DiaryImageDTO>();
 
         public double ImageItemHeight => Model.ImageItemHeight;
         public double ImageItemWidth => Model.ImageItemWidth;
@@ -90,7 +95,7 @@ namespace Sphere.ViewModels.DiaryViewModels
             await PopupHelper.ShowLoadingAsync();
             try
             {
-                bool confirm = await Application.Current!.MainPage! .DisplayAlert("Xác nhận", "Bạn có chắc muốn xóa bài viết này?", "Xóa", "Hủy");
+                bool confirm = await Application.Current!.MainPage!.DisplayAlert("Xác nhận", "Bạn có chắc muốn xóa bài viết này?", "Xóa", "Hủy");
 
                 if (!confirm)
                     return;
@@ -167,12 +172,12 @@ namespace Sphere.ViewModels.DiaryViewModels
                 IsBusy = false;
             }
         }
-
-        //[RelayCommand]
-        //public async Task CommentAsync()
-        //{
-        //    // TODO: Hiển thị giao diện bình luận hoặc chuyển trang bình luận
-        //    await Application.Current!.MainPage!.DisplayAlert("Bình luận", "Chức năng bình luận sẽ được phát triển.", "OK");
-        //}
+        public int CommentCount => Model.CommentCount;
+        // chuyển trang comment
+        [RelayCommand]
+        public async Task CommentAsync()
+        {
+            await _nv.PushModalAsync<DiaryCommentPage, Guid>(Model.Id);
+        }
     }
 }

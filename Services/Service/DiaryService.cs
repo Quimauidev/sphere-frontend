@@ -14,6 +14,18 @@ namespace Sphere.Services.Service
 {
     internal class DiaryService(IApiService apiService) : IDiaryService
     {
+        public Task<ApiResponse<DiaryCommentUIModel>> CreateCommentAsync( Guid diaryId, string content, Guid? replyToCommentId = null)
+        {
+            var request = new PostDiaryCommentModel
+            {
+                Content = content,
+                ParentCommentId = replyToCommentId
+            };
+
+            return apiService.PostAsync< PostDiaryCommentModel, DiaryCommentUIModel >($"api/diary/{diaryId}/comments", request);
+        }
+
+
         public async Task<ApiResponse<DiaryModel>> CreateDiaryAsync(PostDiaryModel postStatusModel)
         {
             // Prepare multipart form data
@@ -45,6 +57,11 @@ namespace Sphere.Services.Service
             return await apiService.DeleteAsync<bool>($"api/diary/{id}");
         }
 
+        public async Task<ApiResponse<IEnumerable<DiaryCommentUIModel>>> GetCommentAsync(Guid id, int page, int pageSize)
+        {
+            return await apiService.GetAsync<IEnumerable<DiaryCommentUIModel>>($"api/diary/{id}/comments?page={page}&pageSize={pageSize}");
+        }
+
         public async Task<ApiResponse<IEnumerable<UserWithDiaryModel>>> GetHomeDiariesAsync(string type, int page, int pageSize)
         {
             return await apiService.GetAsync<IEnumerable<UserWithDiaryModel>>($"api/diary/home?type={type}&page={page}&pageSize={pageSize}");
@@ -53,6 +70,11 @@ namespace Sphere.Services.Service
         public async Task<ApiResponse<IEnumerable<DiaryModel>>> GetListDiaryAsync(int page, int pageSize)
         {
             return await apiService.GetAsync<IEnumerable<DiaryModel>>($"api/diary?page={page}&pageSize={pageSize}");
+        }
+
+        public async Task<ApiResponse<IEnumerable<DiaryCommentUIModel>>> GetRepliesAsync(Guid id, int page, int pageSize)
+        {
+            return await apiService.GetAsync<IEnumerable<DiaryCommentUIModel>>($"api/diary/comments/{id}/replies?page={page}&pageSize={pageSize}");
         }
 
         public async Task<ApiResponse<DiaryModel>> PatchFormDiaryByIdAsync(Guid id, string? content, Privacy privacy, IEnumerable<Guid> removeImageIds, IEnumerable<string> newImagePaths)

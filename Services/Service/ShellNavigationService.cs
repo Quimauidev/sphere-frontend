@@ -1,4 +1,5 @@
-﻿using Sphere.Services.IService;
+﻿using Sphere.Interfaces;
+using Sphere.Services.IService;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -95,6 +96,20 @@ namespace Sphere.Services.Service
                 else
                     await Shell.Current.GoToAsync(route, parameters);
             });
+        }
+
+        public async Task PushModalAsync<TPage, TParam>(TParam param) where TPage : Page
+        {
+            var page = _serviceProvider.GetRequiredService<TPage>();
+
+            // 👉 Gán param vào ViewModel
+            if (page.BindingContext is IModalParameterReceiver<TParam> receiver)
+            {
+                receiver.Receive(param);
+            }
+
+            await MainThread.InvokeOnMainThreadAsync(() =>
+                Navigation.PushModalAsync(page));
         }
     }
 }

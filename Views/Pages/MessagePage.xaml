@@ -260,7 +260,6 @@
                     <FontImageSource
                         FontFamily="MaterialIcons"
                         Glyph="&#xF1C4D;"
-                        Size="25"
                         Color="#512BD4" />
                 </ImageButton.Source>
             </ImageButton>

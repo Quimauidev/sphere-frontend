@@ -15,6 +15,8 @@ namespace Sphere.Services.IService
         Task PopAsync();
 
         // ===== Modal =====
+        Task PushModalAsync<TPage, TParam>(TParam param) where TPage : Page;
+
         Task PushModalAsync<TPage>() where TPage : Page;
         Task PushModalAsync(Page page);
 

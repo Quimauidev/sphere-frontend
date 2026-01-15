@@ -1,0 +1,204 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage
+    x:Class="Sphere.Views.Pages.DiaryCommentPage"
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:ffimageloading="clr-namespace:FFImageLoading.Maui;assembly=FFImageLoading.Maui"
+    xmlns:fftransformations="clr-namespace:FFImageLoading.Transformations;assembly=FFImageLoading.Maui"
+    Title="DiaryCommentPage">
+
+    <Grid RowDefinitions="*,Auto">
+
+        <!--  ================= LIST COMMENTS =================  -->
+        <CollectionView x:Name="CommentsCollection" ItemsSource="{Binding Comments}">
+
+            <CollectionView.ItemTemplate>
+                <DataTemplate>
+                    <Grid
+                        Padding="10"
+                        ColumnDefinitions="40,*"
+                        ColumnSpacing="10"
+                        RowSpacing="2">
+                        <ffimageloading:CachedImage
+                            Aspect="AspectFill"
+                            DownsampleToViewSize="true"
+                            HeightRequest="40"
+                            Source="{Binding AvatarUrl, Converter={StaticResource AvatarGenderConverter}}"
+                            TransformPlaceholders="true"
+                            VerticalOptions="Start"
+                            WidthRequest="40">
+                            <ffimageloading:CachedImage.Transformations>
+                                <fftransformations:CircleTransformation />
+                            </ffimageloading:CachedImage.Transformations>
+                        </ffimageloading:CachedImage>
+                        <VerticalStackLayout Grid.Column="1" Spacing="4">
+
+                            <!--  Header  -->
+                            <HorizontalStackLayout>
+                                <Label
+                                    FontAttributes="Bold"
+                                    FontSize="14"
+                                    Text="{Binding FullName}" />
+
+                                <Label
+                                    FontSize="12"
+                                    IsVisible="{Binding ReplyToFullName, Converter={StaticResource StringIsNotNullOrEmptyToBoolConverter}}"
+                                    Text="{Binding ReplyToFullName, StringFormat='@{0}'}"
+                                    TextColor="Gray" />
+                            </HorizontalStackLayout>
+
+                            <!--  Content  -->
+                            <Label FontSize="14" Text="{Binding Content}" />
+
+                            <!--  Actions  -->
+
+                            <Grid ColumnDefinitions="*,Auto">
+
+                                <Label
+                                    FontSize="12"
+                                    Text="Trả lời"
+                                    TextColor="Gray">
+                                    <Label.GestureRecognizers>
+                                        <TapGestureRecognizer Command="{Binding BindingContext.ReplyCommand, Source={RelativeSource AncestorType={x:Type ContentPage}}}" CommandParameter="{Binding .}" />
+                                    </Label.GestureRecognizers>
+                                </Label>
+
+                                <HorizontalStackLayout
+                                    Grid.Column="1"
+                                    Padding="0,0,10,0"
+                                    Spacing="10">
+                                    <Label
+                                        FontSize="12"
+                                        Text="Thích"
+                                        TextColor="Gray" />
+                                    <Label
+                                        FontSize="12"
+                                        Text="12"
+                                        TextColor="Grey" />
+                                </HorizontalStackLayout>
+                            </Grid>
+
+                            <!--  Tree replies  -->
+                            <CollectionView
+                                Margin="0,8,0,0"
+                                IsVisible="{Binding Replies.Count, Converter={StaticResource NullToBoolConverter}}"
+                                ItemsSource="{Binding Replies}">
+                                <CollectionView.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid Padding="0,0,0,8" ColumnDefinitions="32,*">
+                                            <ffimageloading:CachedImage
+                                                Aspect="AspectFill"
+                                                DownsampleToViewSize="true"
+                                                HeightRequest="32"
+                                                Source="{Binding AvatarUrl, Converter={StaticResource AvatarGenderConverter}}"
+                                                TransformPlaceholders="true"
+                                                VerticalOptions="Start"
+                                                WidthRequest="32">
+                                                <ffimageloading:CachedImage.Transformations>
+                                                    <fftransformations:CircleTransformation />
+                                                </ffimageloading:CachedImage.Transformations>
+                                            </ffimageloading:CachedImage>
+                                            <VerticalStackLayout Grid.Column="1" Spacing="2">
+                                                <HorizontalStackLayout>
+                                                    <Label
+                                                        FontAttributes="Bold"
+                                                        FontSize="13"
+                                                        Text="{Binding FullName}"
+                                                        TextColor="#1976D2" />
+                                                </HorizontalStackLayout>
+                                                <Label
+                                                    FontSize="13"
+                                                    Text="{Binding Content}"
+                                                    TextColor="Black" />
+                                                <Grid ColumnDefinitions="*,Auto">
+
+                                                    <Label
+                                                        FontSize="12"
+                                                        Text="Trả lời"
+                                                        TextColor="Gray">
+                                                        <Label.GestureRecognizers>
+                                                            <TapGestureRecognizer Command="{Binding BindingContext.ReplyCommand, Source={RelativeSource AncestorType={x:Type ContentPage}}}" CommandParameter="{Binding .}" />
+                                                        </Label.GestureRecognizers>
+                                                    </Label>
+
+                                                    <HorizontalStackLayout
+                                                        Grid.Column="1"
+                                                        Padding="0,0,10,0"
+                                                        Spacing="10">
+                                                        <Label
+                                                            FontSize="12"
+                                                            Text="Thích"
+                                                            TextColor="Gray" />
+                                                        <Label
+                                                            FontSize="12"
+                                                            Text="12"
+                                                            TextColor="Grey" />
+                                                    </HorizontalStackLayout>
+                                                </Grid>
+                                            </VerticalStackLayout>
+                                        </Grid>
+                                    </DataTemplate>
+                                </CollectionView.ItemTemplate>
+                            </CollectionView>
+                        </VerticalStackLayout>
+                    </Grid>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+
+        <!--  ================= INPUT =================  -->
+        <Grid
+            Padding="10"
+            ColumnDefinitions="*,Auto"
+            Row="1">
+
+            <StackLayout>
+                <StackLayout
+                    IsVisible="{Binding IsReplying}"
+                    Orientation="Horizontal"
+                    Spacing="10">
+                    <Label
+                        FontSize="13"
+                        Text="Trả lời:"
+                        TextColor="Gray" />
+                    <Label
+                        FontAttributes="Bold"
+                        FontSize="13"
+                        Text="{Binding ReplyToComment.FullName}"
+                        TextColor="#1976D2" />
+                    <Label
+                        FontSize="13"
+                        Text="Hủy"
+                        TextColor="Grey">
+
+                        <Label.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding CancelReplyCommand}" />
+                        </Label.GestureRecognizers>
+                    </Label>
+                </StackLayout>
+                <Editor
+                    x:Name="CommentEntry"
+                    AutoSize="TextChanges"
+                    MaxLength="1000"
+                    MaximumHeightRequest="120"
+                    Placeholder="Viết bình luận..."
+                    Text="{Binding NewCommentContent, Mode=TwoWay}" />
+            </StackLayout>
+
+            <ImageButton
+                Grid.Column="1"
+                Command="{Binding SendCommentCommand}"
+                HeightRequest="25"
+                IsVisible="{Binding NewCommentContent, Converter={StaticResource StringIsNotNullOrEmptyToBoolConverter}}"
+                WidthRequest="25">
+                <ImageButton.Source>
+                    <FontImageSource
+                        FontFamily="MaterialIcons"
+                        Glyph="&#xF1C4D;"
+                        Color="#512BD4" />
+                </ImageButton.Source>
+            </ImageButton>
+        </Grid>
+
+    </Grid>
+</ContentPage>

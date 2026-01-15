@@ -32,24 +32,27 @@ namespace Sphere.ViewModels
         private readonly IServiceProvider _serviceProvider;
         private readonly IUserProfileService _userProfileService;
         private readonly IUserSessionService _userSession;
+        private readonly IShellNavigationService _nv;
 
         [ObservableProperty]
         public partial bool ShouldShowBioToggle { get; set; }
         public DiaryListViewModel DiaryListVM { get; }
-        public ProfileViewModel(IUserSessionService userSession, IImagePickerService imagePickerService, IUserProfileService userProfileService, IServiceProvider serviceProvider, IDiaryService diaryService)
+        public ProfileViewModel(IUserSessionService userSession, IImagePickerService imagePickerService, IUserProfileService userProfileService, IServiceProvider serviceProvider, IDiaryService diaryService, IShellNavigationService nv)
         {
             _userSession = userSession;
             _imagePickerService = imagePickerService;
             _userProfileService = userProfileService;
             _serviceProvider = serviceProvider;
+            _nv = nv;
             var restoredUser = PreferencesHelper.LoadCurrentUser();
             if (restoredUser != null)
             {
                 _userSession.CurrentUser = restoredUser;
             }
             CurrentUser = _userSession.CurrentUser;
-            DiaryListVM = new DiaryListViewModel(diaryService,serviceProvider);
+            DiaryListVM = new DiaryListViewModel(diaryService, serviceProvider, _nv);
             _ = DiaryListVM.LoadFirstPage();
+            
         }
 
         public string? AvatarDisplay => string.IsNullOrWhiteSpace(CurrentUser?.UserProfileDTO?.AvatarUrl) ? (CurrentUser?.UserDTO?.Gender == Gender.Female ? "woman.png" : "man.png") : CurrentUser.UserProfileDTO.AvatarUrl;

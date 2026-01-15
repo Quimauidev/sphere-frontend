@@ -17,5 +17,10 @@ namespace Sphere.Services.IService
         Task<ApiResponse<bool>> DeleteDiaryAsync(Guid id);
         Task<ApiResponse<IEnumerable<UserWithDiaryModel>>> GetHomeDiariesAsync(string type, int page, int pageSize);
         Task<ApiResponse<DiaryLikeStatusDTO>> SetLikeAsync(Guid diaryId);
+        Task<ApiResponse<IEnumerable<DiaryCommentUIModel>>> GetCommentAsync(Guid id, int page,int pageSize);
+        Task<ApiResponse<IEnumerable<DiaryCommentUIModel>>> GetRepliesAsync(Guid id, int page, int pageSize);
+
+        // Create a comment (optionally as a reply to another comment)
+        Task<ApiResponse<DiaryCommentUIModel>> CreateCommentAsync(Guid diaryId, string content, Guid? replyToCommentId = null);
     }
 }
