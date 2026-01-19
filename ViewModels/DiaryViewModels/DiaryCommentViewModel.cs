@@ -153,7 +153,8 @@ namespace Sphere.ViewModels.DiaryViewModels
 
             if (IsBusy) return;
             IsBusy = true;
-
+            // ⭐ Ẩn bàn phím NGAY
+            KeyboardService.HideKeyboard();
             try
             {
                 var replyId = ReplyToComment?.Id;
@@ -180,7 +181,6 @@ namespace Sphere.ViewModels.DiaryViewModels
                         root.Replies.Insert(0, res.Data!);
 
                     }
-
                     BuildFlatComments();
                     var flatItem = FlatComments.FirstOrDefault(x => x.Id == res.Data!.Id);
                     if (flatItem != null)
@@ -194,7 +194,7 @@ namespace Sphere.ViewModels.DiaryViewModels
                 {
                     await ApiResponseHelper.ShowApiErrorsAsync(res, "Gửi bình luận thất bại");
                 }
-                KeyboardService.HideKeyboard();
+                
             }
             finally
             {

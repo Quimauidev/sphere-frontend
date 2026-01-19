@@ -32,7 +32,6 @@
             <local:LevelToMarginConverter x:Key="LevelToMarginConverter" />
             <local:ExpandReplyTextConverter x:Key="ExpandReplyTextConverter" />
 
-
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="Resources/Styles/Colors.xaml" />
                 <ResourceDictionary Source="Resources/Styles/Styles.xaml" />

@@ -35,6 +35,4 @@ public partial class DiaryCommentPage : ContentPage
         };
 
     }
-
-
 }
