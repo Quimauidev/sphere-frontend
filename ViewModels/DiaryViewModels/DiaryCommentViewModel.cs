@@ -22,7 +22,7 @@ namespace Sphere.ViewModels.DiaryViewModels
         private readonly IDiaryService _diaryService;
         private Guid _diaryId;
 
-        public ObservableCollection<DiaryCommentUIModel> Comments { get; } = [];
+        public ObservableCollection<DiaryCommentUIModel> Comments { get; } = [];    
         public ObservableCollection<DiaryCommentFlatItem> FlatComments { get; } = [];
 
         public DiaryCommentViewModel(IDiaryService diaryService)
@@ -160,10 +160,9 @@ namespace Sphere.ViewModels.DiaryViewModels
                     else
                     {
                         
-                        // 1️⃣ xác định comment gốc
-                        var rootId = ReplyToComment!.ParentCommentId ?? ReplyToComment.Id;
+                       
+                        var root = Comments.FirstOrDefault(c => c.Id == ParentCommentId);
 
-                        var root = Comments.FirstOrDefault(c => c.Id == rootId);
                         if (root == null)
                             throw new InvalidOperationException("Root comment not found");
 
@@ -181,7 +180,7 @@ namespace Sphere.ViewModels.DiaryViewModels
                     {
                         ScrollToFlatItem?.Invoke(flatItem);
                     }
-                    NewCommentContent = string.Empty;
+                    NewCommentContent = null;
                     ReplyToComment = null;
                 }
                 else
@@ -200,6 +199,7 @@ namespace Sphere.ViewModels.DiaryViewModels
         public void Reply(DiaryCommentFlatItem item)
         {
             ReplyToComment = item.Comment;
+            ParentCommentId = item.RootCommentId;
             NewCommentContent = string.Empty;
             RequestFocusCommentEditor?.Invoke();
             ScrollToFlatItem?.Invoke(item);
@@ -254,6 +254,87 @@ namespace Sphere.ViewModels.DiaryViewModels
         {
             _diaryId = parameter;
             _ = LoadCommentsAsync();
+        }
+
+        [RelayCommand]
+        public async Task ToggleRepliesAsync(DiaryCommentFlatItem item)
+        {
+            var parent = item.Comment;
+
+            // 1️⃣ Nếu đang mở → đóng
+            if (parent.IsRepliesExpanded)
+            {
+                parent.IsRepliesExpanded = false;
+
+                var itemsToRemove = FlatComments
+                .Where(x => x.Level == 1 && x.RootCommentId == parent.Id)
+                .ToList();
+
+                foreach (var i in itemsToRemove)
+                    FlatComments.Remove(i);
+
+
+                return;
+            }
+
+            if (parent.Replies != null && parent.Replies.Any())
+            {
+                if (!FlatComments.Any(x => x.Level == 1 && x.RootCommentId == parent.Id))
+                {
+                    InsertReplies(parent);
+                }
+
+                parent.IsRepliesExpanded = true;
+                return;
+            }
+
+
+            // 3️⃣ Load từ API
+            parent.IsLoadingReplies = true;
+
+            var res = await _diaryService.GetRepliesAsync(parent.Id, 1, 10);
+            parent.IsLoadingReplies = false;
+
+            if (!res.IsSuccess)
+                return;
+
+            parent.Replies = new ObservableCollection<DiaryCommentUIModel>(res.Data!);
+
+            parent.IsRepliesExpanded = true;
+
+            InsertReplies(parent);
+        }
+        private void InsertReplies(DiaryCommentUIModel parent)
+        {
+            var cache = FlatComments.ToDictionary(x => x.Id);
+
+            var parentIndex = FlatComments
+                .Select((x, i) => new { x, i })
+                .First(x => x.x.Id == parent.Id)
+                .i;
+
+            var insertIndex = parentIndex + 1;
+
+            foreach (var reply in parent.Replies)
+            {
+                if (cache.TryGetValue(reply.Id, out var existing))
+                {
+                    FlatComments.Insert(insertIndex++, existing);
+                }
+                else
+                {
+                    FlatComments.Insert(insertIndex++,
+                        new DiaryCommentFlatItem
+                        {
+                            Id = reply.Id,
+                            Comment = reply,
+                            Level = 1,
+                            RootCommentId = parent.Id,
+                            IsLiked = reply.IsLiked,
+                            LikeCount = reply.LikeCount
+                        });
+                }
+            }
         }
     }
 }

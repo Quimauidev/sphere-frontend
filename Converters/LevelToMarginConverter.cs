@@ -11,8 +11,8 @@ namespace Sphere.Converters
         {
             var level = (int)value!;
             return level == 0
-                ? new Thickness(0, 0, 0, 8)
-                : new Thickness(32, 0, 0, 8);
+                ? new Thickness(0)
+                : new Thickness(50, 0, 0, 0);
         }
 
         public object ConvertBack(object? value, Type targetType, object? parameter, System.Globalization.CultureInfo culture)

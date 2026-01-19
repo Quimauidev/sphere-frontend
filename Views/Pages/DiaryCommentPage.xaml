@@ -84,6 +84,16 @@
                                         TextColor="Grey" />
                                 </HorizontalStackLayout>
                             </Grid>
+                            <Label
+                                FontSize="12"
+                                IsVisible="{Binding Comment.HasReplies}"
+                                Text="{Binding Comment.IsRepliesExpanded, Converter={StaticResource ExpandReplyTextConverter}}"
+                                TextColor="#1976D2">
+                                <Label.GestureRecognizers>
+                                    <TapGestureRecognizer Command="{Binding BindingContext.ToggleRepliesCommand, Source={RelativeSource AncestorType={x:Type ContentPage}}}" CommandParameter="{Binding .}" />
+                                </Label.GestureRecognizers>
+                            </Label>
+
                         </VerticalStackLayout>
 
                     </Grid>
