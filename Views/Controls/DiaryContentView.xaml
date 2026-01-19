@@ -60,6 +60,7 @@
                     </ImageButton.Source>
                 </ImageButton>
                 <Label
+                    FontSize="12"
                     IsVisible="{Binding IsPersonalContext}"
                     Text="{Binding ViewCount}"
                     VerticalOptions="Center" />
@@ -81,7 +82,10 @@
                 </Label>
 
                 <!--  COUNT  -->
-                <Label Text="{Binding LikeCount}" VerticalOptions="Center" />
+                <Label
+                    FontSize="12"
+                    Text="{Binding LikeCount}"
+                    VerticalOptions="Center" />
             </StackLayout>
 
             <StackLayout
@@ -99,7 +103,10 @@
                             Color="Gray" />
                     </ImageButton.Source>
                 </ImageButton>
-                <Label Text="{Binding CommentCount}" VerticalOptions="Center" />
+                <Label
+                    FontSize="12"
+                    Text="{Binding CommentCount}"
+                    VerticalOptions="Center" />
             </StackLayout>
 
             <Label
