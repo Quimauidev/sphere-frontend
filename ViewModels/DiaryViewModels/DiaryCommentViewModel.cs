@@ -57,13 +57,20 @@ namespace Sphere.ViewModels.DiaryViewModels
         [ObservableProperty]
         private int likeCount;
 
+        [ObservableProperty]
+        private string? errorMessage;
+
         [RelayCommand]
         public async Task LoadCommentsAsync()
         {
             if (_isLoaded) return;
             _isLoaded = true;
             var res = await _diaryService.GetCommentAsync(_diaryId, 1, 20);
-            if (!res.IsSuccess) return;
+            if (!res.IsSuccess)
+                {
+                ErrorMessage = res.Errors?.FirstOrDefault()?.Description ?? res.Message ?? "Có lỗi xảy ra";
+                return;
+            }
 
             Comments.Clear();
             foreach (var c in res.Data!)
@@ -250,10 +257,13 @@ namespace Sphere.ViewModels.DiaryViewModels
             }
         }
 
-        public void Receive(Guid parameter)
+        public async void Receive(Guid parameter)
         {
             _diaryId = parameter;
-            _ = LoadCommentsAsync();
+            IsBusy = true;
+            await LoadCommentsAsync();
+            IsBusy = false;
+
         }
 
         [RelayCommand]

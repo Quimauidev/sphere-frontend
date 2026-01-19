@@ -99,6 +99,29 @@
                     </Grid>
                 </DataTemplate>
             </CollectionView.ItemTemplate>
+            <CollectionView.EmptyView>
+                <StackLayout
+                    Margin="20"
+                    HorizontalOptions="Center"
+                    Spacing="10"
+                    VerticalOptions="Center">
+                    <Label IsVisible="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}}" Text="{Binding ErrorMessage}" />
+                    <Grid>
+                        <ActivityIndicator
+                            HeightRequest="40"
+                            HorizontalOptions="Center"
+                            IsRunning="{Binding IsBusy}"
+                            IsVisible="{Binding IsBusy}"
+                            WidthRequest="40" />
+                        <Button
+                            Command="{Binding RetryCommand}"
+                            HeightRequest="40"
+                            IsVisible="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}}"
+                            Text="Thử lại"
+                            WidthRequest="80" />
+                    </Grid>
+                </StackLayout>
+            </CollectionView.EmptyView>
         </CollectionView>
 
 
@@ -106,6 +129,7 @@
         <Grid
             Padding="10"
             ColumnDefinitions="*,Auto"
+            IsVisible="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}}"
             Row="1">
 
             <StackLayout>
@@ -155,6 +179,5 @@
                 </ImageButton.Source>
             </ImageButton>
         </Grid>
-
     </Grid>
 </ContentPage>

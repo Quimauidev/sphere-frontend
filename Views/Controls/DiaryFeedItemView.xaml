@@ -9,7 +9,7 @@
 
     <VerticalStackLayout Padding="10,0,10,0">
 
-        <Frame Padding="10" BorderColor="#ddd">
+        <Frame Padding="10" BorderColor="LightGray">
             <VerticalStackLayout>
                 <Grid ColumnDefinitions="Auto,*,Auto">
                     <!--  Avatar  -->

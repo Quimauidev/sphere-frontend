@@ -7,10 +7,7 @@
     xmlns:local="clr-namespace:Sphere.Views.Controls">
 
     <VerticalStackLayout Padding="10,0,10,0">
-        <Frame
-            Padding="10"
-            BorderColor="LightGray"
-            HasShadow="True">
+        <Frame Padding="10" BorderColor="LightGray">
             <local:DiaryContentView BindingContext="{Binding .}" />
         </Frame>
     </VerticalStackLayout>
