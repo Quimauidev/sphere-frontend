@@ -116,6 +116,11 @@ namespace Sphere.Services.Service
             return await apiService.PatchFormAsync<DiaryModel>($"api/diary/{id}", formData);
         }
 
+        public async Task<ApiResponse<CommentLikeStatusDTO>> SetCommentLikeAsync(Guid commentId)
+        {
+            return await apiService.PostAsync<object, CommentLikeStatusDTO>($"api/diary/comment/{commentId}/like", null!);
+        }
+
         public async Task<ApiResponse<DiaryLikeStatusDTO>> SetLikeAsync(Guid diaryId)
         {
             return await apiService.PostAsync<object, DiaryLikeStatusDTO>( $"api/diary/{diaryId}/like",null!);

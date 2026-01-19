@@ -32,7 +32,7 @@
                             </ffimageloading:CachedImage.Transformations>
                         </ffimageloading:CachedImage>
                         <VerticalStackLayout Grid.Column="1" Spacing="4">
-                            <Grid ColumnDefinitions="*,*" ColumnSpacing="4">
+                            <Grid ColumnDefinitions="Auto,Auto" ColumnSpacing="4">
                                 <Label
                                     FontAttributes="Bold"
                                     LineBreakMode="TailTruncation"
@@ -67,14 +67,20 @@
                                 <HorizontalStackLayout
                                     Grid.Column="1"
                                     Padding="0,0,10,0"
-                                    Spacing="10">
+                                    Spacing="8">
+                                    <Label
+                                        FontFamily="MaterialIcons"
+                                        FontSize="16"
+                                        Text="&#xF0971;"
+                                        TextColor="{Binding IsLiked, Converter={StaticResource BoolToLikeColorConverter}}">
+                                        <Label.GestureRecognizers>
+                                            <TapGestureRecognizer Command="{Binding BindingContext.CommentLikeCommand, Source={RelativeSource AncestorType={x:Type ContentPage}}}" CommandParameter="{Binding .}" />
+
+                                        </Label.GestureRecognizers>
+                                    </Label>
                                     <Label
                                         FontSize="12"
-                                        Text="Thích"
-                                        TextColor="Gray" />
-                                    <Label
-                                        FontSize="12"
-                                        Text="12"
+                                        Text="{Binding LikeCount}"
                                         TextColor="Grey" />
                                 </HorizontalStackLayout>
                             </Grid>

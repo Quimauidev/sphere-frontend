@@ -85,4 +85,9 @@ namespace Sphere.Models
         public bool IsLiked { get; set; }
         public int LikeCount { get; set; }
     }
+    public class CommentLikeStatusDTO
+    {
+        public bool IsLiked { get; set; }
+        public int LikeCount { get; set; }
+    }
 }

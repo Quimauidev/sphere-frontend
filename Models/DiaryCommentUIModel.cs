@@ -40,7 +40,7 @@ namespace Sphere.Models
         public DateTime CommentedAt { get; set; }
         public int LikeCount { get; set; }
         public bool IsLiked { get; set; }
-
+        public bool LikeCommand { get; set; } 
         public int ReplyCount { get; set; }
         public bool IsOwner { get; set; }
         //// UI

@@ -28,11 +28,9 @@ namespace Sphere.ViewModels.DiaryViewModels
         public DiaryCommentViewModel(IDiaryService diaryService)
         {
             _diaryService = diaryService;
+            
         }
         private bool _isLoaded;
-
-        [ObservableProperty]
-        private bool isLiked;
 
         [ObservableProperty]
         private bool isBusy;
@@ -56,6 +54,9 @@ namespace Sphere.ViewModels.DiaryViewModels
 
         public Action<Guid, Guid>? ScrollToReplyInReplies { get; set; }
 
+        [ObservableProperty]
+        private int likeCount;
+
         [RelayCommand]
         public async Task LoadCommentsAsync()
         {
@@ -69,31 +70,72 @@ namespace Sphere.ViewModels.DiaryViewModels
                 Comments.Add(c);
             BuildFlatComments();
         }
+        //private void BuildFlatComments()
+        //{
+        //    FlatComments.Clear();
+
+        //    foreach (var parent in Comments)
+        //    {
+        //        FlatComments.Add(new DiaryCommentFlatItem
+        //        {
+        //            Id = parent.Id,
+        //            Comment = parent,
+        //            Level = 0,
+        //            RootCommentId = parent.Id,
+        //            IsLiked = parent.IsLiked,
+        //            LikeCount = parent.LikeCount
+        //        });
+
+        //        foreach (var reply in parent.Replies)
+        //        {
+        //            FlatComments.Add(new DiaryCommentFlatItem
+        //            {
+        //                Id = reply.Id,
+        //                Comment = reply,
+        //                Level = 1,
+        //                RootCommentId = parent.Id,
+        //                 IsLiked = reply.IsLiked,
+        //                LikeCount = reply.LikeCount
+        //            });
+        //        }
+        //    }
+        //}
         private void BuildFlatComments()
         {
+            var cache = FlatComments.ToDictionary(x => x.Id);
+
             FlatComments.Clear();
 
             foreach (var parent in Comments)
             {
-                FlatComments.Add(new DiaryCommentFlatItem
-                {
-                    Id = parent.Id,
-                    Comment = parent,
-                    Level = 0,
-                    RootCommentId = parent.Id
-                });
+                FlatComments.Add(CreateOrReuse(parent, 0, parent.Id, cache));
+
+                if (parent.Replies == null)
+                    continue;
 
                 foreach (var reply in parent.Replies)
-                {
-                    FlatComments.Add(new DiaryCommentFlatItem
-                    {
-                        Id = reply.Id,
-                        Comment = reply,
-                        Level = 1,
-                        RootCommentId = parent.Id
-                    });
-                }
+                    FlatComments.Add(CreateOrReuse(reply, 1, parent.Id, cache));
             }
+        }
+
+        private DiaryCommentFlatItem CreateOrReuse(
+            DiaryCommentUIModel comment,
+            int level,
+            Guid rootId,
+            Dictionary<Guid, DiaryCommentFlatItem> cache)
+        {
+            if (cache.TryGetValue(comment.Id, out var item))
+                return item;
+
+            return new DiaryCommentFlatItem
+            {
+                Id = comment.Id,
+                Comment = comment,
+                Level = level,
+                RootCommentId = rootId,
+                IsLiked = comment.IsLiked,
+                LikeCount = comment.LikeCount
+            };
         }
 
         [RelayCommand]
@@ -169,6 +211,43 @@ namespace Sphere.ViewModels.DiaryViewModels
         {
             ReplyToComment = null;
             NewCommentContent = string.Empty;
+        }
+        // like commnet và reply
+        [RelayCommand]
+        public async Task CommentLikeAsync(DiaryCommentFlatItem item)
+        {
+            if (item.IsBusy)
+                return;
+
+            item.IsBusy = true;
+
+            // 🔥 UI đổi NGAY
+            item.IsLiked = !item.IsLiked;
+            item.LikeCount += item.IsLiked ? 1 : -1;
+
+            try
+            {
+                var res = await _diaryService.SetCommentLikeAsync(item.Comment.Id);
+
+                if (!res.IsSuccess)
+                    await ApiResponseHelper.ShowApiErrorsAsync(res, "Thao tác thích thất bại");
+
+                // ✅ Sync nhẹ (chỉ khi lệch)
+                if (item.IsLiked != res.Data!.IsLiked)
+                    item.IsLiked = res.Data.IsLiked;
+
+                item.LikeCount = res.Data.LikeCount;
+            }
+            catch
+            {
+                // ❌ rollback nếu fail
+                item.IsLiked = !item.IsLiked;
+                item.LikeCount += item.IsLiked ? 1 : -1;
+            }
+            finally
+            {
+                item.IsBusy = false;
+            }
         }
 
         public void Receive(Guid parameter)

@@ -1,6 +1,8 @@
+using CommunityToolkit.Mvvm.ComponentModel;
+
 namespace Sphere.Models
 {
-    public class DiaryCommentFlatItem
+    public partial class DiaryCommentFlatItem : ObservableObject
     {
         public Guid Id { get; set; }
         public DiaryCommentUIModel Comment { get; set; } = null!;
@@ -8,5 +10,13 @@ namespace Sphere.Models
         public bool IsParent => Level == 0;
         public bool IsReply => Level == 1;
         public Guid RootCommentId { get; set; }
+        [ObservableProperty]
+        private bool isLiked;
+
+        [ObservableProperty]
+        private int likeCount;
+
+        [ObservableProperty]
+        private bool isBusy;
     }
 }
