@@ -15,7 +15,6 @@
             <local:ShowNoDataMessageConverter x:Key="ShowNoDataMessageConverter" />
             <local:ShowEndOfListConverter x:Key="ShowEndOfListConverter" />
             <local:StateToBoolConverter x:Key="StateToBoolConverter" />
-            <local:AvatarGenderConverter x:Key="AvatarGenderConverter" />
             <local:CoinsFormatterConverter x:Key="CoinsFormatterConverter" />
             <local:BoolToColorConverter x:Key="BoolToColorConverter" />
             <local:BoolToLayoutOptionsConverter x:Key="BoolToLayoutOptionsConverter" />

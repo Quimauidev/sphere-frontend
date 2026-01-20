@@ -19,7 +19,7 @@
                         DownsampleToViewSize="true"
                         HeightRequest="50"
                         HorizontalOptions="Center"
-                        Source="{Binding Model.UserDiaryDTO, Converter={StaticResource AvatarGenderConverter}}"
+                        Source="{Binding Model.UserDiaryDTO.AvatarDisplay}"
                         TransformPlaceholders="true"
                         VerticalOptions="Center"
                         WidthRequest="50">

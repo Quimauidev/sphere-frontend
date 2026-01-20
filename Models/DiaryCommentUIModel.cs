@@ -36,19 +36,20 @@ namespace Sphere.Models
         private bool isRepliesExpanded;
         [ObservableProperty]
         private bool isLoadingReplies;
-        public string AvatarDisplay
-        {
-            get
-            {
-                if (!string.IsNullOrWhiteSpace(AvatarUrl))
-                    return AvatarUrl;
+        //public string AvatarDisplay
+        //{
+        //    get
+        //    {
+        //        if (!string.IsNullOrWhiteSpace(AvatarUrl))
+        //            return AvatarUrl;
 
-                return Gender == Gender.Male
-                    ? "man.png"
-                    : "women.png";
-            }
-        }
-        
+        //        return Gender == Gender.Male
+        //            ? "man.png"
+        //            : "woman.png";
+        //    }
+        //}
+        public string AvatarDisplay => !string.IsNullOrWhiteSpace(AvatarUrl) ? AvatarUrl : Gender == Gender.Male ? "man.png" : "woman.png";
+
     }
 
     public class PostDiaryCommentModel

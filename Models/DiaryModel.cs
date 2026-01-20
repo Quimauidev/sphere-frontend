@@ -79,6 +79,8 @@ namespace Sphere.Models
         public bool IsOnline { get; set; }
         public bool IsFollow { get; set; }
         public Gender Gender { get; set; }
+        public string AvatarDisplay => !string.IsNullOrWhiteSpace(AvatarUrl) ? AvatarUrl : Gender == Gender.Male ? "man.png" : "woman.png";
+
     }
     public class DiaryLikeStatusDTO
     {
