@@ -42,7 +42,6 @@
                                     Grid.Column="1"
                                     FontAttributes="Bold"
                                     FontSize="14"
-                                    IsVisible="{Binding Comment.HasReplies}"
                                     LineBreakMode="TailTruncation"
                                     MaxLines="1"
                                     Text="{Binding Comment.ReplyToFullName}"
