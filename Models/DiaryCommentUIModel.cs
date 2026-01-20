@@ -30,6 +30,8 @@ namespace Sphere.Models
         //// UI
         public ObservableCollection<DiaryCommentUIModel> Replies { get; set; } = [];
         public bool HasReplies => ReplyCount > 0;
+        public bool HasReplyTo => !string.IsNullOrWhiteSpace(ReplyToFullName);
+
         [ObservableProperty]
         private bool isRepliesExpanded;
         [ObservableProperty]
@@ -46,6 +48,7 @@ namespace Sphere.Models
                     : "women.png";
             }
         }
+        
     }
 
     public class PostDiaryCommentModel

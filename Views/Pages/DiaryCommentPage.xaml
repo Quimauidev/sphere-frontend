@@ -38,17 +38,25 @@
                                     LineBreakMode="TailTruncation"
                                     MaxLines="1"
                                     Text="{Binding Comment.FullName}" />
+
+                                <!--  Time  -->
                                 <Label
-                                    Grid.Column="1"
-                                    FontAttributes="Bold"
-                                    FontSize="14"
-                                    LineBreakMode="TailTruncation"
-                                    MaxLines="1"
-                                    Text="{Binding Comment.ReplyToFullName}"
-                                    TextColor="#1976D2" />
+                                    Grid.Column="2"
+                                    FontSize="12"
+                                    Text="{Binding Comment.CommentedAt, Converter={StaticResource TimeAgoConverter}, StringFormat='· {0}'}"
+                                    TextColor="Gray"
+                                    VerticalTextAlignment="Center" />
                             </Grid>
 
-
+                            <Label
+                                Grid.Column="1"
+                                FontAttributes="Bold"
+                                FontSize="14"
+                                IsVisible="{Binding Comment.HasReplyTo}"
+                                LineBreakMode="TailTruncation"
+                                MaxLines="1"
+                                Text="{Binding Comment.ReplyToFullName}"
+                                TextColor="#1976D2" />
                             <Label Text="{Binding Comment.Content}" />
 
 

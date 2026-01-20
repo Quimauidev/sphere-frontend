@@ -29,7 +29,7 @@ public partial class DiaryCommentPage : ContentPage
                 await Task.Delay(400); // đợi keyboard
                 CommentsCollection.ScrollTo(
                     item,
-                    position: ScrollToPosition.MakeVisible,
+                    position: ScrollToPosition.End,
                     animate: true);
             });
         };

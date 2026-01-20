@@ -295,6 +295,7 @@ namespace Sphere.ViewModels.DiaryViewModels
                 }
 
                 parent.IsRepliesExpanded = true;
+                ScrollToLastReply(parent); // ⭐ THÊM
                 return;
             }
 
@@ -313,6 +314,7 @@ namespace Sphere.ViewModels.DiaryViewModels
             parent.IsRepliesExpanded = true;
 
             InsertReplies(parent);
+            ScrollToLastReply(parent); // ⭐ THÊM
         }
         private void InsertReplies(DiaryCommentUIModel parent)
         {
@@ -346,5 +348,18 @@ namespace Sphere.ViewModels.DiaryViewModels
                 }
             }
         }
+        private void ScrollToLastReply(DiaryCommentUIModel parent)
+        {
+            var lastReply = parent.Replies?.LastOrDefault();
+            if (lastReply == null)
+                return;
+
+            var flatItem = FlatComments
+                .FirstOrDefault(x => x.Id == lastReply.Id);
+
+            if (flatItem != null)
+                ScrollToFlatItem?.Invoke(flatItem);
+        }
+
     }
 }

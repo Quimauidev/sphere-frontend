@@ -13,42 +13,39 @@ namespace Sphere.Converters
         public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
         {
             if (value is not DateTime time || time == default)
-                return "Chưa cập nhật";
+                return string.Empty;
 
             var timeVN = time.ToVietnamTime();
             var now = DateTime.UtcNow.ToVietnamTime();
             var diff = now - timeVN;
 
+            if (diff.TotalSeconds < 60)
+                return "Vừa đăng";
 
-            if (timeVN.Date == now.Date)
-            {
-                if (diff.TotalMinutes < 1)
-                    return "Vừa đăng";
-                if (diff.TotalMinutes < 60)
-                    return $"{(int)diff.TotalMinutes} phút trước";
+            if (diff.TotalMinutes < 60)
+                return $"{(int)diff.TotalMinutes} phút trước";
+
+            if (diff.TotalHours < 24)
                 return $"{(int)diff.TotalHours} giờ trước";
-            }
 
             if (timeVN.Date == now.Date.AddDays(-1))
                 return "Hôm qua";
 
-            int daysAgo = (int)diff.TotalDays;
-            if (daysAgo < 7)
-                return $"{daysAgo} ngày trước";
+            if (diff.TotalDays < 14)
+                return $"{(int)diff.TotalDays} ngày trước";
 
-            if (daysAgo < 30)
-            {
-                int weeks = daysAgo / 7;
-                return $"{weeks} tuần trước";
-            }
+            if (diff.TotalDays < 60)
+                return $"{Math.Max(1, (int)(diff.TotalDays / 7))} tuần trước";
 
-            if (timeVN.Year == now.Year)
-                return timeVN.ToString("dd/MM");
+            if (diff.TotalDays < 365)
+                return $"{(int)(diff.TotalDays / 30)} tháng trước";
 
-            return timeVN.ToString("dd/MM/yyyy");
+            return $"{(int)(diff.TotalDays / 365)} năm trước";
+
         }
 
         public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
             => throw new NotImplementedException();
     }
+
 }
