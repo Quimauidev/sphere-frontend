@@ -23,7 +23,7 @@
                             Aspect="AspectFill"
                             DownsampleToViewSize="true"
                             HeightRequest="40"
-                            Source="{Binding Comment.AvatarUrl, Converter={StaticResource AvatarGenderConverter}}"
+                            Source="{Binding Comment.AvatarDisplay}"
                             TransformPlaceholders="true"
                             VerticalOptions="Start"
                             WidthRequest="40">

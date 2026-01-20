@@ -1,4 +1,5 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
+using Sphere.Common.Constans;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -16,6 +17,7 @@ namespace Sphere.Models
         public Guid UserProfileId { get; set; }
         public string? FullName { get; set; }
         public string? AvatarUrl { get; set; }
+        public Gender Gender { get; set; }
         // ⭐ Quan trọng
         public Guid? ReplyToUserProfileId { get; set; }
         public string? ReplyToFullName { get; set; }
@@ -32,10 +34,19 @@ namespace Sphere.Models
         private bool isRepliesExpanded;
         [ObservableProperty]
         private bool isLoadingReplies;
+        public string AvatarDisplay
+        {
+            get
+            {
+                if (!string.IsNullOrWhiteSpace(AvatarUrl))
+                    return AvatarUrl;
 
+                return Gender == Gender.Male
+                    ? "man.png"
+                    : "women.png";
+            }
+        }
     }
-
-    
 
     public class PostDiaryCommentModel
     {
