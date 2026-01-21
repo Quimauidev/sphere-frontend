@@ -5,107 +5,130 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:ffimageloading="clr-namespace:FFImageLoading.Maui;assembly=FFImageLoading.Maui"
     xmlns:fftransformations="clr-namespace:FFImageLoading.Transformations;assembly=FFImageLoading.Maui"
+    xmlns:selectors="clr-namespace:Sphere.Views.TemplateSelectors"
     Title="DiaryCommentPage">
+    <ContentPage.Resources>
 
-    <Grid RowDefinitions="*,Auto">
+        <!--  Template comment hiện tại  -->
+        <DataTemplate x:Key="CommentTemplate">
+            <Grid
+                Margin="{Binding Level, Converter={StaticResource LevelToMarginConverter}}"
+                Padding="10"
+                ColumnDefinitions="40,*"
+                ColumnSpacing="10">
 
-        <CollectionView x:Name="CommentsCollection" ItemsSource="{Binding FlatComments}">
+                <ffimageloading:CachedImage
+                    Aspect="AspectFill"
+                    DownsampleToViewSize="true"
+                    HeightRequest="40"
+                    Source="{Binding Comment.AvatarDisplay}"
+                    TransformPlaceholders="true"
+                    VerticalOptions="Start"
+                    WidthRequest="40">
+                    <ffimageloading:CachedImage.Transformations>
+                        <fftransformations:CircleTransformation />
+                    </ffimageloading:CachedImage.Transformations>
+                </ffimageloading:CachedImage>
+                <VerticalStackLayout Grid.Column="1" Spacing="4">
+                    <Grid ColumnDefinitions="Auto,Auto" ColumnSpacing="4">
+                        <Label
+                            FontAttributes="Bold"
+                            LineBreakMode="TailTruncation"
+                            MaxLines="1"
+                            Text="{Binding Comment.FullName}" />
 
-            <CollectionView.ItemTemplate>
-                <DataTemplate>
-                    <Grid
-                        Margin="{Binding Level, Converter={StaticResource LevelToMarginConverter}}"
-                        Padding="10"
-                        ColumnDefinitions="40,*"
-                        ColumnSpacing="10">
+                        <!--  Time  -->
+                        <Label
+                            Grid.Column="2"
+                            FontSize="12"
+                            Text="{Binding Comment.CommentedAt, Converter={StaticResource TimeAgoConverter}, StringFormat='· {0}'}"
+                            TextColor="Gray"
+                            VerticalTextAlignment="Center" />
+                    </Grid>
 
-                        <ffimageloading:CachedImage
-                            Aspect="AspectFill"
-                            DownsampleToViewSize="true"
-                            HeightRequest="40"
-                            Source="{Binding Comment.AvatarDisplay}"
-                            TransformPlaceholders="true"
-                            VerticalOptions="Start"
-                            WidthRequest="40">
-                            <ffimageloading:CachedImage.Transformations>
-                                <fftransformations:CircleTransformation />
-                            </ffimageloading:CachedImage.Transformations>
-                        </ffimageloading:CachedImage>
-                        <VerticalStackLayout Grid.Column="1" Spacing="4">
-                            <Grid ColumnDefinitions="Auto,Auto" ColumnSpacing="4">
-                                <Label
-                                    FontAttributes="Bold"
-                                    LineBreakMode="TailTruncation"
-                                    MaxLines="1"
-                                    Text="{Binding Comment.FullName}" />
+                    <Label
+                        Grid.Column="1"
+                        FontAttributes="Bold"
+                        FontSize="14"
+                        IsVisible="{Binding Comment.HasReplyTo}"
+                        LineBreakMode="TailTruncation"
+                        MaxLines="1"
+                        Text="{Binding Comment.ReplyToFullName}"
+                        TextColor="#1976D2" />
+                    <Label Text="{Binding Comment.Content}" />
 
-                                <!--  Time  -->
-                                <Label
-                                    Grid.Column="2"
-                                    FontSize="12"
-                                    Text="{Binding Comment.CommentedAt, Converter={StaticResource TimeAgoConverter}, StringFormat='· {0}'}"
-                                    TextColor="Gray"
-                                    VerticalTextAlignment="Center" />
-                            </Grid>
+                    <Grid ColumnDefinitions="*,Auto">
 
+                        <Label
+                            FontSize="12"
+                            Text="Trả lời"
+                            TextColor="Gray">
+                            <Label.GestureRecognizers>
+                                <TapGestureRecognizer Command="{Binding BindingContext.ReplyCommand, Source={RelativeSource AncestorType={x:Type ContentPage}}}" CommandParameter="{Binding .}" />
+                            </Label.GestureRecognizers>
+                        </Label>
+
+                        <HorizontalStackLayout
+                            Grid.Column="1"
+                            Padding="0,0,10,0"
+                            Spacing="8">
                             <Label
-                                Grid.Column="1"
-                                FontAttributes="Bold"
-                                FontSize="14"
-                                IsVisible="{Binding Comment.HasReplyTo}"
-                                LineBreakMode="TailTruncation"
-                                MaxLines="1"
-                                Text="{Binding Comment.ReplyToFullName}"
-                                TextColor="#1976D2" />
-                            <Label Text="{Binding Comment.Content}" />
-
-
-                            <Grid ColumnDefinitions="*,Auto">
-
-                                <Label
-                                    FontSize="12"
-                                    Text="Trả lời"
-                                    TextColor="Gray">
-                                    <Label.GestureRecognizers>
-                                        <TapGestureRecognizer Command="{Binding BindingContext.ReplyCommand, Source={RelativeSource AncestorType={x:Type ContentPage}}}" CommandParameter="{Binding .}" />
-                                    </Label.GestureRecognizers>
-                                </Label>
-
-                                <HorizontalStackLayout
-                                    Grid.Column="1"
-                                    Padding="0,0,10,0"
-                                    Spacing="8">
-                                    <Label
-                                        FontFamily="MaterialIcons"
-                                        FontSize="16"
-                                        Text="&#xF0971;"
-                                        TextColor="{Binding IsLiked, Converter={StaticResource BoolToLikeColorConverter}}">
-                                        <Label.GestureRecognizers>
-                                            <TapGestureRecognizer Command="{Binding BindingContext.CommentLikeCommand, Source={RelativeSource AncestorType={x:Type ContentPage}}}" CommandParameter="{Binding .}" />
-
-                                        </Label.GestureRecognizers>
-                                    </Label>
-                                    <Label
-                                        FontSize="12"
-                                        Text="{Binding LikeCount}"
-                                        TextColor="Grey" />
-                                </HorizontalStackLayout>
-                            </Grid>
-                            <Label
-                                FontSize="12"
-                                IsVisible="{Binding Comment.HasReplies}"
-                                Text="{Binding Comment.IsRepliesExpanded, Converter={StaticResource ExpandReplyTextConverter}}"
-                                TextColor="#1976D2">
+                                FontFamily="MaterialIcons"
+                                FontSize="16"
+                                Text="&#xF0971;"
+                                TextColor="{Binding IsLiked, Converter={StaticResource BoolToLikeColorConverter}}">
                                 <Label.GestureRecognizers>
-                                    <TapGestureRecognizer Command="{Binding BindingContext.ToggleRepliesCommand, Source={RelativeSource AncestorType={x:Type ContentPage}}}" CommandParameter="{Binding .}" />
+                                    <TapGestureRecognizer Command="{Binding BindingContext.CommentLikeCommand, Source={RelativeSource AncestorType={x:Type ContentPage}}}" CommandParameter="{Binding .}" />
+
                                 </Label.GestureRecognizers>
                             </Label>
-
-                        </VerticalStackLayout>
-
+                            <Label
+                                FontSize="12"
+                                Text="{Binding LikeCount}"
+                                TextColor="Grey" />
+                        </HorizontalStackLayout>
                     </Grid>
-                </DataTemplate>
-            </CollectionView.ItemTemplate>
+                    <Label
+                        FontSize="12"
+                        IsVisible="{Binding Comment.HasReplies}"
+                        Text="{Binding Comment.IsRepliesExpanded, Converter={StaticResource ExpandReplyTextConverter}}"
+                        TextColor="#1976D2">
+                        <Label.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding BindingContext.ToggleRepliesCommand, Source={RelativeSource AncestorType={x:Type ContentPage}}}" CommandParameter="{Binding .}" />
+                        </Label.GestureRecognizers>
+                    </Label>
+
+                </VerticalStackLayout>
+            </Grid>
+
+        </DataTemplate>
+
+        <!--  ⭐ Template "Xem thêm câu trả lời"  -->
+        <DataTemplate x:Key="LoadMoreRepliesTemplate">
+            <Label
+                Margin="60,4,0,8"
+                FontSize="12"
+                Text="Xem thêm câu trả lời"
+                TextColor="#1976D2">
+                <Label.GestureRecognizers>
+                    <TapGestureRecognizer Command="{Binding BindingContext.LoadMoreRepliesCommand, Source={RelativeSource AncestorType={x:Type ContentPage}}}" CommandParameter="{Binding .}" />
+                </Label.GestureRecognizers>
+            </Label>
+        </DataTemplate>
+
+        <!--  ⭐ TemplateSelector  -->
+        <selectors:CommentTemplateSelector
+            x:Key="CommentTemplateSelector"
+            CommentTemplate="{StaticResource CommentTemplate}"
+            LoadMoreTemplate="{StaticResource LoadMoreRepliesTemplate}" />
+
+    </ContentPage.Resources>
+
+    <Grid RowDefinitions="*,Auto">
+        <CollectionView
+            x:Name="CommentsCollection"
+            ItemTemplate="{StaticResource CommentTemplateSelector}"
+            ItemsSource="{Binding FlatComments}">
             <CollectionView.EmptyView>
                 <StackLayout
                     Margin="20"
@@ -130,7 +153,6 @@
                 </StackLayout>
             </CollectionView.EmptyView>
         </CollectionView>
-
 
         <!--  ================= INPUT =================  -->
         <Grid

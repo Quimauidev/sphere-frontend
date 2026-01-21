@@ -26,13 +26,25 @@ public partial class DiaryCommentPage : ContentPage
         {
             MainThread.BeginInvokeOnMainThread(async () =>
             {
-                await Task.Delay(400); // đợi keyboard
+                await Task.Delay(50); // đợi keyboard
                 CommentsCollection.ScrollTo(
                     item,
                     position: ScrollToPosition.End,
                     animate: true);
             });
         };
+        _vm.ScrollToItem = item =>
+        {
+            MainThread.BeginInvokeOnMainThread(async () =>
+            {
+                await Task.Delay(30); // đợi layout ổn định
+                CommentsCollection.ScrollTo(
+                    item,
+                    position: ScrollToPosition.End,
+                    animate: true);
+            });
+        };
+
 
     }
 }

@@ -49,6 +49,11 @@ namespace Sphere.Models
         //    }
         //}
         public string AvatarDisplay => !string.IsNullOrWhiteSpace(AvatarUrl) ? AvatarUrl : Gender == Gender.Male ? "man.png" : "woman.png";
+        public int ReplyPage { get; set; } = 1;
+        public int ReplyPageSize { get; set; } = 10;
+        [ObservableProperty]
+        private bool hasMoreReplies;
+        public bool IsLocal { get; set; }
 
     }
 

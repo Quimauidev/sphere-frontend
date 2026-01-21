@@ -19,4 +19,9 @@ namespace Sphere.Models
         [ObservableProperty]
         private bool isBusy;
     }
+    public class LoadMoreRepliesItem : DiaryCommentFlatItem
+    {
+        public Guid ParentId { get; set; }
+    }
+
 }
