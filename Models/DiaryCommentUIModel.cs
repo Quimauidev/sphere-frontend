@@ -12,8 +12,8 @@ namespace Sphere.Models
 
     public partial class DiaryCommentUIModel : ObservableObject
     {
-        public Guid Id { get; set; }
-        public Guid? ParentCommentId { get; set; } 
+        public Guid Id { get; set; } // ùng để phân biệt comment
+        public Guid? ParentCommentId { get; set; } // ùng để phân biệt comment cha
         public Guid UserProfileId { get; set; }
         public string? FullName { get; set; }
         public string? AvatarUrl { get; set; }

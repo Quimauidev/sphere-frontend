@@ -1,6 +1,5 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using IntelliJ.Lang.Annotations;
 using Sphere.Common.Helpers;
 using Sphere.Common.Responses;
 using Sphere.Interfaces;
@@ -13,7 +12,6 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using static Android.Graphics.ColorSpace;
 
 namespace Sphere.ViewModels.DiaryViewModels
 {
@@ -24,6 +22,9 @@ namespace Sphere.ViewModels.DiaryViewModels
 
         public ObservableCollection<DiaryCommentUIModel> Comments { get; } = [];    
         public ObservableCollection<DiaryCommentFlatItem> FlatComments { get; } = [];
+        [ObservableProperty]
+        private DiaryCommentUIModel? replyRoot;
+
 
         public DiaryCommentViewModel(IDiaryService diaryService)
         {
@@ -42,7 +43,6 @@ namespace Sphere.ViewModels.DiaryViewModels
         {
             OnPropertyChanged(nameof(IsReplying));
         }
-        public Guid? ParentCommentId { get; set; }
 
         [ObservableProperty]
         private string? newCommentContent;
@@ -170,7 +170,7 @@ namespace Sphere.ViewModels.DiaryViewModels
             KeyboardService.HideKeyboard();
             try
             {
-                var replyId = ReplyToComment?.Id;
+                var replyId = ReplyRoot?.Id;
                 var res = await _diaryService.CreateCommentAsync(_diaryId, NewCommentContent!.Trim(), replyId);
                 if (res.IsSuccess)
                 {
@@ -181,12 +181,11 @@ namespace Sphere.ViewModels.DiaryViewModels
                     }
                     else
                     {
-                        
-                       
-                        var root = Comments.FirstOrDefault(c => c.Id == ParentCommentId);
 
+                        var root = ReplyRoot;
                         if (root == null)
-                            throw new InvalidOperationException("Root comment not found");
+                            return; // không crash, không gửi
+
 
                         // 2️⃣ ÉP ParentCommentId về root (QUAN TRỌNG)
                         res.Data!.ParentCommentId = root.Id;
@@ -215,6 +214,7 @@ namespace Sphere.ViewModels.DiaryViewModels
                     }
                     NewCommentContent = null;
                     ReplyToComment = null;
+                    ReplyRoot = null;
                 }
                 else
                 {
@@ -232,7 +232,8 @@ namespace Sphere.ViewModels.DiaryViewModels
         public void Reply(DiaryCommentFlatItem item)
         {
             ReplyToComment = item.Comment;
-            ParentCommentId = item.RootCommentId;
+            ReplyRoot = Comments.FirstOrDefault(c => c.Id == item.RootCommentId);
+
             NewCommentContent = string.Empty;
             RequestFocusCommentEditor?.Invoke();
             ScrollToFlatItem?.Invoke(item);
@@ -243,6 +244,8 @@ namespace Sphere.ViewModels.DiaryViewModels
         {
             ReplyToComment = null;
             NewCommentContent = string.Empty;
+            ReplyRoot = null;
+
         }
 
         // like commnet và reply
