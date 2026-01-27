@@ -302,12 +302,11 @@ namespace Sphere.ViewModels.DiaryViewModels
                 parent.IsRepliesExpanded = false;
                 parent.ReplyPage = 1;
                 parent.Replies.Clear();
-
                 RemoveReplies(parent.Id);
                 return;
             }
 
-            // 🔼 MỞ → load page đầu
+            // 🔼 MỞ → load page đầu, KHÔNG scroll, KHÔNG rebuild toàn bộ replies
             await LoadRepliesInternalAsync(parent, isFirstPage: true);
         }
 
@@ -321,7 +320,7 @@ namespace Sphere.ViewModels.DiaryViewModels
             await LoadRepliesInternalAsync(parent, isFirstPage: false);
         }
 
-        private async Task LoadRepliesInternalAsync( DiaryCommentUIModel parent, bool isFirstPage)
+        private async Task LoadRepliesInternalAsync(DiaryCommentUIModel parent, bool isFirstPage)
         {
             parent.IsLoadingReplies = true;
 
@@ -339,64 +338,42 @@ namespace Sphere.ViewModels.DiaryViewModels
 
             if (isFirstPage)
             {
-                // ❗ giữ lại reply client-side (chưa có trên server page 1)
-                var clientReplies = parent.Replies
-                    .Where(r => r.IsLocal) // hoặc flag tự đặt
-                    .ToList();
-
+                // Giữ lại reply client-side (chưa có trên server page 1)
+                var clientReplies = parent.Replies.Where(r => r.IsLocal).ToList();
                 parent.Replies.Clear();
-                RemoveReplies(parent.Id);
-
                 foreach (var r in clientReplies)
                     parent.Replies.Add(r);
-            }
-
-
-            foreach (var r in newReplies)
-            {
-                if (!parent.Replies.Any(x => x.Id == r.Id))
-                    parent.Replies.Add(r);
-            }
-            foreach (var r in parent.Replies)
-            {
-                if (newReplies.Any(x => x.Id == r.Id))
-                    r.IsLocal = false;
-            }
-
-            parent.HasMoreReplies = newReplies.Count == parent.ReplyPageSize;
-            parent.ReplyPage++;
-            parent.IsRepliesExpanded = true;
-
-            // ⭐⭐⭐ CHỈ SORT KHI LOAD MORE (page > 1)
-            if (!isFirstPage)
-            {
-                var sorted = parent.Replies
-                        .DistinctBy(x => x.Id)
-                        .OrderBy(x => x.CommentedAt)
-                        .ToList();
-
-                parent.Replies.Clear();
-                foreach (var r in sorted)
-                    parent.Replies.Add(r);
-                // ⭐⭐⭐ THÊM 2 DÒNG NÀY
-                RemoveReplies(parent.Id);
-                InsertNewReplies(parent, sorted);
+                foreach (var r in newReplies)
+                {
+                    if (!parent.Replies.Any(x => x.Id == r.Id))
+                        parent.Replies.Add(r);
+                }
+                foreach (var r in parent.Replies)
+                {
+                    if (newReplies.Any(x => x.Id == r.Id))
+                        r.IsLocal = false;
+                }
+                parent.HasMoreReplies = newReplies.Count == parent.ReplyPageSize;
+                parent.ReplyPage++;
+                parent.IsRepliesExpanded = true;
+                // Chỉ insert replies vào FlatComments, không scroll
+                InsertRepliesOnExpand(parent, parent.Replies.ToList());
             }
             else
             {
-                // page đầu → chỉ insert page 1
-                // page đầu → insert toàn bộ replies (server + local)
-                InsertNewReplies(parent, parent.Replies.ToList());
-
-            }
-
-            if (isFirstPage)
-            {
-                ScrollOnFirstExpand(parent);
-            }
-            else
-            {
-                ScrollToLastReply(parent);
+                // Khi load thêm, chỉ insert replies mới vào FlatComments trước dòng LoadMore
+                var repliesToInsert = newReplies.Where(r => !parent.Replies.Any(x => x.Id == r.Id)).ToList();
+                foreach (var r in repliesToInsert)
+                    parent.Replies.Add(r);
+                foreach (var r in parent.Replies)
+                {
+                    if (newReplies.Any(x => x.Id == r.Id))
+                        r.IsLocal = false;
+                }
+                parent.HasMoreReplies = newReplies.Count == parent.ReplyPageSize;
+                parent.ReplyPage++;
+                parent.IsRepliesExpanded = true;
+                InsertRepliesBeforeLoadMore(parent, repliesToInsert);
             }
         }
 
@@ -466,6 +443,67 @@ namespace Sphere.ViewModels.DiaryViewModels
                     });
             }
         }
+
+        private void InsertRepliesOnExpand(DiaryCommentUIModel parent, List<DiaryCommentUIModel> replies)
+        {
+            // Xóa replies cũ (nếu có) và dòng LoadMore cũ
+            RemoveReplies(parent.Id);
+            var parentIndex = FlatComments.Select((x, i) => new { x, i }).First(x => x.x.Id == parent.Id).i;
+            var insertIndex = parentIndex + 1;
+            foreach (var reply in replies)
+            {
+                FlatComments.Insert(insertIndex++, new DiaryCommentFlatItem
+                {
+                    Id = reply.Id,
+                    Comment = reply,
+                    Level = 1,
+                    RootCommentId = parent.Id,
+                    IsLiked = reply.IsLiked,
+                    LikeCount = reply.LikeCount
+                });
+            }
+            if (parent.HasMoreReplies)
+            {
+                FlatComments.Insert(insertIndex, new LoadMoreRepliesItem
+                {
+                    ParentId = parent.Id,
+                    Level = 1,
+                    RootCommentId = parent.Id
+                });
+            }
+        }
+
+        private void InsertRepliesBeforeLoadMore(DiaryCommentUIModel parent, List<DiaryCommentUIModel> newReplies)
+        {
+            if (newReplies == null || newReplies.Count == 0)
+                return;
+            // Tìm vị trí dòng LoadMore
+            var loadMoreIndex = FlatComments.Select((x, i) => new { x, i })
+                .FirstOrDefault(x => x.x is LoadMoreRepliesItem lm && lm.ParentId == parent.Id)?.i;
+            if (loadMoreIndex == null)
+                return;
+            var insertIndex = loadMoreIndex.Value;
+            foreach (var reply in newReplies)
+            {
+                FlatComments.Insert(insertIndex++, new DiaryCommentFlatItem
+                {
+                    Id = reply.Id,
+                    Comment = reply,
+                    Level = 1,
+                    RootCommentId = parent.Id,
+                    IsLiked = reply.IsLiked,
+                    LikeCount = reply.LikeCount
+                });
+            }
+            // Nếu hết replies thì xóa dòng LoadMore
+            if (!parent.HasMoreReplies)
+            {
+                var loadMore = FlatComments.OfType<LoadMoreRepliesItem>().FirstOrDefault(x => x.ParentId == parent.Id);
+                if (loadMore != null)
+                    FlatComments.Remove(loadMore);
+            }
+        }
+
         private void ScrollOnFirstExpand(DiaryCommentUIModel parent)
         {
             MainThread.BeginInvokeOnMainThread(async () =>

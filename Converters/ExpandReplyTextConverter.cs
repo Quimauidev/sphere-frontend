@@ -11,8 +11,8 @@ namespace Sphere.Converters
     {
         public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
             => (value is bool expanded && expanded)
-                ? "Ẩn câu trả lời"
-                : "Xem câu trả lời";
+                ? "\U000F0737 Ẩn câu trả lời"
+                : "\U000F072E Xem câu trả lời";
 
         public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
         {
