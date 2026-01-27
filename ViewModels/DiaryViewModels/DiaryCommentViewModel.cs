@@ -177,6 +177,7 @@ namespace Sphere.ViewModels.DiaryViewModels
                     if (replyId == null)
                     {
                         Comments.Insert(0, res.Data!);
+                        BuildFlatComments(); // Cập nhật lại FlatComments để hiển thị comment gốc mới
                     }
                     else
                     {
