@@ -130,7 +130,9 @@
         <CollectionView
             x:Name="CommentsCollection"
             ItemTemplate="{StaticResource CommentTemplateSelector}"
-            ItemsSource="{Binding FlatComments}">
+            ItemsSource="{Binding FlatComments}"
+            RemainingItemsThreshold="3"
+            RemainingItemsThresholdReachedCommand="{Binding LoadMoreCommentsCommand}">
             <CollectionView.EmptyView>
                 <StackLayout
                     Margin="20"

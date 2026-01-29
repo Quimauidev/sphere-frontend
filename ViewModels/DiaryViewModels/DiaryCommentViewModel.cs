@@ -109,6 +109,45 @@ namespace Sphere.ViewModels.DiaryViewModels
         //        }
         //    }
         //}
+        private int _page = 1;
+        private const int PageSize = 20;
+        private bool _hasMore = true;
+
+        [RelayCommand]
+        public async Task LoadMoreCommentsAsync()
+        {
+            if (IsBusy || !_hasMore)
+                return;
+
+            IsBusy = true;
+            try
+            {
+                _page++;
+
+                var res = await _diaryService.GetCommentAsync(_diaryId, _page, PageSize);
+                if (!res.IsSuccess || res.Data == null)
+                {
+                    _hasMore = false;
+                    return;
+                }
+
+                var newComments = res.Data.ToList();
+
+                foreach (var c in newComments)
+                    Comments.Add(c);
+
+                BuildFlatComments();
+
+                // Nếu ít hơn pageSize → hết data
+                if (newComments.Count < PageSize)
+                    _hasMore = false;
+            }
+            finally
+            {
+                IsBusy = false;
+            }
+        }
+
         private void BuildFlatComments()
         {
             var cache = FlatComments.ToDictionary(x => x.Id);
