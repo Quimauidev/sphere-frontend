@@ -1,5 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Sphere.Common.Constans;
 using Sphere.Common.Helpers;
 using Sphere.Common.Responses;
 using Sphere.Interfaces;
@@ -15,7 +16,7 @@ using System.Threading.Tasks;
 
 namespace Sphere.ViewModels.DiaryViewModels
 {
-    public partial class DiaryCommentViewModel : ObservableObject, IModalParameterReceiver<Guid>
+    public partial class DiaryCommentViewModel : BaseViewModel, IModalParameterReceiver<Guid> 
     {
         private readonly IDiaryService _diaryService;
         private Guid _diaryId;
@@ -61,16 +62,21 @@ namespace Sphere.ViewModels.DiaryViewModels
 
         [ObservableProperty]
         private string? errorMessage;
+        [ObservableProperty]
+        private bool hasMoreComments = true;
+
 
         [RelayCommand]
         public async Task LoadCommentsAsync()
         {
             if (_isLoaded) return;
             _isLoaded = true;
+            UiState = UiViewState.Loading;
             var res = await _diaryService.GetCommentAsync(_diaryId, 1, 20);
             if (!res.IsSuccess)
-                {
+            {
                 ErrorMessage = res.Errors?.FirstOrDefault()?.Description ?? res.Message ?? "Có lỗi xảy ra";
+                UiState = UiViewState.Error;
                 return;
             }
 
@@ -78,59 +84,55 @@ namespace Sphere.ViewModels.DiaryViewModels
             foreach (var c in res.Data!)
                 Comments.Add(c);
             BuildFlatComments();
+            UiState = FlatComments.Count == 0 ? UiViewState.Empty : UiViewState.Success;
         }
-        //private void BuildFlatComments()
-        //{
-        //    FlatComments.Clear();
 
-        //    foreach (var parent in Comments)
-        //    {
-        //        FlatComments.Add(new DiaryCommentFlatItem
-        //        {
-        //            Id = parent.Id,
-        //            Comment = parent,
-        //            Level = 0,
-        //            RootCommentId = parent.Id,
-        //            IsLiked = parent.IsLiked,
-        //            LikeCount = parent.LikeCount
-        //        });
+        [ObservableProperty]
+        private bool isRefreshing;
+        [RelayCommand]
+        private async Task RefreshCommentsAsync()
+        {
+            IsRefreshing = true;
+            _isLoaded = false;
+            _page = 1;
+            Comments.Clear();
+            FlatComments.Clear();
+            await LoadCommentsAsync();
+            IsRefreshing = false;
+        }
 
-        //        foreach (var reply in parent.Replies)
-        //        {
-        //            FlatComments.Add(new DiaryCommentFlatItem
-        //            {
-        //                Id = reply.Id,
-        //                Comment = reply,
-        //                Level = 1,
-        //                RootCommentId = parent.Id,
-        //                 IsLiked = reply.IsLiked,
-        //                LikeCount = reply.LikeCount
-        //            });
-        //        }
-        //    }
-        //}
+        [RelayCommand]
+        public async Task RetryAsync()
+        {
+            _isLoaded = false;
+            ErrorMessage = null;
+            await LoadCommentsAsync();
+        }
+
         private int _page = 1;
         private const int PageSize = 20;
         private bool _hasMore = true;
+        [ObservableProperty]
+        private bool isLoadingMore;
 
         [RelayCommand]
         public async Task LoadMoreCommentsAsync()
         {
-            if (IsBusy || !_hasMore)
+            if (IsLoadingMore || !HasMoreComments)
                 return;
 
-            IsBusy = true;
+            IsLoadingMore = true;
             try
             {
-                _page++;
+                var nextPage = _page + 1;
 
-                var res = await _diaryService.GetCommentAsync(_diaryId, _page, PageSize);
-                if (!res.IsSuccess || res.Data == null)
+                var res = await _diaryService.GetCommentAsync(_diaryId, nextPage, PageSize);
+                if (!res.IsSuccess || res.Data == null || !res.Data.Any())
                 {
-                    _hasMore = false;
+                    HasMoreComments = false;
                     return;
                 }
-
+                _page = nextPage;
                 var newComments = res.Data.ToList();
 
                 foreach (var c in newComments)
@@ -140,11 +142,11 @@ namespace Sphere.ViewModels.DiaryViewModels
 
                 // Nếu ít hơn pageSize → hết data
                 if (newComments.Count < PageSize)
-                    _hasMore = false;
+                    HasMoreComments = false;
             }
             finally
             {
-                IsBusy = false;
+                IsLoadingMore = false;
             }
         }
 
@@ -177,11 +179,7 @@ namespace Sphere.ViewModels.DiaryViewModels
             }
         }
 
-        private DiaryCommentFlatItem CreateOrReuse(
-            DiaryCommentUIModel comment,
-            int level,
-            Guid rootId,
-            Dictionary<Guid, DiaryCommentFlatItem> cache)
+        private DiaryCommentFlatItem CreateOrReuse( DiaryCommentUIModel comment, int level, Guid rootId, Dictionary<Guid, DiaryCommentFlatItem> cache)
         {
             if (cache.TryGetValue(comment.Id, out var item))
                 return item;
@@ -251,6 +249,9 @@ namespace Sphere.ViewModels.DiaryViewModels
 
 
                     }
+                    if (UiState == UiViewState.Empty)
+                        UiState = UiViewState.Success;
+
                     NewCommentContent = null;
                     ReplyToComment = null;
                     ReplyRoot = null;

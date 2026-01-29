@@ -67,6 +67,7 @@
             <Button
                 Command="{Binding LoadFirstPopularPageCommand}"
                 CornerRadius="25"
+                HeightRequest="40"
                 Text="Thử lại"
                 WidthRequest="100" />
         </StackLayout>

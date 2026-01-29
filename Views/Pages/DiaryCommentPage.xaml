@@ -127,42 +127,94 @@
     </ContentPage.Resources>
 
     <Grid RowDefinitions="*,Auto">
-        <CollectionView
-            x:Name="CommentsCollection"
-            ItemTemplate="{StaticResource CommentTemplateSelector}"
-            ItemsSource="{Binding FlatComments}"
-            RemainingItemsThreshold="3"
-            RemainingItemsThresholdReachedCommand="{Binding LoadMoreCommentsCommand}">
-            <CollectionView.EmptyView>
-                <StackLayout
-                    Margin="20"
-                    HorizontalOptions="Center"
-                    Spacing="10"
-                    VerticalOptions="Center">
-                    <Label IsVisible="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}}" Text="{Binding ErrorMessage}" />
-                    <Grid>
-                        <ActivityIndicator
-                            HeightRequest="40"
+        <!--  ================= LOADING =================  -->
+
+        <ActivityIndicator
+            HeightRequest="40"
+            HorizontalOptions="Center"
+            IsRunning="True"
+            IsVisible="{Binding IsLoading}"
+            VerticalOptions="Center"
+            WidthRequest="40" />
+
+        <!--  ================= ERROR =================  -->
+        <StackLayout
+            HorizontalOptions="Center"
+            IsVisible="{Binding IsError}"
+            Spacing="20"
+            VerticalOptions="Center">
+            <Label
+                FontAttributes="Bold"
+                FontSize="16"
+                Text="{Binding ErrorMessage}"
+                TextColor="Red" />
+            <Button
+                Command="{Binding RetryCommand}"
+                CornerRadius="25"
+                HeightRequest="40"
+                Text="Thử lại"
+                WidthRequest="100" />
+        </StackLayout>
+        <!--  ================= EMPTY =================  -->
+        <StackLayout
+            HorizontalOptions="Center"
+            IsVisible="{Binding IsEmpty}"
+            VerticalOptions="Center">
+            <Label Text="Chưa có bình luận nào" TextColor="Gray" />
+        </StackLayout>
+        <RefreshView
+            Command="{Binding RefreshCommentsCommand}"
+            IsRefreshing="{Binding IsRefreshing}"
+            IsVisible="{Binding IsSuccess}">
+            <CollectionView
+                x:Name="CommentsCollection"
+                IsVisible="{Binding IsSuccess}"
+                ItemTemplate="{StaticResource CommentTemplateSelector}"
+                ItemsSource="{Binding FlatComments}"
+                RemainingItemsThreshold="3"
+                RemainingItemsThresholdReachedCommand="{Binding LoadMoreCommentsCommand}">
+                <CollectionView.Footer>
+                    <Grid Padding="16">
+
+                        <!--  🔄 Loading more  -->
+                        <StackLayout
                             HorizontalOptions="Center"
-                            IsRunning="{Binding IsBusy}"
-                            IsVisible="{Binding IsBusy}"
-                            WidthRequest="40" />
-                        <Button
-                            Command="{Binding RetryCommand}"
-                            HeightRequest="40"
-                            IsVisible="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}}"
-                            Text="Thử lại"
-                            WidthRequest="80" />
+                            IsVisible="{Binding IsLoadingMore}"
+                            Orientation="Horizontal"
+                            Spacing="8"
+                            VerticalOptions="Center">
+                            <ActivityIndicator
+                                HeightRequest="20"
+                                IsRunning="True"
+                                VerticalOptions="Center"
+                                WidthRequest="20" />
+                            <Label
+                                FontSize="12"
+                                Text="Đang tải..."
+                                TextColor="Gray"
+                                VerticalOptions="Center" />
+                        </StackLayout>
+
+                        <!--  🚫 Hết data  -->
+                        <Label
+                            FontSize="12"
+                            HorizontalOptions="Center"
+                            IsVisible="{Binding HasMoreComments, Converter={StaticResource InverseBoolConverter}}"
+                            Text="-- Hết --"
+                            TextColor="Gray" />
+
                     </Grid>
-                </StackLayout>
-            </CollectionView.EmptyView>
-        </CollectionView>
+                </CollectionView.Footer>
+
+            </CollectionView>
+        </RefreshView>
+
 
         <!--  ================= INPUT =================  -->
         <Grid
             Padding="10"
             ColumnDefinitions="*,Auto"
-            IsVisible="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}}"
+            IsVisible="{Binding UiState, Converter={StaticResource UiStateToBoolConverter}, ConverterParameter=Success}"
             Row="1">
 
             <StackLayout>

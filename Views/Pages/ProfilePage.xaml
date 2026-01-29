@@ -44,7 +44,7 @@
                         Spacing="10"
                         VerticalOptions="Center">
                         <Label IsVisible="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}" Text="{Binding ErrorMessage}" />
-                        <Grid>
+                        <StackLayout>
                             <ActivityIndicator
                                 HeightRequest="40"
                                 HorizontalOptions="Center"
@@ -53,11 +53,12 @@
                                 WidthRequest="40" />
                             <Button
                                 Command="{Binding RetryCommand}"
+                                CornerRadius="25"
                                 HeightRequest="40"
                                 IsVisible="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
                                 Text="Thử lại"
                                 WidthRequest="80" />
-                        </Grid>
+                        </StackLayout>
                     </StackLayout>
                 </CollectionView.EmptyView>
                 <CollectionView.FooterTemplate>
