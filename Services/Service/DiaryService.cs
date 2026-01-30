@@ -52,6 +52,11 @@ namespace Sphere.Services.Service
             return await apiService.PostFormAsync<DiaryModel>("api/diary", form);
         }
 
+        public async Task<ApiResponse<bool>> DeleteCommentAsync(Guid commentId)
+        {
+            return await apiService.DeleteAsync<bool>($"api/diary/comments/{commentId}");
+        }
+
         public async Task<ApiResponse<bool>> DeleteDiaryAsync(Guid id)
         {
             return await apiService.DeleteAsync<bool>($"api/diary/{id}");
@@ -116,6 +121,11 @@ namespace Sphere.Services.Service
             return await apiService.PatchFormAsync<DiaryModel>($"api/diary/{id}", formData);
         }
 
+        public async Task<ApiResponse<bool>> ReportCommentAsync(Guid commentId)
+        {
+          return await apiService.PostAsync<object, bool>($"api/diary/comment/{commentId}/report", null!);
+        }
+
         public async Task<ApiResponse<CommentLikeStatusDTO>> SetCommentLikeAsync(Guid commentId)
         {
             return await apiService.PostAsync<object, CommentLikeStatusDTO>($"api/diary/comment/{commentId}/like", null!);
@@ -124,6 +134,11 @@ namespace Sphere.Services.Service
         public async Task<ApiResponse<DiaryLikeStatusDTO>> SetLikeAsync(Guid diaryId)
         {
             return await apiService.PostAsync<object, DiaryLikeStatusDTO>( $"api/diary/{diaryId}/like",null!);
+        }
+
+        public async Task<ApiResponse<DiaryCommentUIModel>> UpdateCommentAsync(Guid commentId, string newContent)
+        {
+            return await apiService.PatchAsync<object, DiaryCommentUIModel>($"api/diary/comments/{commentId}", new { Content = newContent });
         }
     }
 }

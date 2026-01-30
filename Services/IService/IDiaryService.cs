@@ -20,8 +20,10 @@ namespace Sphere.Services.IService
         Task<ApiResponse<CommentLikeStatusDTO>> SetCommentLikeAsync(Guid commentId);
         Task<ApiResponse<IEnumerable<DiaryCommentUIModel>>> GetCommentAsync(Guid id, int page,int pageSize);
         Task<ApiResponse<IEnumerable<DiaryCommentUIModel>>> GetRepliesAsync(Guid id, int page, int pageSize);
-
-        // Create a comment (optionally as a reply to another comment)
         Task<ApiResponse<DiaryCommentUIModel>> CreateCommentAsync(Guid diaryId, string content, Guid? replyToCommentId = null);
+        Task<ApiResponse<bool>> DeleteCommentAsync(Guid commentId);
+        Task<ApiResponse<DiaryCommentUIModel>> UpdateCommentAsync(Guid commentId, string newContent);
+        // tố cáo
+        Task<ApiResponse<bool>> ReportCommentAsync(Guid commentId);
     }
 }

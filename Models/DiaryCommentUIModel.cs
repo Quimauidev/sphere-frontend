@@ -21,7 +21,8 @@ namespace Sphere.Models
         // ⭐ Quan trọng
         public Guid? ReplyToUserProfileId { get; set; }
         public string? ReplyToFullName { get; set; }
-        public string? Content { get; set; }
+        [ObservableProperty]
+        public string? content;
         public DateTime CommentedAt { get; set; }
         public int LikeCount { get; set; }
         public bool IsLiked { get; set; }
@@ -36,18 +37,7 @@ namespace Sphere.Models
         private bool isRepliesExpanded;
         [ObservableProperty]
         private bool isLoadingReplies;
-        //public string AvatarDisplay
-        //{
-        //    get
-        //    {
-        //        if (!string.IsNullOrWhiteSpace(AvatarUrl))
-        //            return AvatarUrl;
-
-        //        return Gender == Gender.Male
-        //            ? "man.png"
-        //            : "woman.png";
-        //    }
-        //}
+        
         public string AvatarDisplay => !string.IsNullOrWhiteSpace(AvatarUrl) ? AvatarUrl : Gender == Gender.Male ? "man.png" : "woman.png";
         public int ReplyPage { get; set; } = 1;
         public int ReplyPageSize { get; set; } = 10;

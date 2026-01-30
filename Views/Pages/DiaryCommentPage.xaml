@@ -6,6 +6,7 @@
     xmlns:ffimageloading="clr-namespace:FFImageLoading.Maui;assembly=FFImageLoading.Maui"
     xmlns:fftransformations="clr-namespace:FFImageLoading.Transformations;assembly=FFImageLoading.Maui"
     xmlns:selectors="clr-namespace:Sphere.Views.TemplateSelectors"
+    xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
     Title="DiaryCommentPage">
     <ContentPage.Resources>
 
@@ -55,7 +56,16 @@
                         MaxLines="1"
                         Text="{Binding Comment.ReplyToFullName}"
                         TextColor="#1976D2" />
-                    <Label Text="{Binding Comment.Content}" />
+                    <Grid>
+                        <Grid.Behaviors>
+                            <toolkit:TouchBehavior
+                                LongPressCommand="{Binding ShowOptionsCommand}"
+                                LongPressCommandParameter="{Binding .}"
+                                LongPressDuration="600" />
+                        </Grid.Behaviors>
+
+                        <Label FontSize="14" Text="{Binding Comment.Content}" />
+                    </Grid>
 
                     <Grid ColumnDefinitions="*,Auto">
 

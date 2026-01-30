@@ -16,22 +16,22 @@ using System.Threading.Tasks;
 
 namespace Sphere.ViewModels.DiaryViewModels
 {
-    public partial class DiaryCommentViewModel : BaseViewModel, IModalParameterReceiver<Guid> 
+    public partial class DiaryCommentViewModel : BaseViewModel, IModalParameterReceiver<Guid>
     {
         private readonly IDiaryService _diaryService;
         private Guid _diaryId;
 
-        public ObservableCollection<DiaryCommentUIModel> Comments { get; } = [];    
+        public ObservableCollection<DiaryCommentUIModel> Comments { get; } = [];
         public ObservableCollection<DiaryCommentFlatItem> FlatComments { get; } = [];
+
         [ObservableProperty]
         private DiaryCommentUIModel? replyRoot;
-
 
         public DiaryCommentViewModel(IDiaryService diaryService)
         {
             _diaryService = diaryService;
-            
         }
+
         private bool _isLoaded;
 
         [ObservableProperty]
@@ -39,7 +39,9 @@ namespace Sphere.ViewModels.DiaryViewModels
 
         [ObservableProperty]
         private DiaryCommentUIModel? replyToComment;
+
         public bool IsReplying => ReplyToComment != null;
+
         partial void OnReplyToCommentChanged(DiaryCommentUIModel? value)
         {
             OnPropertyChanged(nameof(IsReplying));
@@ -52,7 +54,6 @@ namespace Sphere.ViewModels.DiaryViewModels
         public Action<DiaryCommentFlatItem>? ScrollToFlatItem { get; set; }
         public Action<object>? ScrollToItem { get; set; }
 
-
         public Action? RequestFocusCommentEditor { get; set; }
 
         public Action<Guid, Guid>? ScrollToReplyInReplies { get; set; }
@@ -62,9 +63,9 @@ namespace Sphere.ViewModels.DiaryViewModels
 
         [ObservableProperty]
         private string? errorMessage;
+
         [ObservableProperty]
         private bool hasMoreComments = true;
-
 
         [RelayCommand]
         public async Task LoadCommentsAsync()
@@ -89,6 +90,7 @@ namespace Sphere.ViewModels.DiaryViewModels
 
         [ObservableProperty]
         private bool isRefreshing;
+
         [RelayCommand]
         private async Task RefreshCommentsAsync()
         {
@@ -112,8 +114,90 @@ namespace Sphere.ViewModels.DiaryViewModels
         private int _page = 1;
         private const int PageSize = 20;
         private bool _hasMore = true;
+
+        [ObservableProperty]
+        private Guid? editingCommentId;
+
+        public bool IsEditing => EditingCommentId != null;
+
         [ObservableProperty]
         private bool isLoadingMore;
+        private async void OnDeleteCommentRequested(DiaryCommentFlatItem item)
+        {
+            if (IsBusy)
+                return;
+
+            IsBusy = true;
+
+            var res = await _diaryService.DeleteCommentAsync(item.Id);
+
+            if (!res.IsSuccess)
+            {
+                await ApiResponseHelper.ShowApiErrorsAsync(res, "Xóa bình luận thất bại");
+                IsBusy = false;
+                return;
+            }
+
+            // ================== REMOVE UI ==================
+
+            // 1️⃣ Nếu đang edit comment này → reset
+            if (EditingCommentId == item.Id)
+            {
+                EditingCommentId = null;
+                NewCommentContent = null;
+            }
+
+            // 2️⃣ Nếu đang reply vào comment này → reset
+            if (ReplyToComment?.Id == item.Id)
+            {
+                ReplyToComment = null;
+                ReplyRoot = null;
+            }
+
+            // 3️⃣ REMOVE PARENT COMMENT
+            if (item.IsParent)
+            {
+                var parent = Comments.FirstOrDefault(c => c.Id == item.Id);
+                if (parent != null)
+                    Comments.Remove(parent);
+
+                // Xóa toàn bộ flat items liên quan
+                RemoveReplies(item.Id);
+                FlatComments.Remove(item);
+            }
+            // 4️⃣ REMOVE REPLY
+            else
+            {
+                var parent = Comments.FirstOrDefault(c => c.Id == item.RootCommentId);
+                parent?.Replies.Remove(item.Comment);
+
+                FlatComments.Remove(item);
+            }
+
+            // 5️⃣ Cập nhật UiState
+            if (Comments.Count == 0)
+                UiState = UiViewState.Empty;
+
+            IsBusy = false;
+        }
+
+        private void OnEditCommentRequested(DiaryCommentFlatItem item)
+        {
+            EditingCommentId = item.Id;
+
+            // Đẩy nội dung comment lên Editor
+            NewCommentContent = item.Comment.Content;
+
+            // Khi edit thì KHÔNG reply
+            ReplyToComment = null;
+            ReplyRoot = null;
+
+            // Focus Editor
+            RequestFocusCommentEditor?.Invoke();
+
+            // Scroll tới comment đang edit (optional nhưng UX rất tốt)
+            ScrollToFlatItem?.Invoke(item);
+        }
 
         [RelayCommand]
         public async Task LoadMoreCommentsAsync()
@@ -179,7 +263,7 @@ namespace Sphere.ViewModels.DiaryViewModels
             }
         }
 
-        private DiaryCommentFlatItem CreateOrReuse( DiaryCommentUIModel comment, int level, Guid rootId, Dictionary<Guid, DiaryCommentFlatItem> cache)
+        private DiaryCommentFlatItem CreateOrReuse(DiaryCommentUIModel comment, int level, Guid rootId, Dictionary<Guid, DiaryCommentFlatItem> cache)
         {
             if (cache.TryGetValue(comment.Id, out var item))
                 return item;
@@ -191,7 +275,10 @@ namespace Sphere.ViewModels.DiaryViewModels
                 Level = level,
                 RootCommentId = rootId,
                 IsLiked = comment.IsLiked,
-                LikeCount = comment.LikeCount
+                LikeCount = comment.LikeCount,
+                RequestEdit = OnEditCommentRequested,
+                RequestDelete = OnDeleteCommentRequested
+
             };
         }
 
@@ -207,60 +294,79 @@ namespace Sphere.ViewModels.DiaryViewModels
             KeyboardService.HideKeyboard();
             try
             {
+                // ================== ✏️ EDIT COMMENT ==================
+                if (EditingCommentId != null)
+                {
+                    var content = NewCommentContent!.Trim();
+
+                    var update = await _diaryService.UpdateCommentAsync(EditingCommentId.Value, content);
+
+                    if (!update.IsSuccess)
+                    {
+                        await ApiResponseHelper.ShowApiErrorsAsync(update, "Cập nhật bình luận thất bại");
+                        return;
+                    }
+
+                    // ⭐ UPDATE UI LOCAL (PHẢI notify)
+                    var item = FlatComments.FirstOrDefault(x => x.Id == EditingCommentId.Value);
+                    if (item != null)
+                    {
+                        item.Comment.Content = content;
+                    }
+
+                    EditingCommentId = null;
+                    NewCommentContent = null;
+                    return;
+                }
+
                 var replyId = ReplyRoot?.Id;
                 var res = await _diaryService.CreateCommentAsync(_diaryId, NewCommentContent!.Trim(), replyId);
-                if (res.IsSuccess)
-                {
-                    if (replyId == null)
-                    {
-                        Comments.Insert(0, res.Data!);
-                        BuildFlatComments(); // Cập nhật lại FlatComments để hiển thị comment gốc mới
-                    }
-                    else
-                    {
 
-                        var root = ReplyRoot;
-                        if (root == null)
-                            return; // không crash, không gửi
-
-
-                        // 2️⃣ ÉP ParentCommentId về root (QUAN TRỌNG)
-                        res.Data!.ParentCommentId = root.Id;
-                        res.Data!.IsLocal = true; // ⭐ QUAN TRỌNG
-                        // 🔥 QUAN TRỌNG
-                        // luôn thêm reply mới vào Replies (client-side)
-                        root.Replies.Add(res.Data!);
-
-                        // nhưng KHÔNG đổi ReplyPage, HasMoreReplies
-                        InsertNewReplies(root, new List<DiaryCommentUIModel> { res.Data! });
-
-                        // scroll tới reply mới
-                        // 🔥 SCROLL ĐÚNG UX
-                        if (root.HasMoreReplies)
-                        {
-                            // còn replies chưa load → scroll tới "Xem thêm"
-                            ScrollOnFirstExpand(root);
-                        }
-                        else
-                        {
-                            // đã load hết → scroll tới reply mới
-                            ScrollToLastReply(root);
-                        }
-
-
-                    }
-                    if (UiState == UiViewState.Empty)
-                        UiState = UiViewState.Success;
-
-                    NewCommentContent = null;
-                    ReplyToComment = null;
-                    ReplyRoot = null;
-                }
-                else
+                if (!res.IsSuccess)
                 {
                     await ApiResponseHelper.ShowApiErrorsAsync(res, "Gửi bình luận thất bại");
                 }
-                
+
+                if (replyId == null)
+                {
+                    Comments.Insert(0, res.Data!);
+                    BuildFlatComments(); // Cập nhật lại FlatComments để hiển thị comment gốc mới
+                }
+                else
+                {
+                    var root = ReplyRoot;
+                    if (root == null)
+                        return; // không crash, không gửi
+
+                    // 2️⃣ ÉP ParentCommentId về root (QUAN TRỌNG)
+                    res.Data!.ParentCommentId = root.Id;
+                    res.Data!.IsLocal = true; // ⭐ QUAN TRỌNG
+                                              // 🔥 QUAN TRỌNG
+                                              // luôn thêm reply mới vào Replies (client-side)
+                    root.Replies.Add(res.Data!);
+
+                    // nhưng KHÔNG đổi ReplyPage, HasMoreReplies
+                    InsertNewReplies(root, new List<DiaryCommentUIModel> { res.Data! });
+
+                    // scroll tới reply mới
+                    // 🔥 SCROLL ĐÚNG UX
+                    if (root.HasMoreReplies)
+                    {
+                        // còn replies chưa load → scroll tới "Xem thêm"
+                        ScrollOnFirstExpand(root);
+                    }
+                    else
+                    {
+                        // đã load hết → scroll tới reply mới
+                        ScrollToLastReply(root);
+                    }
+                }
+                if (UiState == UiViewState.Empty)
+                    UiState = UiViewState.Success;
+
+                NewCommentContent = null;
+                ReplyToComment = null;
+                ReplyRoot = null;
             }
             finally
             {
@@ -285,7 +391,6 @@ namespace Sphere.ViewModels.DiaryViewModels
             ReplyToComment = null;
             NewCommentContent = string.Empty;
             ReplyRoot = null;
-
         }
 
         // like commnet và reply
@@ -332,7 +437,6 @@ namespace Sphere.ViewModels.DiaryViewModels
             IsBusy = true;
             await LoadCommentsAsync();
             IsBusy = false;
-
         }
 
         [RelayCommand]
@@ -423,12 +527,7 @@ namespace Sphere.ViewModels.DiaryViewModels
 
         private void RemoveReplies(Guid parentId)
         {
-            var items = FlatComments
-        .Where(x =>
-            (x.Level == 1 && x.RootCommentId == parentId) ||
-            x is LoadMoreRepliesItem lm && lm.ParentId == parentId)
-        .ToList();
-
+            var items = FlatComments.Where(x => (x.Level == 1 && x.RootCommentId == parentId) || x is LoadMoreRepliesItem lm && lm.ParentId == parentId).ToList();
 
             foreach (var i in items)
                 FlatComments.Remove(i);
@@ -460,7 +559,6 @@ namespace Sphere.ViewModels.DiaryViewModels
                 insertIndex++;
             }
 
-
             foreach (var reply in newReplies)
             {
                 FlatComments.Insert(insertIndex++,
@@ -471,7 +569,10 @@ namespace Sphere.ViewModels.DiaryViewModels
                         Level = 1,
                         RootCommentId = parent.Id,
                         IsLiked = reply.IsLiked,
-                        LikeCount = reply.LikeCount
+                        LikeCount = reply.LikeCount,
+                        RequestEdit = OnEditCommentRequested,
+                        RequestDelete = OnDeleteCommentRequested
+
                     });
             }
 
@@ -503,7 +604,10 @@ namespace Sphere.ViewModels.DiaryViewModels
                     Level = 1,
                     RootCommentId = parent.Id,
                     IsLiked = reply.IsLiked,
-                    LikeCount = reply.LikeCount
+                    LikeCount = reply.LikeCount,
+                    RequestEdit = OnEditCommentRequested,
+                    RequestDelete = OnDeleteCommentRequested
+
                 });
             }
             if (parent.HasMoreReplies)
@@ -536,7 +640,10 @@ namespace Sphere.ViewModels.DiaryViewModels
                     Level = 1,
                     RootCommentId = parent.Id,
                     IsLiked = reply.IsLiked,
-                    LikeCount = reply.LikeCount
+                    LikeCount = reply.LikeCount,
+                    RequestEdit = OnEditCommentRequested,
+                    RequestDelete = OnDeleteCommentRequested
+
                 });
             }
             // Nếu hết replies thì xóa dòng LoadMore
@@ -567,6 +674,7 @@ namespace Sphere.ViewModels.DiaryViewModels
                 ScrollToLastReply(parent);
             });
         }
+
         private void ScrollToLastReply(DiaryCommentUIModel parent)
         {
             MainThread.BeginInvokeOnMainThread(async () =>
@@ -581,8 +689,5 @@ namespace Sphere.ViewModels.DiaryViewModels
                     ScrollToItem?.Invoke(lastReply);
             });
         }
-
-
-
     }
 }
