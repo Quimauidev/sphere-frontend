@@ -18,54 +18,112 @@ namespace Sphere.ViewModels.DiaryViewModels
 {
     public partial class DiaryCommentViewModel : BaseViewModel, IModalParameterReceiver<Guid>
     {
+        private const int PageSize = 20;
         private readonly IDiaryService _diaryService;
         private Guid _diaryId;
 
-        public ObservableCollection<DiaryCommentUIModel> Comments { get; } = [];
-        public ObservableCollection<DiaryCommentFlatItem> FlatComments { get; } = [];
-
-        [ObservableProperty]
-        private DiaryCommentUIModel? replyRoot;
-
-        public DiaryCommentViewModel(IDiaryService diaryService)
-        {
-            _diaryService = diaryService;
-        }
-
         private bool _isLoaded;
+        private int _page = 1;
+      
+        [ObservableProperty]
+        private Guid? editingCommentId;
 
         [ObservableProperty]
-        private bool isBusy;
-
-        [ObservableProperty]
-        private DiaryCommentUIModel? replyToComment;
-
-        public bool IsReplying => ReplyToComment != null;
-
-        partial void OnReplyToCommentChanged(DiaryCommentUIModel? value)
-        {
-            OnPropertyChanged(nameof(IsReplying));
-        }
-
-        [ObservableProperty]
-        private string? newCommentContent;
-
-        public Action<int>? ScrollToIndex { get; set; }
-        public Action<DiaryCommentFlatItem>? ScrollToFlatItem { get; set; }
-        public Action<object>? ScrollToItem { get; set; }
-
-        public Action? RequestFocusCommentEditor { get; set; }
-
-        public Action<Guid, Guid>? ScrollToReplyInReplies { get; set; }
-
-        [ObservableProperty]
-        private int likeCount;
+        private Guid? editingReplyToUserId;
 
         [ObservableProperty]
         private string? errorMessage;
 
         [ObservableProperty]
         private bool hasMoreComments = true;
+
+        [ObservableProperty]
+        private bool isBusy;
+
+        [ObservableProperty]
+        private bool isLoadingMore;
+
+        [ObservableProperty]
+        private bool isRefreshing;
+
+        [ObservableProperty]
+        private int likeCount;
+
+        [ObservableProperty]
+        private string? newCommentContent;
+
+        [ObservableProperty]
+        private DiaryCommentUIModel? replyRoot;
+
+        [ObservableProperty]
+        private DiaryCommentUIModel? replyToComment;
+
+        public DiaryCommentViewModel(IDiaryService diaryService)
+        {
+            _diaryService = diaryService;
+        }
+
+        public ObservableCollection<DiaryCommentUIModel> Comments { get; } = [];
+        public ObservableCollection<DiaryCommentFlatItem> FlatComments { get; } = [];
+        public bool IsEditing => EditingCommentId != null;
+        public bool IsReplying => ReplyToComment != null;
+
+        public Action? RequestFocusCommentEditor { get; set; }
+
+        public Action<DiaryCommentFlatItem>? ScrollToFlatItem { get; set; }
+
+        public Action<int>? ScrollToIndex { get; set; }
+
+        public Action<object>? ScrollToItem { get; set; }
+
+        public Action<Guid, Guid>? ScrollToReplyInReplies { get; set; }
+
+        [RelayCommand]
+        public void CancelReply()
+        {
+            EditingReplyToUserId = null;
+            ReplyToComment = null;
+            NewCommentContent = string.Empty;
+            ReplyRoot = null;
+        }
+
+        // like commnet và reply
+        [RelayCommand]
+        public async Task CommentLikeAsync(DiaryCommentFlatItem item)
+        {
+            if (item.IsBusy)
+                return;
+
+            item.IsBusy = true;
+
+            // 🔥 UI đổi NGAY
+            item.IsLiked = !item.IsLiked;
+            item.LikeCount += item.IsLiked ? 1 : -1;
+
+            try
+            {
+                var res = await _diaryService.SetCommentLikeAsync(item.Comment.Id);
+
+                if (!res.IsSuccess)
+                    await ApiResponseHelper.ShowApiErrorsAsync(res, "Thao tác thích thất bại");
+
+                // ✅ Sync nhẹ (chỉ khi lệch)
+                if (item.IsLiked != res.Data!.IsLiked)
+                    item.IsLiked = res.Data.IsLiked;
+
+                item.LikeCount = res.Data.LikeCount;
+            }
+            catch
+            {
+                // ❌ rollback nếu fail
+                item.IsLiked = !item.IsLiked;
+                item.LikeCount += item.IsLiked ? 1 : -1;
+            }
+            finally
+            {
+                item.IsBusy = false;
+            }
+        }
 
         [RelayCommand]
         public async Task LoadCommentsAsync()
@@ -88,19 +146,68 @@ namespace Sphere.ViewModels.DiaryViewModels
             UiState = FlatComments.Count == 0 ? UiViewState.Empty : UiViewState.Success;
         }
 
-        [ObservableProperty]
-        private bool isRefreshing;
+        [RelayCommand]
+        public async Task LoadMoreCommentsAsync()
+        {
+            if (IsLoadingMore || !HasMoreComments)
+                return;
+
+            IsLoadingMore = true;
+            try
+            {
+                var nextPage = _page + 1;
+
+                var res = await _diaryService.GetCommentAsync(_diaryId, nextPage, PageSize);
+                if (!res.IsSuccess || res.Data == null || !res.Data.Any())
+                {
+                    HasMoreComments = false;
+                    return;
+                }
+                _page = nextPage;
+                var newComments = res.Data.ToList();
+
+                foreach (var c in newComments)
+                    Comments.Add(c);
+
+                BuildFlatComments();
+
+                // Nếu ít hơn pageSize → hết data
+                if (newComments.Count < PageSize)
+                    HasMoreComments = false;
+            }
+            finally
+            {
+                IsLoadingMore = false;
+            }
+        }
 
         [RelayCommand]
-        private async Task RefreshCommentsAsync()
+        public async Task LoadMoreRepliesAsync(LoadMoreRepliesItem item)
         {
-            IsRefreshing = true;
-            _isLoaded = false;
-            _page = 1;
-            Comments.Clear();
-            FlatComments.Clear();
+            var parent = Comments.FirstOrDefault(c => c.Id == item.ParentId);
+            if (parent == null || parent.IsLoadingReplies)
+                return;
+
+            await LoadRepliesInternalAsync(parent, isFirstPage: false);
+        }
+
+        public async void Receive(Guid parameter)
+        {
+            _diaryId = parameter;
+            IsBusy = true;
             await LoadCommentsAsync();
-            IsRefreshing = false;
+            IsBusy = false;
+        }
+
+        [RelayCommand]
+        public void Reply(DiaryCommentFlatItem item)
+        {
+            ReplyToComment = item.Comment;
+            ReplyRoot = Comments.FirstOrDefault(c => c.Id == item.RootCommentId);
+
+            NewCommentContent = string.Empty;
+            RequestFocusCommentEditor?.Invoke();
+            ScrollToFlatItem?.Invoke(item);
         }
 
         [RelayCommand]
@@ -111,31 +218,353 @@ namespace Sphere.ViewModels.DiaryViewModels
             await LoadCommentsAsync();
         }
 
-        private int _page = 1;
-        private const int PageSize = 20;
-        private bool _hasMore = true;
+        [RelayCommand]
+        public async Task SendCommentAsync()
+        {
+            if (string.IsNullOrWhiteSpace(NewCommentContent))
+                return;
 
-        [ObservableProperty]
-        private Guid? editingCommentId;
-        [ObservableProperty]
-        private Guid? editingReplyToUserId;
+            if (IsBusy) return;
+            IsBusy = true;
+            // ⭐ Ẩn bàn phím NGAY
+            KeyboardService.HideKeyboard();
+            try
+            {
+                var content = NewCommentContent!.Trim();
+                // ================== ✏️ EDIT COMMENT ==================
+                if (EditingCommentId != null)
+                {
+                    var update = await _diaryService.UpdateCommentAsync(EditingCommentId.Value, content, EditingReplyToUserId);
+                    if (!update.IsSuccess)
+                    {
+                        await ApiResponseHelper.ShowApiErrorsAsync(update, "Cập nhật bình luận thất bại");
+                        return;
+                    }
 
+                    var item = FlatComments.First(x => x.Id == EditingCommentId.Value);
+                    item.Comment.Content = content;
 
-        public bool IsEditing => EditingCommentId != null;
+                    // ================= CASE: BỎ REPLY → THÀNH COMMENT GỐC =================
+                    if (EditingReplyToUserId == null && item.Level == 1)
+                    {
+                        var oldRootId = item.RootCommentId;
 
-        [ObservableProperty]
-        private bool isLoadingMore;
+                        // 1️⃣ Xóa khỏi replies của parent cũ
+                        var oldParent = Comments.FirstOrDefault(c => c.Id == oldRootId);
+                        oldParent?.Replies.Remove(item.Comment);
+
+                        // 2️⃣ Reset quan hệ reply
+                        item.Comment.ReplyToUserProfileId = null;
+                        item.Comment.ReplyToFullName = null;
+                        item.Comment.ParentCommentId = null;
+                        // 🔥 CỰC QUAN TRỌNG
+                        item.Comment.IsRepliesExpanded = false;
+                        item.Comment.HasMoreReplies = false;
+                        item.Comment.ReplyPage = 1;
+                        item.Comment.Replies.Clear();
+
+                        // 3️⃣ Đưa thành comment gốc (nếu chưa có trong Comments)
+                        if (!Comments.Any(c => c.Id == item.Comment.Id))
+                            Comments.Insert(0, item.Comment);
+
+                        // 4️⃣ Rebuild flat list (CỰC KỲ QUAN TRỌNG)
+                        BuildFlatComments();
+                    }
+                    else
+                    {
+                        // ================= CASE: VẪN LÀ REPLY =================
+                        item.Comment.ReplyToUserProfileId = EditingReplyToUserId;
+                        item.Comment.ReplyToFullName = ReplyToComment?.FullName;
+                    }
+
+                    ResetEditState();
+                    return;
+                }
+
+                var replyId = ReplyRoot?.Id; // null nếu comment gốc
+                var res = await _diaryService.CreateCommentAsync(_diaryId, NewCommentContent!.Trim(), replyId);
+                if (!res.IsSuccess)
+                {
+                    await ApiResponseHelper.ShowApiErrorsAsync(res, "Gửi bình luận thất bại");
+                }
+                if (replyId == null)
+                {
+                    Comments.Insert(0, res.Data!);
+                    BuildFlatComments(); // Cập nhật lại FlatComments để hiển thị comment gốc mới
+                }                
+                else
+                {
+                    var root = ReplyRoot;
+                    if (root == null)
+                        return; // không crash, không gửi
+                   
+
+                    res.Data!.ParentCommentId = root.Id;
+                    res.Data.IsLocal = true;
+                    root.Replies.Add(res.Data!);
+                    InsertNewReplies(root, new List<DiaryCommentUIModel> { res.Data! });
+
+                    // scroll tới reply mới
+                    // 🔥 SCROLL ĐÚNG UX
+                    if (root.HasMoreReplies)
+                    {
+                        // còn replies chưa load → scroll tới "Xem thêm"
+                        ScrollOnFirstExpand(root);
+                    }
+                    else
+                    {
+                        // đã load hết → scroll tới reply mới
+                        ScrollToLastReply(root);
+                    }
+                }
+                if (UiState == UiViewState.Empty)
+                    UiState = UiViewState.Success;
+
+                NewCommentContent = null;
+                ReplyToComment = null;
+                ReplyRoot = null;
+            }
+            finally
+            {
+                IsBusy = false;
+            }
+        }
+
+        [RelayCommand]
+        public async Task ToggleRepliesAsync(DiaryCommentFlatItem item)
+        {
+            var parent = item.Comment;
+
+            // 🔽 ĐÓNG
+            if (parent.IsRepliesExpanded)
+            {
+                parent.IsRepliesExpanded = false;
+                parent.ReplyPage = 1;
+                parent.Replies.Clear();
+                RemoveReplies(parent.Id);
+                return;
+            }
+
+            // 🔼 MỞ → load page đầu, KHÔNG scroll, KHÔNG rebuild toàn bộ replies
+            await LoadRepliesInternalAsync(parent, isFirstPage: true);
+        }
+
+        private void BuildFlatComments()
+        {
+            var cache = FlatComments.ToDictionary(x => x.Id);
+
+            FlatComments.Clear();
+
+            foreach (var parent in Comments)
+            {
+                FlatComments.Add(CreateOrReuse(parent, 0, parent.Id, cache));
+
+                if (parent.Replies != null)
+                {
+                    foreach (var reply in parent.Replies)
+                        FlatComments.Add(CreateOrReuse(reply, 1, parent.Id, cache));
+                }
+
+                // ⭐⭐⭐ THÊM ĐOẠN NÀY
+                if (parent.HasMoreReplies)
+                {
+                    FlatComments.Add(CreateLoadMoreItem(parent.Id));
+                }
+            }
+        }
+
+        // helper factory to create a new flat item
+        private DiaryCommentFlatItem CreateFlatItem(DiaryCommentUIModel comment, int level, Guid rootId)
+            => new DiaryCommentFlatItem
+            {
+                Id = comment.Id,
+                Comment = comment,
+                Level = level,
+                RootCommentId = rootId,
+                IsLiked = comment.IsLiked,
+                LikeCount = comment.LikeCount,
+                RequestEdit = OnEditCommentRequested,
+                RequestDelete = OnDeleteCommentRequested
+            };
+
+        private LoadMoreRepliesItem CreateLoadMoreItem(Guid parentId)
+            => new LoadMoreRepliesItem
+            {
+                ParentId = parentId,
+                Level = 1,
+                RootCommentId = parentId
+            };
+
+        // Update CreateOrReuse so cached flat items are refreshed with current level/root/comment when reused
+        private DiaryCommentFlatItem CreateOrReuse(DiaryCommentUIModel comment, int level, Guid rootId, Dictionary<Guid, DiaryCommentFlatItem> cache)
+        {
+            if (cache.TryGetValue(comment.Id, out var item))
+            {
+                // refresh fields to reflect current hierarchy and state
+                item.Level = level;
+                item.RootCommentId = rootId;
+                item.Comment = comment;
+                item.IsLiked = comment.IsLiked;
+                item.LikeCount = comment.LikeCount;
+                // ensure actions are set (in case cached item was different)
+                item.RequestEdit = OnEditCommentRequested;
+                item.RequestDelete = OnDeleteCommentRequested;
+                return item;
+            }
+
+            return CreateFlatItem(comment, level, rootId);
+        }
+
+        private void InsertNewReplies(DiaryCommentUIModel parent, List<DiaryCommentUIModel> newReplies)
+        {
+            // ❗ Xóa LoadMore cũ
+            var loadMore = FlatComments
+                .OfType<LoadMoreRepliesItem>()
+                .FirstOrDefault(x => x.ParentId == parent.Id);
+
+            if (loadMore != null)
+                FlatComments.Remove(loadMore);
+
+            var parentIndex = FlatComments
+                .Select((x, i) => new { x, i })
+                .First(x => x.x.Id == parent.Id)
+                .i;
+
+            // Insert sau replies hiện tại
+            var insertIndex = parentIndex + 1;
+
+            // nhảy qua replies hiện có
+            while (insertIndex < FlatComments.Count &&
+                   FlatComments[insertIndex].Level == 1 &&
+                   FlatComments[insertIndex].RootCommentId == parent.Id)
+            {
+                insertIndex++;
+            }
+
+            foreach (var reply in newReplies)
+            {
+                FlatComments.Insert(insertIndex++,
+                    CreateFlatItem(reply, 1, parent.Id));
+            }
+
+            // ⭐ Thêm LoadMore nếu còn
+            if (parent.HasMoreReplies)
+            {
+                FlatComments.Insert(insertIndex,
+                    CreateLoadMoreItem(parent.Id));
+            }
+        }
+
+        private void InsertRepliesBeforeLoadMore(DiaryCommentUIModel parent, List<DiaryCommentUIModel> newReplies)
+        {
+            if (newReplies == null || newReplies.Count == 0)
+                return;
+            // Tìm vị trí dòng LoadMore
+            var loadMoreIndex = FlatComments.Select((x, i) => new { x, i })
+                .FirstOrDefault(x => x.x is LoadMoreRepliesItem lm && lm.ParentId == parent.Id)?.i;
+            if (loadMoreIndex == null)
+                return;
+            var insertIndex = loadMoreIndex.Value;
+            foreach (var reply in newReplies)
+            {
+                FlatComments.Insert(insertIndex++, CreateFlatItem(reply, 1, parent.Id));
+            }
+            // Nếu hết replies thì xóa dòng LoadMore
+            if (!parent.HasMoreReplies)
+            {
+                var loadMore = FlatComments.OfType<LoadMoreRepliesItem>().FirstOrDefault(x => x.ParentId == parent.Id);
+                if (loadMore != null)
+                    FlatComments.Remove(loadMore);
+            }
+        }
+
+        private void InsertRepliesOnExpand(DiaryCommentUIModel parent, List<DiaryCommentUIModel> replies)
+        {
+            // Xóa replies cũ (nếu có) và dòng LoadMore cũ
+            RemoveReplies(parent.Id);
+            var parentIndex = FlatComments.Select((x, i) => new { x, i }).First(x => x.x.Id == parent.Id).i;
+            var insertIndex = parentIndex + 1;
+            foreach (var reply in replies)
+            {
+                FlatComments.Insert(insertIndex++, CreateFlatItem(reply, 1, parent.Id));
+            }
+            if (parent.HasMoreReplies)
+            {
+                FlatComments.Insert(insertIndex, CreateLoadMoreItem(parent.Id));
+            }
+        }
+
+        private async Task LoadRepliesInternalAsync(DiaryCommentUIModel parent, bool isFirstPage)
+        {
+            parent.IsLoadingReplies = true;
+
+            var res = await _diaryService.GetRepliesAsync(
+                parent.Id,
+                parent.ReplyPage,
+                parent.ReplyPageSize);
+
+            parent.IsLoadingReplies = false;
+
+            if (!res.IsSuccess || res.Data == null)
+                return;
+
+            var newReplies = res.Data.ToList();
+
+            if (isFirstPage)
+            {
+                // Giữ lại reply client-side (chưa có trên server page 1)
+                var clientReplies = parent.Replies.Where(r => r.IsLocal).ToList();
+                parent.Replies.Clear();
+                foreach (var r in clientReplies)
+                    parent.Replies.Add(r);
+                foreach (var r in newReplies)
+                {
+                    if (!parent.Replies.Any(x => x.Id == r.Id))
+                        parent.Replies.Add(r);
+                }
+                foreach (var r in parent.Replies)
+                {
+                    if (newReplies.Any(x => x.Id == r.Id))
+                        r.IsLocal = false;
+                }
+                parent.HasMoreReplies = newReplies.Count == parent.ReplyPageSize;
+                parent.ReplyPage++;
+                parent.IsRepliesExpanded = true;
+                // Chỉ insert replies vào FlatComments, không scroll
+                InsertRepliesOnExpand(parent, parent.Replies.ToList());
+            }
+            else
+            {
+                // Khi load thêm, chỉ insert replies mới vào FlatComments trước dòng LoadMore
+                var repliesToInsert = newReplies.Where(r => !parent.Replies.Any(x => x.Id == r.Id)).ToList();
+                foreach (var r in repliesToInsert)
+                    parent.Replies.Add(r);
+                foreach (var r in parent.Replies)
+                {
+                    if (newReplies.Any(x => x.Id == r.Id))
+                        r.IsLocal = false;
+                }
+                parent.HasMoreReplies = newReplies.Count == parent.ReplyPageSize;
+                parent.ReplyPage++;
+                parent.IsRepliesExpanded = true;
+                InsertRepliesBeforeLoadMore(parent, repliesToInsert);
+            }
+        }
+
         private async void OnDeleteCommentRequested(DiaryCommentFlatItem item)
         {
             if (IsBusy)
                 return;
 
             IsBusy = true;
-
+            Console.WriteLine($"[DeleteComment] Start - CommentId: {item.Id}");
             var res = await _diaryService.DeleteCommentAsync(item.Id);
 
             if (!res.IsSuccess)
             {
+                Console.WriteLine($"[DeleteComment] FAILED - CommentId: {item.Id}");
+                Console.WriteLine($"Message: {res.Message}");
+                Console.WriteLine($"Errors: {string.Join(", ", res.Errors?.Select(e => e.Description) ?? [])}");
                 await ApiResponseHelper.ShowApiErrorsAsync(res, "Xóa bình luận thất bại");
                 IsBusy = false;
                 return;
@@ -212,380 +641,21 @@ namespace Sphere.ViewModels.DiaryViewModels
             ScrollToFlatItem?.Invoke(item);
         }
 
-        [RelayCommand]
-        public async Task LoadMoreCommentsAsync()
+        partial void OnReplyToCommentChanged(DiaryCommentUIModel? value)
         {
-            if (IsLoadingMore || !HasMoreComments)
-                return;
-
-            IsLoadingMore = true;
-            try
-            {
-                var nextPage = _page + 1;
-
-                var res = await _diaryService.GetCommentAsync(_diaryId, nextPage, PageSize);
-                if (!res.IsSuccess || res.Data == null || !res.Data.Any())
-                {
-                    HasMoreComments = false;
-                    return;
-                }
-                _page = nextPage;
-                var newComments = res.Data.ToList();
-
-                foreach (var c in newComments)
-                    Comments.Add(c);
-
-                BuildFlatComments();
-
-                // Nếu ít hơn pageSize → hết data
-                if (newComments.Count < PageSize)
-                    HasMoreComments = false;
-            }
-            finally
-            {
-                IsLoadingMore = false;
-            }
+            OnPropertyChanged(nameof(IsReplying));
         }
-
-        private void BuildFlatComments()
+        [RelayCommand]
+        private async Task RefreshCommentsAsync()
         {
-            var cache = FlatComments.ToDictionary(x => x.Id);
-
+            IsRefreshing = true;
+            _isLoaded = false;
+            _page = 1;
+            Comments.Clear();
             FlatComments.Clear();
-
-            foreach (var parent in Comments)
-            {
-                FlatComments.Add(CreateOrReuse(parent, 0, parent.Id, cache));
-
-                if (parent.Replies != null)
-                {
-                    foreach (var reply in parent.Replies)
-                        FlatComments.Add(CreateOrReuse(reply, 1, parent.Id, cache));
-                }
-
-                // ⭐⭐⭐ THÊM ĐOẠN NÀY
-                if (parent.HasMoreReplies)
-                {
-                    FlatComments.Add(new LoadMoreRepliesItem
-                    {
-                        ParentId = parent.Id,
-                        Level = 1,
-                        RootCommentId = parent.Id
-                    });
-                }
-            }
-        }
-
-        // Update CreateOrReuse so cached flat items are refreshed with current level/root/comment when reused
-        private DiaryCommentFlatItem CreateOrReuse(DiaryCommentUIModel comment, int level, Guid rootId, Dictionary<Guid, DiaryCommentFlatItem> cache)
-        {
-            if (cache.TryGetValue(comment.Id, out var item))
-            {
-                // refresh fields to reflect current hierarchy and state
-                item.Level = level;
-                item.RootCommentId = rootId;
-                item.Comment = comment;
-                item.IsLiked = comment.IsLiked;
-                item.LikeCount = comment.LikeCount;
-                // ensure actions are set (in case cached item was different)
-                item.RequestEdit = OnEditCommentRequested;
-                item.RequestDelete = OnDeleteCommentRequested;
-                return item;
-            }
-
-            return new DiaryCommentFlatItem
-            {
-                Id = comment.Id,
-                Comment = comment,
-                Level = level,
-                RootCommentId = rootId,
-                IsLiked = comment.IsLiked,
-                LikeCount = comment.LikeCount,
-                RequestEdit = OnEditCommentRequested,
-                RequestDelete = OnDeleteCommentRequested
-
-            };
-        }
-
-        [RelayCommand]
-        public async Task SendCommentAsync()
-        {
-            if (string.IsNullOrWhiteSpace(NewCommentContent))
-                return;
-
-            if (IsBusy) return;
-            IsBusy = true;
-            // ⭐ Ẩn bàn phím NGAY
-            KeyboardService.HideKeyboard();
-            try
-            {
-                // ================== ✏️ EDIT COMMENT ==================
-                if (EditingCommentId != null)
-                {
-                    var content = NewCommentContent!.Trim();
-                    var update = await _diaryService.UpdateCommentAsync( EditingCommentId.Value, content, EditingReplyToUserId);
-                    if (!update.IsSuccess)
-                    {
-                        await ApiResponseHelper.ShowApiErrorsAsync(update, "Cập nhật bình luận thất bại");
-                        return;
-                    }
-
-                    var item = FlatComments.First(x => x.Id == EditingCommentId.Value);
-                    item.Comment.Content = content;
-
-                    // ================= CASE: BỎ REPLY → THÀNH COMMENT GỐC =================
-                    if (EditingReplyToUserId == null && item.Level == 1)
-                    {
-                        var oldRootId = item.RootCommentId;
-
-                        // 1️⃣ Xóa khỏi replies của parent cũ
-                        var oldParent = Comments.FirstOrDefault(c => c.Id == oldRootId);
-                        oldParent?.Replies.Remove(item.Comment);
-
-                        // 2️⃣ Reset quan hệ reply
-                        item.Comment.ReplyToUserProfileId = null;
-                        item.Comment.ReplyToFullName = null;
-                        item.Comment.ParentCommentId = null;
-                        // 🔥 CỰC QUAN TRỌNG
-                        item.Comment.IsRepliesExpanded = false;
-                        item.Comment.HasMoreReplies = false;
-                        item.Comment.ReplyPage = 1;
-                        item.Comment.Replies.Clear();
-
-                        // 3️⃣ Đưa thành comment gốc (nếu chưa có trong Comments)
-                        if (!Comments.Any(c => c.Id == item.Comment.Id))
-                            Comments.Insert(0, item.Comment);
-
-                        // 4️⃣ Rebuild flat list (CỰC KỲ QUAN TRỌNG)
-                        BuildFlatComments();
-                    }
-                    else
-                    {
-                        // ================= CASE: VẪN LÀ REPLY =================
-                        item.Comment.ReplyToUserProfileId = EditingReplyToUserId;
-                        item.Comment.ReplyToFullName = ReplyToComment?.FullName;
-                    }
-
-                    ResetEditState();
-                    return;
-                }
-
-                var replyId = ReplyRoot?.Id;
-                var res = await _diaryService.CreateCommentAsync(_diaryId, NewCommentContent!.Trim(), replyId);
-
-                if (!res.IsSuccess)
-                {
-                    await ApiResponseHelper.ShowApiErrorsAsync(res, "Gửi bình luận thất bại");
-                }
-
-                if (replyId == null)
-                {
-                    Comments.Insert(0, res.Data!);
-                    BuildFlatComments(); // Cập nhật lại FlatComments để hiển thị comment gốc mới
-                }
-                else
-                {
-                    var root = ReplyRoot;
-                    if (root == null)
-                        return; // không crash, không gửi
-
-                    // 2️⃣ ÉP ParentCommentId về root (QUAN TRỌNG)
-                    res.Data!.ParentCommentId = root.Id;
-                    res.Data!.IsLocal = true; // ⭐ QUAN TRỌNG
-                                              // 🔥 QUAN TRỌNG
-                                              // luôn thêm reply mới vào Replies (client-side)
-                    root.Replies.Add(res.Data!);
-
-                    // nhưng KHÔNG đổi ReplyPage, HasMoreReplies
-                    InsertNewReplies(root, new List<DiaryCommentUIModel> { res.Data! });
-
-                    // scroll tới reply mới
-                    // 🔥 SCROLL ĐÚNG UX
-                    if (root.HasMoreReplies)
-                    {
-                        // còn replies chưa load → scroll tới "Xem thêm"
-                        ScrollOnFirstExpand(root);
-                    }
-                    else
-                    {
-                        // đã load hết → scroll tới reply mới
-                        ScrollToLastReply(root);
-                    }
-                }
-                if (UiState == UiViewState.Empty)
-                    UiState = UiViewState.Success;
-
-                NewCommentContent = null;
-                ReplyToComment = null;
-                ReplyRoot = null;
-            }
-            finally
-            {
-                IsBusy = false;
-            }
-        }
-        private void ResetEditState()
-        {
-            EditingCommentId = null;
-            EditingReplyToUserId = null;
-            NewCommentContent = null;
-            ReplyToComment = null;
-            ReplyRoot = null;
-        }
-
-
-        [RelayCommand]
-        public void Reply(DiaryCommentFlatItem item)
-        {
-            ReplyToComment = item.Comment;
-            ReplyRoot = Comments.FirstOrDefault(c => c.Id == item.RootCommentId);
-
-            NewCommentContent = string.Empty;
-            RequestFocusCommentEditor?.Invoke();
-            ScrollToFlatItem?.Invoke(item);
-        }
-
-        [RelayCommand]
-        public void CancelReply()
-        {
-            EditingReplyToUserId = null;
-            ReplyToComment = null;
-            NewCommentContent = string.Empty;
-            ReplyRoot = null;
-        }
-
-        // like commnet và reply
-        [RelayCommand]
-        public async Task CommentLikeAsync(DiaryCommentFlatItem item)
-        {
-            if (item.IsBusy)
-                return;
-
-            item.IsBusy = true;
-
-            // 🔥 UI đổi NGAY
-            item.IsLiked = !item.IsLiked;
-            item.LikeCount += item.IsLiked ? 1 : -1;
-
-            try
-            {
-                var res = await _diaryService.SetCommentLikeAsync(item.Comment.Id);
-
-                if (!res.IsSuccess)
-                    await ApiResponseHelper.ShowApiErrorsAsync(res, "Thao tác thích thất bại");
-
-                // ✅ Sync nhẹ (chỉ khi lệch)
-                if (item.IsLiked != res.Data!.IsLiked)
-                    item.IsLiked = res.Data.IsLiked;
-
-                item.LikeCount = res.Data.LikeCount;
-            }
-            catch
-            {
-                // ❌ rollback nếu fail
-                item.IsLiked = !item.IsLiked;
-                item.LikeCount += item.IsLiked ? 1 : -1;
-            }
-            finally
-            {
-                item.IsBusy = false;
-            }
-        }
-
-        public async void Receive(Guid parameter)
-        {
-            _diaryId = parameter;
-            IsBusy = true;
             await LoadCommentsAsync();
-            IsBusy = false;
+            IsRefreshing = false;
         }
-
-        [RelayCommand]
-        public async Task ToggleRepliesAsync(DiaryCommentFlatItem item)
-        {
-            var parent = item.Comment;
-
-            // 🔽 ĐÓNG
-            if (parent.IsRepliesExpanded)
-            {
-                parent.IsRepliesExpanded = false;
-                parent.ReplyPage = 1;
-                parent.Replies.Clear();
-                RemoveReplies(parent.Id);
-                return;
-            }
-
-            // 🔼 MỞ → load page đầu, KHÔNG scroll, KHÔNG rebuild toàn bộ replies
-            await LoadRepliesInternalAsync(parent, isFirstPage: true);
-        }
-
-        [RelayCommand]
-        public async Task LoadMoreRepliesAsync(LoadMoreRepliesItem item)
-        {
-            var parent = Comments.FirstOrDefault(c => c.Id == item.ParentId);
-            if (parent == null || parent.IsLoadingReplies)
-                return;
-
-            await LoadRepliesInternalAsync(parent, isFirstPage: false);
-        }
-
-        private async Task LoadRepliesInternalAsync(DiaryCommentUIModel parent, bool isFirstPage)
-        {
-            parent.IsLoadingReplies = true;
-
-            var res = await _diaryService.GetRepliesAsync(
-                parent.Id,
-                parent.ReplyPage,
-                parent.ReplyPageSize);
-
-            parent.IsLoadingReplies = false;
-
-            if (!res.IsSuccess || res.Data == null)
-                return;
-
-            var newReplies = res.Data.ToList();
-
-            if (isFirstPage)
-            {
-                // Giữ lại reply client-side (chưa có trên server page 1)
-                var clientReplies = parent.Replies.Where(r => r.IsLocal).ToList();
-                parent.Replies.Clear();
-                foreach (var r in clientReplies)
-                    parent.Replies.Add(r);
-                foreach (var r in newReplies)
-                {
-                    if (!parent.Replies.Any(x => x.Id == r.Id))
-                        parent.Replies.Add(r);
-                }
-                foreach (var r in parent.Replies)
-                {
-                    if (newReplies.Any(x => x.Id == r.Id))
-                        r.IsLocal = false;
-                }
-                parent.HasMoreReplies = newReplies.Count == parent.ReplyPageSize;
-                parent.ReplyPage++;
-                parent.IsRepliesExpanded = true;
-                // Chỉ insert replies vào FlatComments, không scroll
-                InsertRepliesOnExpand(parent, parent.Replies.ToList());
-            }
-            else
-            {
-                // Khi load thêm, chỉ insert replies mới vào FlatComments trước dòng LoadMore
-                var repliesToInsert = newReplies.Where(r => !parent.Replies.Any(x => x.Id == r.Id)).ToList();
-                foreach (var r in repliesToInsert)
-                    parent.Replies.Add(r);
-                foreach (var r in parent.Replies)
-                {
-                    if (newReplies.Any(x => x.Id == r.Id))
-                        r.IsLocal = false;
-                }
-                parent.HasMoreReplies = newReplies.Count == parent.ReplyPageSize;
-                parent.ReplyPage++;
-                parent.IsRepliesExpanded = true;
-                InsertRepliesBeforeLoadMore(parent, repliesToInsert);
-            }
-        }
-
         private void RemoveReplies(Guid parentId)
         {
             var items = FlatComments.Where(x => (x.Level == 1 && x.RootCommentId == parentId) || x is LoadMoreRepliesItem lm && lm.ParentId == parentId).ToList();
@@ -594,128 +664,14 @@ namespace Sphere.ViewModels.DiaryViewModels
                 FlatComments.Remove(i);
         }
 
-        private void InsertNewReplies(DiaryCommentUIModel parent, List<DiaryCommentUIModel> newReplies)
+        private void ResetEditState()
         {
-            // ❗ Xóa LoadMore cũ
-            var loadMore = FlatComments
-                .OfType<LoadMoreRepliesItem>()
-                .FirstOrDefault(x => x.ParentId == parent.Id);
-
-            if (loadMore != null)
-                FlatComments.Remove(loadMore);
-
-            var parentIndex = FlatComments
-                .Select((x, i) => new { x, i })
-                .First(x => x.x.Id == parent.Id)
-                .i;
-
-            // Insert sau replies hiện tại
-            var insertIndex = parentIndex + 1;
-
-            // nhảy qua replies hiện có
-            while (insertIndex < FlatComments.Count &&
-                   FlatComments[insertIndex].Level == 1 &&
-                   FlatComments[insertIndex].RootCommentId == parent.Id)
-            {
-                insertIndex++;
-            }
-
-            foreach (var reply in newReplies)
-            {
-                FlatComments.Insert(insertIndex++,
-                    new DiaryCommentFlatItem
-                    {
-                        Id = reply.Id,
-                        Comment = reply,
-                        Level = 1,
-                        RootCommentId = parent.Id,
-                        IsLiked = reply.IsLiked,
-                        LikeCount = reply.LikeCount,
-                        RequestEdit = OnEditCommentRequested,
-                        RequestDelete = OnDeleteCommentRequested
-
-                    });
-            }
-
-            // ⭐ Thêm LoadMore nếu còn
-            if (parent.HasMoreReplies)
-            {
-                FlatComments.Insert(insertIndex,
-                    new LoadMoreRepliesItem
-                    {
-                        ParentId = parent.Id,
-                        Level = 1,
-                        RootCommentId = parent.Id
-                    });
-            }
+            EditingCommentId = null;
+            EditingReplyToUserId = null;
+            NewCommentContent = null;
+            ReplyToComment = null;
+            ReplyRoot = null;
         }
-
-        private void InsertRepliesOnExpand(DiaryCommentUIModel parent, List<DiaryCommentUIModel> replies)
-        {
-            // Xóa replies cũ (nếu có) và dòng LoadMore cũ
-            RemoveReplies(parent.Id);
-            var parentIndex = FlatComments.Select((x, i) => new { x, i }).First(x => x.x.Id == parent.Id).i;
-            var insertIndex = parentIndex + 1;
-            foreach (var reply in replies)
-            {
-                FlatComments.Insert(insertIndex++, new DiaryCommentFlatItem
-                {
-                    Id = reply.Id,
-                    Comment = reply,
-                    Level = 1,
-                    RootCommentId = parent.Id,
-                    IsLiked = reply.IsLiked,
-                    LikeCount = reply.LikeCount,
-                    RequestEdit = OnEditCommentRequested,
-                    RequestDelete = OnDeleteCommentRequested
-
-                });
-            }
-            if (parent.HasMoreReplies)
-            {
-                FlatComments.Insert(insertIndex, new LoadMoreRepliesItem
-                {
-                    ParentId = parent.Id,
-                    Level = 1,
-                    RootCommentId = parent.Id
-                });
-            }
-        }
-
-        private void InsertRepliesBeforeLoadMore(DiaryCommentUIModel parent, List<DiaryCommentUIModel> newReplies)
-        {
-            if (newReplies == null || newReplies.Count == 0)
-                return;
-            // Tìm vị trí dòng LoadMore
-            var loadMoreIndex = FlatComments.Select((x, i) => new { x, i })
-                .FirstOrDefault(x => x.x is LoadMoreRepliesItem lm && lm.ParentId == parent.Id)?.i;
-            if (loadMoreIndex == null)
-                return;
-            var insertIndex = loadMoreIndex.Value;
-            foreach (var reply in newReplies)
-            {
-                FlatComments.Insert(insertIndex++, new DiaryCommentFlatItem
-                {
-                    Id = reply.Id,
-                    Comment = reply,
-                    Level = 1,
-                    RootCommentId = parent.Id,
-                    IsLiked = reply.IsLiked,
-                    LikeCount = reply.LikeCount,
-                    RequestEdit = OnEditCommentRequested,
-                    RequestDelete = OnDeleteCommentRequested
-
-                });
-            }
-            // Nếu hết replies thì xóa dòng LoadMore
-            if (!parent.HasMoreReplies)
-            {
-                var loadMore = FlatComments.OfType<LoadMoreRepliesItem>().FirstOrDefault(x => x.ParentId == parent.Id);
-                if (loadMore != null)
-                    FlatComments.Remove(loadMore);
-            }
-        }
-
         private void ScrollOnFirstExpand(DiaryCommentUIModel parent)
         {
             MainThread.BeginInvokeOnMainThread(async () =>
