@@ -184,14 +184,25 @@ namespace Sphere.ViewModels.DiaryViewModels
         private void OnEditCommentRequested(DiaryCommentFlatItem item)
         {
             EditingCommentId = item.Id;
-
-            // Đẩy nội dung comment lên Editor
             NewCommentContent = item.Comment.Content;
+            if (item.Comment.HasReplyTo && item.Comment.ReplyToUserProfileId.HasValue)
+            {
+                
+                ReplyToComment = new DiaryCommentUIModel
+                {
+                    Id = item.Comment.ReplyToUserProfileId.Value,
+                    FullName = item.Comment.ReplyToFullName
+                };
 
-            // Khi edit thì KHÔNG reply
-            ReplyToComment = null;
-            ReplyRoot = null;
-
+                ReplyRoot = Comments.FirstOrDefault(c => c.Id == item.RootCommentId);
+            }
+            else
+            {
+                // Khi edit thì KHÔNG reply
+                ReplyToComment = null;
+                ReplyRoot = null;
+            }
+            
             // Focus Editor
             RequestFocusCommentEditor?.Invoke();
 
@@ -298,24 +309,20 @@ namespace Sphere.ViewModels.DiaryViewModels
                 if (EditingCommentId != null)
                 {
                     var content = NewCommentContent!.Trim();
-
-                    var update = await _diaryService.UpdateCommentAsync(EditingCommentId.Value, content);
-
+                    var update = await _diaryService.UpdateCommentAsync( EditingCommentId.Value, content );
                     if (!update.IsSuccess)
                     {
                         await ApiResponseHelper.ShowApiErrorsAsync(update, "Cập nhật bình luận thất bại");
                         return;
                     }
 
-                    // ⭐ UPDATE UI LOCAL (PHẢI notify)
-                    var item = FlatComments.FirstOrDefault(x => x.Id == EditingCommentId.Value);
-                    if (item != null)
-                    {
-                        item.Comment.Content = content;
-                    }
+                    var item = FlatComments.First(x => x.Id == EditingCommentId.Value);
+                    item.Comment.Content = content;
 
                     EditingCommentId = null;
                     NewCommentContent = null;
+                    ReplyToComment = null;
+                    ReplyRoot = null;
                     return;
                 }
 

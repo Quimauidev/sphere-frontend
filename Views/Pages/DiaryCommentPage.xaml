@@ -31,31 +31,6 @@
                     </ffimageloading:CachedImage.Transformations>
                 </ffimageloading:CachedImage>
                 <VerticalStackLayout Grid.Column="1" Spacing="4">
-                    <Grid ColumnDefinitions="Auto,Auto" ColumnSpacing="4">
-                        <Label
-                            FontAttributes="Bold"
-                            LineBreakMode="TailTruncation"
-                            MaxLines="1"
-                            Text="{Binding Comment.FullName}" />
-
-                        <!--  Time  -->
-                        <Label
-                            Grid.Column="2"
-                            FontSize="12"
-                            Text="{Binding Comment.CommentedAt, Converter={StaticResource TimeAgoConverter}, StringFormat='· {0}'}"
-                            TextColor="Gray"
-                            VerticalTextAlignment="Center" />
-                    </Grid>
-
-                    <Label
-                        Grid.Column="1"
-                        FontAttributes="Bold"
-                        FontSize="14"
-                        IsVisible="{Binding Comment.HasReplyTo}"
-                        LineBreakMode="TailTruncation"
-                        MaxLines="1"
-                        Text="{Binding Comment.ReplyToFullName}"
-                        TextColor="#1976D2" />
                     <Grid>
                         <Grid.Behaviors>
                             <toolkit:TouchBehavior
@@ -63,8 +38,34 @@
                                 LongPressCommandParameter="{Binding .}"
                                 LongPressDuration="600" />
                         </Grid.Behaviors>
+                        <VerticalStackLayout>
+                            <Grid ColumnDefinitions="Auto,Auto" ColumnSpacing="4">
+                                <Label
+                                    FontAttributes="Bold"
+                                    LineBreakMode="TailTruncation"
+                                    MaxLines="1"
+                                    Text="{Binding Comment.FullName}" />
 
-                        <Label FontSize="14" Text="{Binding Comment.Content}" />
+                                <!--  Time  -->
+                                <Label
+                                    Grid.Column="1"
+                                    FontSize="12"
+                                    Text="{Binding Comment.CommentedAt, Converter={StaticResource TimeAgoConverter}, StringFormat='· {0}'}"
+                                    TextColor="Gray"
+                                    VerticalTextAlignment="Center" />
+                            </Grid>
+
+                            <Label
+                                Grid.Column="1"
+                                FontAttributes="Bold"
+                                FontSize="14"
+                                IsVisible="{Binding Comment.HasReplyTo}"
+                                LineBreakMode="TailTruncation"
+                                MaxLines="1"
+                                Text="{Binding Comment.ReplyToFullName}"
+                                TextColor="#1976D2" />
+                            <Label FontSize="14" Text="{Binding Comment.Content}" />
+                        </VerticalStackLayout>
                     </Grid>
 
                     <Grid ColumnDefinitions="*,Auto">
