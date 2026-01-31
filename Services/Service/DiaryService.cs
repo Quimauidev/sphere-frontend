@@ -136,9 +136,14 @@ namespace Sphere.Services.Service
             return await apiService.PostAsync<object, DiaryLikeStatusDTO>( $"api/diary/{diaryId}/like",null!);
         }
 
-        public async Task<ApiResponse<DiaryCommentUIModel>> UpdateCommentAsync(Guid commentId, string newContent)
+        public async Task<ApiResponse<DiaryCommentUIModel>> UpdateCommentAsync(Guid commentId, string? newContent, Guid? replyToUserId)
         {
-            return await apiService.PatchAsync<object, DiaryCommentUIModel>($"api/diary/comments/{commentId}", new { Content = newContent });
+            var body = new 
+            {
+                Content = newContent?.Trim(),
+                ReplyToUserProfileId = replyToUserId // null ⇒ comment gốc
+            };
+            return await apiService.PatchAsync<object, DiaryCommentUIModel>($"api/diary/comments/{commentId}", body);
         }
     }
 }

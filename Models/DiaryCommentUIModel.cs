@@ -20,7 +20,9 @@ namespace Sphere.Models
         public Gender Gender { get; set; }
         // ⭐ Quan trọng
         public Guid? ReplyToUserProfileId { get; set; }
-        public string? ReplyToFullName { get; set; }
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(HasReplyTo))]
+        public string? replyToFullName;
         [ObservableProperty]
         public string? content;
         public DateTime CommentedAt { get; set; }
@@ -52,6 +54,4 @@ namespace Sphere.Models
         public Guid? ParentCommentId { get; set; }
         public string? Content { get; set; }
     }
-
-
 }

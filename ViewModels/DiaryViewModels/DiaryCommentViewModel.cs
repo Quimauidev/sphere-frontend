@@ -117,6 +117,9 @@ namespace Sphere.ViewModels.DiaryViewModels
 
         [ObservableProperty]
         private Guid? editingCommentId;
+        [ObservableProperty]
+        private Guid? editingReplyToUserId;
+
 
         public bool IsEditing => EditingCommentId != null;
 
@@ -187,7 +190,7 @@ namespace Sphere.ViewModels.DiaryViewModels
             NewCommentContent = item.Comment.Content;
             if (item.Comment.HasReplyTo && item.Comment.ReplyToUserProfileId.HasValue)
             {
-                
+                EditingReplyToUserId = item.Comment.ReplyToUserProfileId;
                 ReplyToComment = new DiaryCommentUIModel
                 {
                     Id = item.Comment.ReplyToUserProfileId.Value,
@@ -202,7 +205,6 @@ namespace Sphere.ViewModels.DiaryViewModels
                 ReplyToComment = null;
                 ReplyRoot = null;
             }
-            
             // Focus Editor
             RequestFocusCommentEditor?.Invoke();
 
@@ -274,10 +276,22 @@ namespace Sphere.ViewModels.DiaryViewModels
             }
         }
 
+        // Update CreateOrReuse so cached flat items are refreshed with current level/root/comment when reused
         private DiaryCommentFlatItem CreateOrReuse(DiaryCommentUIModel comment, int level, Guid rootId, Dictionary<Guid, DiaryCommentFlatItem> cache)
         {
             if (cache.TryGetValue(comment.Id, out var item))
+            {
+                // refresh fields to reflect current hierarchy and state
+                item.Level = level;
+                item.RootCommentId = rootId;
+                item.Comment = comment;
+                item.IsLiked = comment.IsLiked;
+                item.LikeCount = comment.LikeCount;
+                // ensure actions are set (in case cached item was different)
+                item.RequestEdit = OnEditCommentRequested;
+                item.RequestDelete = OnDeleteCommentRequested;
                 return item;
+            }
 
             return new DiaryCommentFlatItem
             {
@@ -309,7 +323,7 @@ namespace Sphere.ViewModels.DiaryViewModels
                 if (EditingCommentId != null)
                 {
                     var content = NewCommentContent!.Trim();
-                    var update = await _diaryService.UpdateCommentAsync( EditingCommentId.Value, content );
+                    var update = await _diaryService.UpdateCommentAsync( EditingCommentId.Value, content, EditingReplyToUserId);
                     if (!update.IsSuccess)
                     {
                         await ApiResponseHelper.ShowApiErrorsAsync(update, "Cập nhật bình luận thất bại");
@@ -319,10 +333,40 @@ namespace Sphere.ViewModels.DiaryViewModels
                     var item = FlatComments.First(x => x.Id == EditingCommentId.Value);
                     item.Comment.Content = content;
 
-                    EditingCommentId = null;
-                    NewCommentContent = null;
-                    ReplyToComment = null;
-                    ReplyRoot = null;
+                    // ================= CASE: BỎ REPLY → THÀNH COMMENT GỐC =================
+                    if (EditingReplyToUserId == null && item.Level == 1)
+                    {
+                        var oldRootId = item.RootCommentId;
+
+                        // 1️⃣ Xóa khỏi replies của parent cũ
+                        var oldParent = Comments.FirstOrDefault(c => c.Id == oldRootId);
+                        oldParent?.Replies.Remove(item.Comment);
+
+                        // 2️⃣ Reset quan hệ reply
+                        item.Comment.ReplyToUserProfileId = null;
+                        item.Comment.ReplyToFullName = null;
+                        item.Comment.ParentCommentId = null;
+                        // 🔥 CỰC QUAN TRỌNG
+                        item.Comment.IsRepliesExpanded = false;
+                        item.Comment.HasMoreReplies = false;
+                        item.Comment.ReplyPage = 1;
+                        item.Comment.Replies.Clear();
+
+                        // 3️⃣ Đưa thành comment gốc (nếu chưa có trong Comments)
+                        if (!Comments.Any(c => c.Id == item.Comment.Id))
+                            Comments.Insert(0, item.Comment);
+
+                        // 4️⃣ Rebuild flat list (CỰC KỲ QUAN TRỌNG)
+                        BuildFlatComments();
+                    }
+                    else
+                    {
+                        // ================= CASE: VẪN LÀ REPLY =================
+                        item.Comment.ReplyToUserProfileId = EditingReplyToUserId;
+                        item.Comment.ReplyToFullName = ReplyToComment?.FullName;
+                    }
+
+                    ResetEditState();
                     return;
                 }
 
@@ -380,6 +424,15 @@ namespace Sphere.ViewModels.DiaryViewModels
                 IsBusy = false;
             }
         }
+        private void ResetEditState()
+        {
+            EditingCommentId = null;
+            EditingReplyToUserId = null;
+            NewCommentContent = null;
+            ReplyToComment = null;
+            ReplyRoot = null;
+        }
+
 
         [RelayCommand]
         public void Reply(DiaryCommentFlatItem item)
@@ -395,6 +448,7 @@ namespace Sphere.ViewModels.DiaryViewModels
         [RelayCommand]
         public void CancelReply()
         {
+            EditingReplyToUserId = null;
             ReplyToComment = null;
             NewCommentContent = string.Empty;
             ReplyRoot = null;

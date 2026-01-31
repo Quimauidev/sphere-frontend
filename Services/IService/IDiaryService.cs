@@ -22,7 +22,7 @@ namespace Sphere.Services.IService
         Task<ApiResponse<IEnumerable<DiaryCommentUIModel>>> GetRepliesAsync(Guid id, int page, int pageSize);
         Task<ApiResponse<DiaryCommentUIModel>> CreateCommentAsync(Guid diaryId, string content, Guid? replyToCommentId = null);
         Task<ApiResponse<bool>> DeleteCommentAsync(Guid commentId);
-        Task<ApiResponse<DiaryCommentUIModel>> UpdateCommentAsync(Guid commentId, string newContent);
+        Task<ApiResponse<DiaryCommentUIModel>> UpdateCommentAsync(Guid commentId, string newContent, Guid? replyId);
         // tố cáo
         Task<ApiResponse<bool>> ReportCommentAsync(Guid commentId);
     }
