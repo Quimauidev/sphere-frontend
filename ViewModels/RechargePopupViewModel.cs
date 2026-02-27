@@ -116,9 +116,7 @@ namespace Sphere.ViewModels
                 using var outStream = contentResolver.OpenOutputStream(uri)!;
                 await stream.CopyToAsync(outStream);
 
-                await Shell.Current.DisplayAlert("Thành công",
-                    "Ảnh đã được lưu vào thư mục Download.",
-                    "OK");
+                await Shell.Current.DisplayAlert("Thành công", "Ảnh đã được lưu vào thư mục Download.", "OK");
             }
             catch (Exception ex)
             {

@@ -20,17 +20,16 @@ using System.Threading.Tasks;
 
 namespace Sphere.ViewModels
 {
-    public partial class LoginViewModel(IServiceProvider serviceProvider, IAuthService authService, IUserSessionService userSession, IUserProfileService userProfileService, IPermissionService permissionService, ILocationService locationService) : ObservableObject
+    public partial class LoginViewModel(IServiceProvider serviceProvider, IAuthService authService, IUserSessionService userSession, IUserProfileService userProfileService, IPermissionService permissionService, ILocationService locationService, IShellNavigationService nv) : ObservableObject
     {
         private readonly IAuthService _authService = authService;
 
         private readonly ILocationService _locationService = locationService;
         private readonly IPermissionService _permissionService = permissionService;
         private readonly IServiceProvider _serviceProvider = serviceProvider;
-
         private readonly IUserProfileService _userProfileService = userProfileService;
-
         private readonly IUserSessionService _userSession = userSession;
+        private readonly IShellNavigationService _nv = nv;
         private bool _isCheckingGps;
 
         [ObservableProperty]
@@ -48,8 +47,7 @@ namespace Sphere.ViewModels
         [RelayCommand]
         public async Task ForgotPassword()
         {
-            var forgotPassword = _serviceProvider.GetRequiredService<ForgotPasswordPage>();
-            await Application.Current!.MainPage!.Navigation.PushModalAsync(forgotPassword);
+            await _nv.PushModalAsync<ForgotPasswordPage>();
         }
 
         [RelayCommand]
@@ -144,8 +142,7 @@ namespace Sphere.ViewModels
         public async Task Register()
         {
             if (IsLoading) return;
-            var register = _serviceProvider.GetRequiredService<RegisterPage>();
-            await Application.Current!.MainPage!.Navigation.PushModalAsync(register);
+            await _nv.PushModalAsync<RegisterPage>();
         }
 
         [RelayCommand]
@@ -230,10 +227,7 @@ namespace Sphere.ViewModels
             }
             catch (Exception ex)
             {
-                await Application.Current!.MainPage!.DisplayAlert(
-                    "Lỗi",
-                    $"Có lỗi xảy ra khi lấy hoặc gửi vị trí: {ex.Message}",
-                    "OK");
+                await Application.Current!.MainPage!.DisplayAlert( "Lỗi", $"Có lỗi xảy ra khi lấy hoặc gửi vị trí: {ex.Message}", "OK");
             }
         }
     }

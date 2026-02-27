@@ -1,6 +1,7 @@
 ﻿using CommunityToolkit.Maui.Views;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Java.Security;
 using Sphere.Common.Constans;
 using Sphere.Common.Helpers;
 using Sphere.Common.Responses;
@@ -12,9 +13,10 @@ using System.Text.RegularExpressions;
 
 namespace Sphere.ViewModels
 {
-    internal partial class RegisterViewModel(IAuthService authService) : ObservableObject
+    internal partial class RegisterViewModel(IAuthService authService, IShellNavigationService nv) : ObservableObject
     {
         private readonly IAuthService _authService = authService;
+        private readonly IShellNavigationService _nv = nv;
 
         [ObservableProperty]
         public partial bool IsLoading { get; set; }
@@ -107,7 +109,8 @@ namespace Sphere.ViewModels
                 if (response.IsSuccess)
                 {
                     await ApiResponseHelper.ShowApiSuccessAsync(response, "Thành công");
-                    await Application.Current!.MainPage!.Navigation.PopModalAsync();
+                    //await Application.Current!.MainPage!.Navigation.PopModalAsync();
+                    await _nv.PopModalAsync();
                 }
                 else
                 {

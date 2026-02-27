@@ -160,9 +160,7 @@ namespace Sphere.ViewModels.DiaryViewModels
                 }
                 else
                 {
-                    ErrorMessage = response.Errors?.FirstOrDefault()?.Description
-                              ?? response.Message
-                              ?? "Có lỗi xảy ra";
+                    ErrorMessage = response.Errors?.FirstOrDefault()?.Description ?? response.Message ?? "Có lỗi xảy ra";
                 }
 
                 FooterKey = Guid.NewGuid().ToString(); // ép render lại Footer

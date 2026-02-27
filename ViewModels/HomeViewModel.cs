@@ -307,12 +307,12 @@ namespace Sphere.ViewModels
 
                        return vm;
                    })
-                   .ToList() ?? new List<DiaryFeedItemViewModel>();
+                   .ToList() ?? [];
 
                     if (forceReload) LatestPosts.Clear();
                     foreach (var item in items) LatestPosts.Add(item);
                     // nếu có data thì tăng page, còn không thì giữ nguyên page
-                    if (items.Any())
+                    if (items.Count != 0)
                     {
                         _latestPage++;
                     }

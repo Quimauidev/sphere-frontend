@@ -312,8 +312,7 @@ namespace Sphere.ViewModels
         [RelayCommand]
         public async Task PostStatus()
         {
-            var page = _serviceProvider.GetRequiredService<PostDiaryPage>();
-            await Shell.Current.Navigation.PushModalAsync(page);
+            await _nv.PushModalAsync<PostDiaryPage>();
         }
 
         public bool CanEditProfile => CurrentUser?.UserDTO?.Id == _userSession.CurrentUser?.UserDTO?.Id;
@@ -336,8 +335,7 @@ namespace Sphere.ViewModels
         // chuyeden trang quan ly coin
         public async Task ManageCoins()
         {
-            var page = _serviceProvider.GetRequiredService<DiamondPage>();
-            await Application.Current!.MainPage!.Navigation.PushModalAsync(page);
+           await _nv.PushModalAsync<DiamondPage>();
         }
     } 
 }

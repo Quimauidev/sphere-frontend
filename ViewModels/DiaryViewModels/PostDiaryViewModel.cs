@@ -26,7 +26,8 @@ namespace Sphere.ViewModels
         private readonly IDiaryService _diaryService;
         private readonly IServiceProvider _serviceProvider;
         private readonly IMediaUploadService _mediaUploadService;
-        public PostDiaryViewModel(IDiaryService diaryService, IServiceProvider serviceProvider, IMediaUploadService mediaUploadService)
+        private readonly IShellNavigationService _nv;
+        public PostDiaryViewModel(IDiaryService diaryService, IServiceProvider serviceProvider, IMediaUploadService mediaUploadService, IShellNavigationService nv)
         {
             _diaryService = diaryService;
             _serviceProvider = serviceProvider;
@@ -41,7 +42,7 @@ namespace Sphere.ViewModels
             };
 
             RefreshGalleryItems();
-            
+            _nv = nv;
         }
 
         public bool CanAddMoreImages => PostDiaryModel.ImagePaths.Count < 9;

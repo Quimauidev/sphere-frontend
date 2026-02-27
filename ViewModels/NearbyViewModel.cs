@@ -248,7 +248,7 @@ namespace Sphere.ViewModels
                     return;
                 }
 
-                var data = resp.Data ?? new List<NearbyModel>();
+                var data = resp.Data ?? [];
                 
                 if (forceReload) Nearby.Clear();
                 if (data.Any())
