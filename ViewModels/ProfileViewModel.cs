@@ -111,7 +111,7 @@ namespace Sphere.ViewModels
                 var newBio = result.Trim();
                 if (newBio == oldBio.Trim())
                 {
-                    await Shell.Current.DisplayAlert("Thông báo", "Bạn chưa thay đổi nội dung tiểu sử", "OK");
+                    await ApiResponseHelper.ShowShellAlertAsync("Thông báo", "Bạn chưa thay đổi nội dung tiểu sử");
                     return;
                 }
                 // Tạo model phù hợp với API
@@ -124,12 +124,8 @@ namespace Sphere.ViewModels
         [RelayCommand]
         public async Task EditProfile()
         {
-            var page = _serviceProvider.GetRequiredService<EditUserProfilePage>();
-            if (page.BindingContext is UserViewModel viewModel)
-            {
-                await viewModel.LoadUserAsync();
-            }
-            await Shell.Current.Navigation.PushModalAsync(page);
+           
+            await _nv.PushModalAsync<EditUserProfilePage>();
         }
 
         public void RefreshFromSession()

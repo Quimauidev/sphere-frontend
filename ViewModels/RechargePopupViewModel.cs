@@ -2,6 +2,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Maui.ApplicationModel.DataTransfer;
+using Sphere.Common.Responses;
 using Sphere.Models;
 using Sphere.Services.IService;
 using Sphere.Services.Service;
@@ -45,14 +46,14 @@ namespace Sphere.ViewModels
         private async Task CopyBankAsync()
         {
             await Clipboard.SetTextAsync(BankInfo);
-            await Shell.Current.DisplayAlert("Đã copy", $"Đã sao chép {BankInfo}.", "OK");
+            await ApiResponseHelper.ShowShellAlertAsync("Đã copy", $"Đã sao chép {BankInfo}.");
         }
         // Copy STK
         [RelayCommand]
         private async Task CopyAccountNumberAsync()
         {
             await Clipboard.SetTextAsync(AccountNumber);
-            await Shell.Current.DisplayAlert("Đã copy", $"Đã sao chép {AccountNumber}.", "OK");
+            await ApiResponseHelper.ShowShellAlertAsync("Đã copy", $"Đã sao chép {AccountNumber}.");
         }
         // Copy tên người nhận
         [RelayCommand]
@@ -62,14 +63,14 @@ namespace Sphere.ViewModels
 
             await Clipboard.SetTextAsync(moneyForCopy);
 
-            await Shell.Current.DisplayAlert("Đã copy", $"Đã sao chép {moneyForCopy}.", "OK");
+            await ApiResponseHelper.ShowShellAlertAsync("Đã copy", $"Đã sao chép {moneyForCopy}.");
         }
         // Copy Nội dung CK
         [RelayCommand]
         private async Task CopyNoteAsync()
         {
             await Clipboard.SetTextAsync(TransferNote);
-            await Shell.Current.DisplayAlert("Đã copy", "Đã sao chép nội dung chuyển khoản.", "OK");
+            await ApiResponseHelper.ShowShellAlertAsync("Đã copy", "Đã sao chép nội dung chuyển khoản.");
         }
 
         [RelayCommand]
@@ -84,10 +85,7 @@ namespace Sphere.ViewModels
                 // Kiểm tra API
                 if (!OperatingSystem.IsAndroidVersionAtLeast(29))
                 {
-                    await Shell.Current.DisplayAlert(
-                        "Không hỗ trợ",
-                        "Thiết bị Android dưới 10 không thể lưu vào Download mà không cần quyền.",
-                        "OK");
+                    await ApiResponseHelper.ShowShellAlertAsync( "Không hỗ trợ", "Thiết bị Android dưới 10 không thể lưu vào Download mà không cần quyền.");
                     return;
                 }
 
@@ -108,7 +106,7 @@ namespace Sphere.ViewModels
 
                 if (uri == null)
                 {
-                    await Shell.Current.DisplayAlert("Lỗi", "Không thể tạo file trong Download.", "OK");
+                    await ApiResponseHelper.ShowShellAlertAsync("Lỗi", "Không thể tạo file trong Download.");
                     return;
                 }
 
@@ -116,11 +114,11 @@ namespace Sphere.ViewModels
                 using var outStream = contentResolver.OpenOutputStream(uri)!;
                 await stream.CopyToAsync(outStream);
 
-                await Shell.Current.DisplayAlert("Thành công", "Ảnh đã được lưu vào thư mục Download.", "OK");
+                await ApiResponseHelper.ShowShellAlertAsync("Thành công", "Ảnh đã được lưu vào thư mục Download.");
             }
             catch (Exception ex)
             {
-                await Shell.Current.DisplayAlert("Lỗi", ex.Message, "OK");
+                await ApiResponseHelper.ShowShellAlertAsync("Lỗi", ex.Message);
             }
         }
 

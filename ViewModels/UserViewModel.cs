@@ -17,10 +17,11 @@ using System.Threading.Tasks;
 
 namespace Sphere.ViewModels
 {
-    internal partial class UserViewModel(IUserService userService, IUserSessionService userSessionService) : ObservableObject
+    internal partial class UserViewModel(IUserService userService, IUserSessionService userSessionService, IShellNavigationService nv) : ObservableObject
     {
         private readonly IUserService _userService = userService;
         private readonly IUserSessionService _userSession = userSessionService;
+        private readonly IShellNavigationService _nv = nv;
 
         private UserModel? OldUserModel;
 
@@ -28,6 +29,10 @@ namespace Sphere.ViewModels
         public partial bool IsLoading { get; set; }
         [ObservableProperty]
         public partial UserModel? UserModel { get; set; }
+        public async Task InitializeAsync()
+        {
+            await LoadUserAsync(); 
+        }
 
         public async Task LoadUserAsync()
         {
@@ -37,10 +42,12 @@ namespace Sphere.ViewModels
                 var result = _userSession.CurrentUser?.UserDTO ?? PreferencesHelper.LoadCurrentUser()?.UserDTO;
                 if (result is null)
                 {
-                    await Shell.Current.DisplayAlert("Lỗi", "Không tìm thấy thông tin người dùng.", "OK");
+                    await ApiResponseHelper.ShowShellAlertAsync("Thông báo","Không tìm thấy thông tin người dùng. Vui lòng đăng nhập lại.");
                 }
-                UserModel = _userSession.CurrentUser?.UserDTO?.Adapt<UserModel>();
-                OldUserModel = UserModel?.Adapt<UserModel>();
+                //UserModel = _userSession.CurrentUser?.UserDTO?.Adapt<UserModel>();
+                UserModel = result.Adapt<UserModel>();
+                OldUserModel = result.Adapt<UserModel>();
+               // OldUserModel = UserModel?.Adapt<UserModel>();
             }
             finally
             {
@@ -56,7 +63,7 @@ namespace Sphere.ViewModels
             var patchData = new List<JsonPatchOperation>();
             if (string.IsNullOrWhiteSpace(UserModel?.FullName))
             {
-                await Shell.Current.DisplayAlert("Thông báo", "Họ và tên không được trống", "OK");
+                await ApiResponseHelper.ShowShellAlertAsync("Thông báo","Họ và tên không được trống");
                 return;
             }
 
@@ -73,13 +80,13 @@ namespace Sphere.ViewModels
 
                 if (birthday > today)
                 {
-                    await Shell.Current.DisplayAlert("Thông báo", "Ngày sinh không thể là ngày trong tương lai.", "OK");
+                    await ApiResponseHelper.ShowShellAlertAsync("Thông báo", "Ngày sinh không thể là ngày trong tương lai.");
                     return;
                 }
 
                 if (birthday > today.AddYears(-10))
                 {
-                    await Shell.Current.DisplayAlert("Thông báo", "Bạn phải từ 10 tuổi trở lên để đăng ký.", "OK");
+                    await ApiResponseHelper.ShowShellAlertAsync("Thông báo", "Bạn phải từ 10 tuổi trở lên để đăng ký.");
                     return;
                 }
 
@@ -90,7 +97,7 @@ namespace Sphere.ViewModels
 
             if (patchData.Count == 0)
             {
-                await Shell.Current.DisplayAlert("Thông báo", "Bạn chưa thay đổi thông tin nào để cập nhật.", "OK");
+                await ApiResponseHelper.ShowShellAlertAsync("Thông báo", "Bạn chưa thay đổi thông tin nào để cập nhật.");
                 return;
             }
             if (IsLoading) return;
@@ -113,7 +120,7 @@ namespace Sphere.ViewModels
                     }
 
                     KeyboardService.HideKeyboard();
-                    await Shell.Current.Navigation.PopModalAsync();
+                    await _nv.PopModalAsync();
                 }
                 else
                 {

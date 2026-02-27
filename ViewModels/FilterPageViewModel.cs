@@ -1,6 +1,9 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Sphere.Common.Constans;
+using Sphere.Interfaces;
+using Sphere.Models;
+using Sphere.Services.IService;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,14 +12,23 @@ using System.Threading.Tasks;
 
 namespace Sphere.ViewModels
 {
-    public partial class FilterPageViewModel : ObservableObject
+    public partial class FilterPageViewModel : ObservableObject, IModalParameterReceiver<FilterParam>
     {
+        private readonly IShellNavigationService _nv;
+        public FilterPageViewModel(IShellNavigationService nv)
+        {
+            _nv = nv;
+        }
         // callback này được gán từ NearbyViewModel
-        public Action<Gender?, int, bool>? OnApply { get; set; }
-
+        //public Action<Gender?, int, bool>? OnApply { get; set; }
+        private Action<Gender?, int, bool>? _onApply;
+        public void Receive(FilterParam param)
+        {
+            _onApply = param.OnApply;
+        }
         [ObservableProperty] private Gender? selectedGender;
         [ObservableProperty] private int distance = 1; // default 10km
-        [ObservableProperty] private bool isLocationEnabled;
+        [ObservableProperty] private bool isLocationEnabled; // default false
         public Array GenderOptions => Enum.GetValues(typeof(Gender));
 
 
@@ -24,18 +36,15 @@ namespace Sphere.ViewModels
         [RelayCommand]
         private async Task ApplyAsync()
         {
-            // gọi callback về NearbyViewModel
-            OnApply?.Invoke(SelectedGender, Distance, IsLocationEnabled);
-
-            // đóng trang Filter sau khi áp dụng
-            await Shell.Current.Navigation.PopModalAsync();
+            _onApply?.Invoke(SelectedGender, Distance, IsLocationEnabled);
+            await _nv.PopModalAsync();
         }
 
         // Command cho nút Hủy (nếu cần)
         [RelayCommand]
         private async Task CancelAsync()
         {
-            await Shell.Current.Navigation.PopModalAsync();
+            await _nv.PopModalAsync();
         }
     }
 }

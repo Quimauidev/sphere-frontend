@@ -11,6 +11,13 @@ public partial class EditUserProfilePage : ContentPage
         InitializeComponent();
         BindingContext = serviceProvider.GetRequiredService<UserViewModel>();
     }
+    protected override async void OnAppearing()
+    {
+        base.OnAppearing();
+
+        if (BindingContext is UserViewModel vm)
+            await vm.InitializeAsync();
+    }
 
     private void OnTextChanged(object sender, TextChangedEventArgs e)
     {

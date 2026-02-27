@@ -44,9 +44,9 @@ namespace Sphere
 
         private async void InitializeAppAsync()
         {
-            string? token = PreferencesHelper.GetAuthToken();
-            var expiresAt = PreferencesHelper.GetAuthTokenExpiresAt();
-            var isExpired = expiresAt.HasValue && DateTime.UtcNow > expiresAt.Value;
+            string? token = PreferencesHelper.GetAuthToken(); // lấy token từ Preferences
+            var expiresAt = PreferencesHelper.GetAuthTokenExpiresAt(); // lấy thời gian hết hạn token từ Preferences
+            var isExpired = expiresAt.HasValue && DateTime.UtcNow > expiresAt.Value; // kiểm tra nếu token đã hết hạn
 
             if (!string.IsNullOrEmpty(token) && !isExpired)
             {
@@ -69,7 +69,7 @@ namespace Sphere
                         {
                             MainPage = new AppShell(_serviceProvider, _authService, _permissionService, _locationService, _presenceService);
                         };
-                        MainPage = new NavigationPage(intro);
+                        MainPage = new NavigationPage(intro);   
                     }
                     else
                     {

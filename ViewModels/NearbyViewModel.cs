@@ -2,6 +2,7 @@
 using CommunityToolkit.Mvvm.Input;
 using Sphere.Common.Constans;
 using Sphere.Common.Helpers;
+using Sphere.Common.Responses;
 using Sphere.Models;
 using Sphere.Services.IService;
 using Sphere.Services.Service;
@@ -23,7 +24,7 @@ namespace Sphere.ViewModels
         private CancellationTokenSource? _locationCts;
         private DateTime? _lastLoadTime;
         private readonly TimeSpan _minLoadInterval = TimeSpan.FromSeconds(30);
-
+        private readonly IShellNavigationService _nv;
         [ObservableProperty]
         private UiViewState nearbyState;
 
@@ -48,7 +49,7 @@ namespace Sphere.ViewModels
         [ObservableProperty]
         private ObservableCollection<NearbyModel> nearby = [];
 
-        public NearbyViewModel(IServiceProvider serviceProvider, INearbyService nearbyService, IPermissionService permissionService)
+        public NearbyViewModel(IServiceProvider serviceProvider, INearbyService nearbyService, IPermissionService permissionService, IShellNavigationService nv)
         {
             _serviceProvider = serviceProvider;
             _nearbyService = nearbyService;
@@ -56,6 +57,7 @@ namespace Sphere.ViewModels
 
             // 🔹 Đọc trạng thái đã lưu
             IsLocationEnabled = PreferencesHelper.GetLocationEnabled();
+            _nv = nv;
         }
         public async Task InitAsync()
         {
@@ -174,9 +176,9 @@ namespace Sphere.ViewModels
                 // 🔹 Xóa danh sách nearby
                 Nearby.Clear();
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                await Application.Current!.MainPage!.DisplayAlert("Lỗi", $"Không thể tắt chia sẻ vị trí: {ex.Message}", "OK");
+                await ApiResponseHelper.DisplayAlertSafe("Lỗi","Đã có lỗi xảy ra khi tắt chia sẻ vị trí. Vui lòng thử lại.");
             }
             finally
             {
@@ -350,17 +352,17 @@ namespace Sphere.ViewModels
         [RelayCommand]
         public async Task Filter()
         {
-            var filterPage = _serviceProvider.GetRequiredService<FilterPage>();
-            if (filterPage.BindingContext is FilterPageViewModel vm)
+            var param = new FilterParam
             {
-                vm.OnApply = (gender, dist, locationEnabled) =>
+                OnApply = (gender, dist, locationEnabled) =>
                 {
                     SelectedGender = gender;
                     Distance = dist;
                     IsLocationEnabled = locationEnabled;
-                };
-            }
-            await Shell.Current.CurrentPage.Navigation.PushModalAsync(filterPage);
+                }
+            };
+
+            await _nv.PushModalAsync<FilterPage, FilterParam>(param);
         }
 
         [RelayCommand]
@@ -410,7 +412,5 @@ namespace Sphere.ViewModels
             if (IsLocationEnabled)
                 IsLocationEnabled = false;
         }
-
-
     }
 }

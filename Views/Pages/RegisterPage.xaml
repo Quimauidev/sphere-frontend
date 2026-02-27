@@ -7,82 +7,84 @@
     xmlns:local="clr-namespace:Sphere.Common.Constans"
     Title="RegisterPage">
 
-    <VerticalStackLayout Padding="30" Spacing="20">
+    <ScrollView>
 
-        <Entry
-            MaxLength="30"
-            Placeholder="Họ và Tên"
-            Text="{Binding RegisterModel.FullName}">
-            <Entry.Behaviors>
-                <behaviors:NoSpecialCharBehavior />
-            </Entry.Behaviors>
-        </Entry>
+        <VerticalStackLayout Padding="30" Spacing="20">
 
-        <VerticalStackLayout>
-            <Label FontAttributes="Bold" Text="Giới tính" />
-            <HorizontalStackLayout Spacing="20">
-                <RadioButton
-                    Content="Nam"
-                    GroupName="Gender"
-                    IsChecked="{Binding RegisterModel.Gender, Converter={StaticResource GenderToBoolConverter}, ConverterParameter={x:Static local:Gender.Male}}" />
-                <RadioButton
-                    Content="Nữ"
-                    GroupName="Gender"
-                    IsChecked="{Binding RegisterModel.Gender, Converter={StaticResource GenderToBoolConverter}, ConverterParameter={x:Static local:Gender.Female}}" />
-            </HorizontalStackLayout>
+            <Entry
+                MaxLength="30"
+                Placeholder="Họ và Tên"
+                Text="{Binding RegisterModel.FullName}">
+                <Entry.Behaviors>
+                    <behaviors:NoSpecialCharBehavior />
+                </Entry.Behaviors>
+            </Entry>
+
+            <VerticalStackLayout>
+                <Label FontAttributes="Bold" Text="Giới tính" />
+                <HorizontalStackLayout Spacing="20">
+                    <RadioButton
+                        Content="Nam"
+                        GroupName="Gender"
+                        IsChecked="{Binding RegisterModel.Gender, Converter={StaticResource GenderToBoolConverter}, ConverterParameter={x:Static local:Gender.Male}}" />
+                    <RadioButton
+                        Content="Nữ"
+                        GroupName="Gender"
+                        IsChecked="{Binding RegisterModel.Gender, Converter={StaticResource GenderToBoolConverter}, ConverterParameter={x:Static local:Gender.Female}}" />
+                </HorizontalStackLayout>
+            </VerticalStackLayout>
+
+            <VerticalStackLayout>
+                <Label FontAttributes="Bold" Text="Ngày sinh" />
+                <DatePicker Date="{Binding RegisterModel.BirthDay}" Format="dd/MM/yyyy" />
+            </VerticalStackLayout>
+
+
+            <Entry
+                Keyboard="Telephone"
+                MaxLength="10"
+                Placeholder="Số điện thoại"
+                Text="{Binding RegisterModel.PhoneNumber}" />
+
+            <Entry
+                IsPassword="{Binding IsPasswordVisible, Converter={StaticResource InverseBoolConverter}}"
+                MaxLength="30"
+                Placeholder="Nhập mật khẩu"
+                Text="{Binding RegisterModel.Password}" />
+
+            <Entry
+                IsPassword="{Binding IsPasswordVisible, Converter={StaticResource InverseBoolConverter}}"
+                MaxLength="30"
+                Placeholder="Nhập lại mật khẩu"
+                Text="{Binding RegisterModel.ConfirmPassword}" />
+
+            <StackLayout Orientation="Horizontal" Spacing="10">
+                <ImageButton
+                    Command="{Binding TogglePasswordCommand}"
+                    HeightRequest="28"
+                    VerticalOptions="Center"
+                    WidthRequest="28">
+                    <ImageButton.Source>
+                        <FontImageSource
+                            FontFamily="MaterialIcons"
+                            Glyph="{Binding PasswordIcon}"
+                            Color="Black" />
+                    </ImageButton.Source>
+                </ImageButton>
+                <Label
+                    FontAttributes="Bold"
+                    Text="Hiển thị mật khẩu"
+                    TextColor="#1877F2"
+                    VerticalOptions="Center" />
+            </StackLayout>
+
+
+            <Button
+                Command="{Binding RegisterCommand}"
+                IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
+                IsVisible="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
+                Text="Đăng ký" />
         </VerticalStackLayout>
 
-        <VerticalStackLayout>
-            <Label FontAttributes="Bold" Text="Ngày sinh" />
-            <DatePicker Date="{Binding RegisterModel.BirthDay}" Format="dd/MM/yyyy" />
-        </VerticalStackLayout>
-
-
-        <Entry
-            Keyboard="Telephone"
-            MaxLength="10"
-            Placeholder="Số điện thoại"
-            Text="{Binding RegisterModel.PhoneNumber}" />
-
-        <Entry
-            IsPassword="{Binding IsPasswordVisible, Converter={StaticResource InverseBoolConverter}}"
-            MaxLength="30"
-            Placeholder="Nhập mật khẩu"
-            Text="{Binding RegisterModel.Password}" />
-
-        <Entry
-            IsPassword="{Binding IsPasswordVisible, Converter={StaticResource InverseBoolConverter}}"
-            MaxLength="30"
-            Placeholder="Nhập lại mật khẩu"
-            Text="{Binding RegisterModel.ConfirmPassword}" />
-
-        <StackLayout Orientation="Horizontal" Spacing="10">
-            <ImageButton
-                Command="{Binding TogglePasswordCommand}"
-                HeightRequest="28"
-                VerticalOptions="Center"
-                WidthRequest="28">
-                <ImageButton.Source>
-                    <FontImageSource
-                        FontFamily="MaterialIcons"
-                        Glyph="{Binding PasswordIcon}"
-                        Color="Black" />
-                </ImageButton.Source>
-            </ImageButton>
-            <Label
-                FontAttributes="Bold"
-                Text="Hiển thị mật khẩu"
-                TextColor="#1877F2"
-                VerticalOptions="Center" />
-        </StackLayout>
-
-
-        <Button
-            Command="{Binding RegisterCommand}"
-            IsEnabled="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
-            IsVisible="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
-            Text="Đăng ký" />
-    </VerticalStackLayout>
-
-
+    </ScrollView>
 </ContentPage>

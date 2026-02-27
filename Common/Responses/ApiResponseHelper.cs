@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Maui.Controls.PlatformConfiguration;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -45,16 +46,32 @@ namespace Sphere.Common.Responses
             await DisplayAlertSafe(title, message);
         }
 
-        private static async Task DisplayAlertSafe(string title, string message)
+        public static async Task DisplayAlertSafe(string title, string message)
         {
-            var page = Application.Current?.MainPage;
-            if (page != null)   
+            var app = Application.Current;
+
+            if (app?.Windows.Count > 0)
             {
-                await page.DisplayAlert(title, message, "OK");
+                var page = app.Windows[0].Page;
+                if (page != null)
+                    await page.DisplayAlertAsync(title, message, "OK");
             }
         }
 
         public static async Task ShowAlertAsync(string message)
-        => await Application.Current!.MainPage!.DisplayAlert("Thông báo", message, "OK");
+        {
+            var app = Application.Current;
+
+            if (app?.Windows.Count > 0)
+            {
+                var page = app.Windows[0].Page;
+                if (page != null)
+                {
+                    await page.DisplayAlertAsync("Thông báo", message, "OK");
+                }
+            }
+        }
+        public static async Task ShowShellAlertAsync(string title, string message)
+            => await Shell.Current.DisplayAlertAsync(title, message, "OK");
     }
 }
