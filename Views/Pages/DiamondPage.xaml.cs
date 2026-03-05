@@ -4,9 +4,9 @@ namespace Sphere.Views.Pages;
 
 public partial class DiamondPage : ContentPage
 {
-	public DiamondPage(IServiceProvider serviceProvider)
+	public DiamondPage(DiamondViewModel vm)
 	{
 		InitializeComponent();
-		BindingContext = serviceProvider.GetRequiredService<DiamondViewModel>();
+		BindingContext = vm;
     }
 }

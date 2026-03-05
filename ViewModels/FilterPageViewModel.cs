@@ -12,20 +12,18 @@ using System.Threading.Tasks;
 
 namespace Sphere.ViewModels
 {
-    public partial class FilterPageViewModel : ObservableObject, IModalParameterReceiver<FilterParam>
+    public partial class FilterPageViewModel(IShellNavigationService nv) : ObservableObject, IModalParameterReceiver<FilterParam>
     {
-        private readonly IShellNavigationService _nv;
-        public FilterPageViewModel(IShellNavigationService nv)
-        {
-            _nv = nv;
-        }
+        private readonly IShellNavigationService _nv = nv;
+
         // callback này được gán từ NearbyViewModel
         //public Action<Gender?, int, bool>? OnApply { get; set; }
         private Action<Gender?, int, bool>? _onApply;
-        public void Receive(FilterParam param)
+        public async Task Receive(FilterParam param)
         {
             _onApply = param.OnApply;
         }
+
         [ObservableProperty] private Gender? selectedGender;
         [ObservableProperty] private int distance = 1; // default 10km
         [ObservableProperty] private bool isLocationEnabled; // default false
@@ -46,5 +44,7 @@ namespace Sphere.ViewModels
         {
             await _nv.PopModalAsync();
         }
+
+        
     }
 }

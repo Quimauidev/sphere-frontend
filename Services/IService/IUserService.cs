@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace Sphere.Services.IService
 {
-    internal interface IUserService
+    public interface IUserService
     {
         Task<ApiResponse<UserModel>> GetUserAsync();
         Task<ApiResponse<UserModel>> UpdateProfileAsync(Guid id, List<JsonPatchOperation> patchData);

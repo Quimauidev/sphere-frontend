@@ -6,10 +6,10 @@ namespace Sphere.Views.Pages;
 
 public partial class EditUserProfilePage : ContentPage
 {
-    public EditUserProfilePage(IServiceProvider serviceProvider)
+    public EditUserProfilePage(UserViewModel vm)
     {
         InitializeComponent();
-        BindingContext = serviceProvider.GetRequiredService<UserViewModel>();
+        BindingContext = vm;
     }
     protected override async void OnAppearing()
     {

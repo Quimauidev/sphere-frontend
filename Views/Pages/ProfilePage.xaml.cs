@@ -5,10 +5,10 @@ namespace Sphere.Views.Pages;
 
 public partial class ProfilePage : ContentPage
 {
-    public ProfilePage(IServiceProvider serviceProvider)
+    public ProfilePage(ProfileViewModel vm)
     {
         InitializeComponent();
-        BindingContext = serviceProvider.GetRequiredService<ProfileViewModel>();
+        BindingContext = vm;
        
     }
 

@@ -6,9 +6,9 @@ namespace Sphere.Views.Pages;
 
 public partial class PopularPage : ContentPage
 {
-    public PopularPage(IServiceProvider serviceProvider)
+    public PopularPage(HomeViewModel vm)
 	{
 		InitializeComponent();
-        BindingContext = serviceProvider.GetRequiredService<HomeViewModel>();
+        BindingContext = vm;
     }
 }

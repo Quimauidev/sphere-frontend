@@ -4,9 +4,9 @@ namespace Sphere.Views.Pages;
 
 public partial class FollowPage : ContentPage
 {
-	public FollowPage(IServiceProvider serviceProvider)
+	public FollowPage(HomeViewModel vm)
 	{
 		InitializeComponent();
-        BindingContext = serviceProvider.GetRequiredService<HomeViewModel>();
+		BindingContext = vm;
     }
 }

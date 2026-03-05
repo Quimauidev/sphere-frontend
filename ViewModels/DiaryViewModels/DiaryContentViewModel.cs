@@ -9,6 +9,7 @@ using Sphere.Common.Constans;
 using Sphere.Common.Helpers;
 using Sphere.Common.Responses;
 using Sphere.Models;
+using Sphere.Models.Params;
 using Sphere.Reloads;
 using Sphere.Services.IService;
 using Sphere.Services.Service;
@@ -24,17 +25,17 @@ namespace Sphere.ViewModels.DiaryViewModels
     public partial class DiaryContentViewModel : ObservableObject
     {
         private readonly IDiaryService _diaryService;
-        private readonly IServiceProvider _serviceProvider;
-        private readonly IShellNavigationService _nv;
+        private readonly IAppNavigationService _anv;
+        private readonly IShellNavigationService _nv; 
 
-        public DiaryContentViewModel(IDiaryService diaryService, IServiceProvider serviceProvider, DiaryModel model, IShellNavigationService nv)
+        public DiaryContentViewModel(IDiaryService diaryService, DiaryModel model, IAppNavigationService anv, IShellNavigationService nv)
         {
             _diaryService = diaryService;
-            _serviceProvider = serviceProvider;
             Model = model;
             IsOwnMess = Model.IsOwNer;
             LikeCount = Model.LikeCount;
             IsLiked = Model.IsLiked;
+            _anv = anv;
             _nv = nv;
         }
 
@@ -62,28 +63,24 @@ namespace Sphere.ViewModels.DiaryViewModels
             if (Model == null) return;
             if (IsOwnMess)
             {
-                string action = await Application.Current!.MainPage!.DisplayActionSheet("Tùy chọn bài viết", "Hủy", null, "Sửa", "Xóa");
+                string action = await _anv.ShowActionSheetAsync("Tùy chọn bài viết", "Hủy", null, "Sửa", "Xóa");
                 if (string.IsNullOrEmpty(action) || action == "Hủy") return;
                 if (action == "Sửa") await EditDiary();
                 else if (action == "Xóa") await DeleteDiary();
             }
             else
             {
-                string action = await Application.Current!.MainPage!.DisplayActionSheet("Tùy chọn bài viết", "Hủy", null, "Tố cáo");
+                string action = await _anv.ShowActionSheetAsync("Tùy chọn bài viết", "Hủy", null, "Tố cáo");
                 if (string.IsNullOrEmpty(action) || action == "Hủy") return;
                 if (action == "Tố cáo") await ReportDiary();
             }
         }
+
         [RelayCommand]
         private async Task EditDiary()
         {
             if (Model == null) return;
-            var page = _serviceProvider.GetRequiredService<PostDiaryPage>();
-            if (page.BindingContext is PostDiaryViewModel vm)
-            {
-                await vm.LoadForEditAsync(Model);
-            }
-            await Application.Current!.MainPage!.Navigation.PushModalAsync(page);
+            await _nv.PushModalAsync<PostDiaryPage, EditDiaryNavigationParam>( new EditDiaryNavigationParam { Diary = Model });
         }
 
         [RelayCommand]
@@ -95,7 +92,7 @@ namespace Sphere.ViewModels.DiaryViewModels
             await PopupHelper.ShowLoadingAsync();
             try
             {
-                bool confirm = await Application.Current!.MainPage!.DisplayAlert("Xác nhận", "Bạn có chắc muốn xóa bài viết này?", "Xóa", "Hủy");
+                bool confirm = await ApiResponseHelper.ShowShellConfirmAsync("Xác nhận", "Bạn có chắc muốn xóa bài viết này?", "Xóa", "Hủy");
 
                 if (!confirm)
                     return;
@@ -123,7 +120,7 @@ namespace Sphere.ViewModels.DiaryViewModels
         [RelayCommand]
         private async Task ReportDiary()
         {
-            await Application.Current!.MainPage!.DisplayAlert("Tố cáo", "Chức năng tố cáo sẽ được phát triển sau.", "OK");
+            await ApiResponseHelper.DisplayAlertSafe("Tố cáo", "Chức năng tố cáo sẽ được phát triển sau.");
         }
 
         [ObservableProperty]

@@ -11,28 +11,27 @@ namespace Sphere.Common.Responses
     {
         public string? Message { get; set; }
         public T? Data { get; set; }
-        public List<ErrorDetail>? Errors { get; set; }
-        public bool IsSuccess => Errors == null || Errors.Count == 0;
+        public List<ErrorDetail> Errors { get; set; } = [];
+        public bool IsSuccess => Errors.Count == 0;
 
-        public ApiResponse() => Errors = [];
+        public ApiResponse() { }
 
-        public ApiResponse(string? message, T? data = default, List<ErrorDetail>? errors = null)
+        public ApiResponse(string? message, T? data, List<ErrorDetail>? errors)
         {
             Message = message;
             Data = data;
             Errors = errors ?? [];
         }
 
-        public static ApiResponse<T> Success(string message, T data)
-            => new(message, data, null);
+        public static ApiResponse<T> Success(string? message, T? data)
+            => new(message, data, []);
 
-        public static ApiResponse<T> Fail(string message, List<ErrorDetail> errors)
-            => new(message, default, errors);
+        public static ApiResponse<T> Fail(string? message, List<ErrorDetail>? errors)
+            => new(message, default, errors ?? []);
+        public static ApiResponse<T> Fail(string? message, string code, string description)
+            => new(message, default, [new ErrorDetail { Code = code, Description = description }]);
 
-        public static implicit operator ApiResponse<T>(ApiResponse<UserProfileModel> v)
-        {
-            throw new NotImplementedException();
-        }
+
     }
 
     public class ErrorDetail

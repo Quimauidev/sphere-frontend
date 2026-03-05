@@ -6,10 +6,10 @@ namespace Sphere.Views.Pages;
 
 public partial class PostDiaryPage : ContentPage
 {
-    public PostDiaryPage(IServiceProvider serviceProvider)
+    public PostDiaryPage(PostDiaryViewModel vm)
     {
         InitializeComponent();
-        BindingContext = serviceProvider.GetRequiredService<PostDiaryViewModel>();
+        BindingContext = vm;
         GalleryView.ItemTemplate = new GalleryItemTemplateSelector
         {
             ImageTemplate = (DataTemplate)Resources["ImageTemplate"],

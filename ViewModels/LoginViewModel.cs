@@ -20,7 +20,7 @@ using System.Threading.Tasks;
 
 namespace Sphere.ViewModels
 {
-    public partial class LoginViewModel(IServiceProvider serviceProvider, IAuthService authService, IUserSessionService userSession, IUserProfileService userProfileService, IPermissionService permissionService, ILocationService locationService, IShellNavigationService nv) : ObservableObject
+    public partial class LoginViewModel(IServiceProvider serviceProvider, IAuthService authService, IUserSessionService userSession, IUserProfileService userProfileService, IPermissionService permissionService, ILocationService locationService, IShellNavigationService nv, IAppNavigationService anv) : ObservableObject
     {
         private readonly IAuthService _authService = authService;
 
@@ -30,6 +30,7 @@ namespace Sphere.ViewModels
         private readonly IUserProfileService _userProfileService = userProfileService;
         private readonly IUserSessionService _userSession = userSession;
         private readonly IShellNavigationService _nv = nv;
+        private readonly IAppNavigationService _anv = anv;
         private bool _isCheckingGps;
 
         [ObservableProperty]
@@ -100,25 +101,23 @@ namespace Sphere.ViewModels
 
                         // Tạo instance mới PresenceService
                         var presenceService = new PresenceService("https://sphere-iqm8.onrender.com", newUserId, _serviceProvider);
-                        await presenceService.StartAsync();
+                        await presenceService.StartAsync(); // online ngay sau khi login    
                         if (!PreferencesHelper.HasSeenIntro())
                         {
                             var intro = _serviceProvider.GetRequiredService<IntroPage>();
                             intro.OnFinishedIntro = async () =>
                             {
-                                Application.Current!.MainPage = new AppShell(_serviceProvider, _authService, _permissionService, _locationService, presenceService);
+                                _anv.SetRootPage(new AppShell(_serviceProvider, _authService, _permissionService,  presenceService, _anv));
                                 await Task.Delay(200);
 
                                 _permissionService.ReturnedFromSettings -= OnReturnedFromSettings;
-                                _permissionService.ReturnedFromSettings += OnReturnedFromSettings;
                             };
-                            Application.Current!.MainPage = new NavigationPage(intro);
+                            _anv.SetRootPage(new NavigationPage(intro));
                         }
                         else
                         {
-                            Application.Current!.MainPage = new AppShell(_serviceProvider, _authService, _permissionService, _locationService, presenceService);
+                            _anv.SetRootPage(new AppShell(_serviceProvider, _authService, _permissionService,  presenceService, _anv));
                             _permissionService.ReturnedFromSettings -= OnReturnedFromSettings;
-                            _permissionService.ReturnedFromSettings += OnReturnedFromSettings;
                         }
                     }
                     else
@@ -211,7 +210,7 @@ namespace Sphere.ViewModels
                 var location = await GetStableLocationAsync();
                 if (location == null)
                 {
-                    await Application.Current!.MainPage!.DisplayAlert("Vị trí", "Không lấy được vị trí từ thiết bị.", "OK");
+                    await ApiResponseHelper.DisplayAlertSafe("Vị trí", "Không lấy được vị trí từ thiết bị.");
                     return;
                 }
 
@@ -227,7 +226,7 @@ namespace Sphere.ViewModels
             }
             catch (Exception ex)
             {
-                await Application.Current!.MainPage!.DisplayAlert( "Lỗi", $"Có lỗi xảy ra khi lấy hoặc gửi vị trí: {ex.Message}", "OK");
+                await ApiResponseHelper.DisplayAlertSafe( "Lỗi", $"Có lỗi xảy ra khi lấy hoặc gửi vị trí: {ex.Message}");
             }
         }
     }

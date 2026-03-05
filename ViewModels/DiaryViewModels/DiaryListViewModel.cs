@@ -21,7 +21,8 @@ namespace Sphere.ViewModels.DiaryViewModels
     public partial class DiaryListViewModel : ObservableObject
     {
         private readonly IDiaryService _diaryService;
-        private readonly IServiceProvider _serviceProvider;
+        
+        private readonly IAppNavigationService _anv;
         private readonly IShellNavigationService _nv;
 
         [ObservableProperty]
@@ -34,7 +35,6 @@ namespace Sphere.ViewModels.DiaryViewModels
         [ObservableProperty]
         public bool isLoading;
        
-
         private int _currentPage = 1;
         private const int PageSize = 20;
         //public bool IsHomeContext { get; set; }  // true nếu hiển thị trên Home
@@ -52,10 +52,10 @@ namespace Sphere.ViewModels.DiaryViewModels
         [ObservableProperty]
         private string footerKey = Guid.NewGuid().ToString();
 
-        public DiaryListViewModel(IDiaryService diaryService, IServiceProvider serviceProvider, IShellNavigationService nv)
+        public DiaryListViewModel(IDiaryService diaryService,IAppNavigationService anv , IShellNavigationService nv)
         {
             _diaryService = diaryService;
-            _serviceProvider = serviceProvider;
+            _anv = anv;
             _nv = nv;
 
             WeakReferenceMessenger.Default.Register<DiaryPostedMessage>(this, async (r, m) =>
@@ -111,7 +111,7 @@ namespace Sphere.ViewModels.DiaryViewModels
                 Diaries.Clear();
                 foreach (var item in items)
                 {
-                    Diaries.Add(new DiaryContentViewModel( _diaryService, _serviceProvider, item, _nv));
+                    Diaries.Add(new DiaryContentViewModel( _diaryService, item, _anv, _nv));
                 }
 
                 _currentPage = 2;
@@ -150,7 +150,7 @@ namespace Sphere.ViewModels.DiaryViewModels
                         Diaries.Clear();
 
                     foreach (var item in items)
-                        Diaries.Add(new DiaryContentViewModel(_diaryService,_serviceProvider,item,_nv));
+                        Diaries.Add(new DiaryContentViewModel(_diaryService,item,_anv,_nv));
 
                     HasNoMoreData = items.Count < PageSize;
                     _currentPage++;

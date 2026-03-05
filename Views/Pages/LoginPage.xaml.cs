@@ -8,10 +8,9 @@ namespace Sphere.Views.Pages;
 public partial class LoginPage : ContentPage
 {
 
-    public LoginPage(IServiceProvider serviceProvider)
+    public LoginPage(LoginViewModel vm)
     {
         InitializeComponent();
-        BindingContext = serviceProvider.GetRequiredService<LoginViewModel>();
+        BindingContext = vm;
     }
-
 }

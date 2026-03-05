@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Sphere.Common.Responses
 {
-    internal class JsonPatchOperation
+    public class JsonPatchOperation
     {
         public string Op { get; set; } = "replace";
         public string? Path { get; set; }

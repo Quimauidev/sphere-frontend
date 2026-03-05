@@ -7,6 +7,7 @@ using Sphere.Common.Responses;
 using Sphere.Database.EntitySQLite;
 using Sphere.Database.ServiceSQLite;
 using Sphere.Models;
+using Sphere.Models.Params;
 using Sphere.Services.IService;
 using Sphere.Views.Pages;
 using System;
@@ -20,8 +21,8 @@ namespace Sphere.ViewModels
     public partial class ConversationsViewModel : ObservableObject
     {
         private readonly IConversationService _conversationService;
-        private readonly IServiceProvider _serviceProvider;
         private readonly ConversationSQLiteService _localConversationDb;
+        private readonly IShellNavigationService _nv;
 
         public ObservableCollection<ConversationModel> Conversations { get; } = [];
 
@@ -31,11 +32,11 @@ namespace Sphere.ViewModels
         [ObservableProperty]
         private bool isLoading;
 
-        public ConversationsViewModel(IConversationService conversationService, IServiceProvider serviceProvider, ConversationSQLiteService localConversationDb)
+        public ConversationsViewModel(IConversationService conversationService, ConversationSQLiteService localConversationDb, IShellNavigationService nv)
         {
             _conversationService = conversationService;
-            _serviceProvider = serviceProvider;
             _localConversationDb = localConversationDb; 
+            _nv = nv;
             _ = LoadAsync();
         }
 
@@ -86,7 +87,7 @@ namespace Sphere.ViewModels
             }
             catch (Exception ex)
             {
-                await Application.Current!.MainPage!.DisplayAlert("Lỗi", ex.Message, "OK");
+                await ApiResponseHelper.DisplayAlertSafe("Lỗi", $"Đã có lỗi xảy ra {ex.Message}");
             }
             finally
             {
@@ -106,20 +107,7 @@ namespace Sphere.ViewModels
             if (conversation == null) return;
 
             // Resolve page từ DI
-            var page = _serviceProvider.GetRequiredService<MessagePage>();
-
-            // Gán ConversationId → tự chạy OnConversationIdChanged
-            if (page.BindingContext is MessageViewModel vm)
-            {
-                // Gán thông tin user để hiện lên header
-                vm.PartnerFullName = conversation.PartnerName;
-                vm.PartnerAvatar = conversation.PartnerAvatar;
-                vm.ConversationId = conversation.Id;
-            }
-
-            // Điều hướng
-            await Application.Current!.MainPage!.Navigation.PushModalAsync(page);
-
+            await _nv.PushModalAsync<MessagePage, MessageNavigationParam>( new MessageNavigationParam { ConversationId = conversation.Id, PartnerFullName = conversation.PartnerName!, PartnerAvatar = conversation.PartnerAvatar });
             // reset để chọn lại được item cũ lần sau
             SelectedConversation = null;
         }

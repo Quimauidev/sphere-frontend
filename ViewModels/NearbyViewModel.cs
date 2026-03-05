@@ -18,7 +18,6 @@ namespace Sphere.ViewModels
 {
     public partial class NearbyViewModel : ObservableObject
     {
-        private readonly IServiceProvider _serviceProvider;
         private readonly INearbyService _nearbyService;
         private readonly IPermissionService _permissionService;
         private CancellationTokenSource? _locationCts;
@@ -49,9 +48,8 @@ namespace Sphere.ViewModels
         [ObservableProperty]
         private ObservableCollection<NearbyModel> nearby = [];
 
-        public NearbyViewModel(IServiceProvider serviceProvider, INearbyService nearbyService, IPermissionService permissionService, IShellNavigationService nv)
+        public NearbyViewModel( INearbyService nearbyService, IPermissionService permissionService, IShellNavigationService nv)
         {
-            _serviceProvider = serviceProvider;
             _nearbyService = nearbyService;
             _permissionService = permissionService;
 
@@ -176,9 +174,9 @@ namespace Sphere.ViewModels
                 // 🔹 Xóa danh sách nearby
                 Nearby.Clear();
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                await ApiResponseHelper.DisplayAlertSafe("Lỗi","Đã có lỗi xảy ra khi tắt chia sẻ vị trí. Vui lòng thử lại.");
+                await ApiResponseHelper.DisplayAlertSafe("Lỗi",$"Đã có lỗi xảy ra khi tắt chia sẻ vị trí: {ex.Message}. Vui lòng thử lại.");
             }
             finally
             {

@@ -8,6 +8,7 @@ using Sphere.Common.Helpers;
 using Sphere.Common.Responses;
 using Sphere.Hubs;
 using Sphere.Models;
+using Sphere.Models.Params;
 using Sphere.Reloads;
 using Sphere.Services.IService;
 using Sphere.Views.Controls;
@@ -26,7 +27,7 @@ namespace Sphere.ViewModels
         // Services
         private readonly IFollowService _followService;
         private readonly IConversationService _conversationService;
-        private readonly IServiceProvider _serviceProvider;
+        private readonly IShellNavigationService _nv;
 
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(ShouldShowFollowButton))] // cập nhật UI khi thay đổi trạng thái
@@ -37,12 +38,12 @@ namespace Sphere.ViewModels
         [ObservableProperty]
         private Guid userId;
 
-        public DiaryFeedItemViewModel(UserWithDiaryModel model, Guid currentUserId, IFollowService followService, IConversationService conversationService, IServiceProvider serviceProvider)
+        public DiaryFeedItemViewModel(UserWithDiaryModel model, Guid currentUserId, IFollowService followService, IConversationService conversationService, IShellNavigationService nv)
         {
             Model = model ?? throw new ArgumentNullException(nameof(model));
             _followService = followService;
             _conversationService = conversationService;
-            _serviceProvider = serviceProvider;
+            _nv = nv;
             var user = model.UserDiaryDTO ?? throw new ArgumentNullException(nameof(model.UserDiaryDTO));
             UserId = user.Id;
 
@@ -130,10 +131,7 @@ namespace Sphere.ViewModels
             bool alreadyUnlocked = PreferencesHelper.IsChatUnlocked(Model.UserDiaryDTO!.Id);
             if (!alreadyUnlocked)
             {
-                bool confirm = await Application.Current!.MainPage!.DisplayAlert(
-                "Xác nhận mở khóa",
-                "Cần tiêu 130 kim cương 💎 để mở khóa cuộc trò chuyện này. Bạn có muốn tiếp tục không?",
-                "Đồng ý", "Hủy");
+                bool confirm = await ApiResponseHelper.ShowShellConfirmAsync( "Xác nhận mở khóa", "Cần tiêu 130 kim cương 💎 để mở khóa cuộc trò chuyện này. Bạn có muốn tiếp tục không?", "Đồng ý", "Hủy");
 
                 if (!confirm)
                     return;
@@ -143,15 +141,11 @@ namespace Sphere.ViewModels
             if (response.Errors?.Any(e => e.Code == "NotEnoughDiamonds") == true ||
                 response.Message?.Contains("kim cương", StringComparison.OrdinalIgnoreCase) == true)
             {
-                bool goTopUp = await Application.Current!.MainPage!.DisplayAlert(
-                 "Không đủ kim cương 💎",
-                 "Bạn không đủ kim cương để mở khóa cuộc trò chuyện này. Bạn có muốn nạp thêm không?",
-                 "Nạp ngay", "Đóng");
+                bool goTopUp = await ApiResponseHelper.ShowShellConfirmAsync( "Không đủ kim cương 💎", "Bạn không đủ kim cương để mở khóa cuộc trò chuyện này. Bạn có muốn nạp thêm không?", "Nạp ngay", "Đóng");
 
                 if (goTopUp)
                 {
-                    var topUpPage = _serviceProvider.GetRequiredService<HomePage>();
-                    await Application.Current!.MainPage!.Navigation.PushModalAsync(topUpPage);
+                    await _nv.PushModalAsync<HomePage>();
                 }
                 return;
             }
@@ -160,26 +154,13 @@ namespace Sphere.ViewModels
                 PreferencesHelper.SetChatUnlocked(Model.UserDiaryDTO.Id, true);
                 if (!alreadyUnlocked)
                 {
-                    await Application.Current!.MainPage!.DisplayAlert("Mở khóa thành công",
-                   $"Bạn đã mở khóa cuộc trò chuyện. Số dư còn lại: {response.Data.NewBalance} 💎", "OK");
+                    await ApiResponseHelper.DisplayAlertSafe("Mở khóa thành công", $"Bạn đã mở khóa cuộc trò chuyện. Số dư còn lại: {response.Data.NewBalance} 💎");
                 }
-                
-
-                var mess = _serviceProvider.GetRequiredService<MessagePage>();
-                if (mess.BindingContext is MessageViewModel vm)
-                {
-                    vm.ConversationId = response.Data.ConversationId.Value;
-                    // Gọi trực tiếp từ UserDiaryDTO
-                    vm.SetPartner(Model.UserDiaryDTO!);
-                }
-                await Application.Current!.MainPage!.Navigation.PushModalAsync(mess);
-
+                await _nv.PushModalAsync<MessagePage, MessageNavigationParam>( new MessageNavigationParam { ConversationId = response.Data.ConversationId!.Value, Partner = Model.UserDiaryDTO! });
             }
             else
                 await ApiResponseHelper.ShowApiErrorsAsync(response, "Không thể mở chat");
         }
-
-        
 
         [RelayCommand]
         public async Task Follow()

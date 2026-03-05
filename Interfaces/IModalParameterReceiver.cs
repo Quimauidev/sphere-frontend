@@ -8,7 +8,7 @@ namespace Sphere.Interfaces
 {
     public interface IModalParameterReceiver<T>
     {
-        void Receive(T parameter);
+        Task Receive(T parameter);
     }
 
 }

@@ -14,22 +14,22 @@ namespace Sphere
     public partial class AppShell : Shell
     {
         private readonly IAuthService _authService;
-        private readonly ILocationService _locationService;
         private readonly IPermissionService _permissionService;
         private readonly PresenceService _presenceService;
         private readonly IServiceProvider _serviceProvider;
-        
+        private readonly IAppNavigationService _anv;
 
-        public AppShell(IServiceProvider serviceProvider, IAuthService authService, IPermissionService permissionService, ILocationService locationService, PresenceService presenceService)
+        public AppShell(IServiceProvider serviceProvider, IAuthService authService, IPermissionService permissionService,  PresenceService presenceService, IAppNavigationService anv)
         {
             InitializeComponent();
             _serviceProvider = serviceProvider;
             _authService = authService;
             _permissionService = permissionService;
-            _locationService = locationService;
             _presenceService = presenceService;
+            _anv = anv;
             // Khi AppShell load lần đầu, yêu cầu quyền
             RequestLocationPermissionFirstTime();
+            
         }
 
         private async void RequestLocationPermissionFirstTime()
@@ -45,18 +45,18 @@ namespace Sphere
 
         private async void OnLogoutClicked(object sender, EventArgs e)
         {
-            bool confirm = await DisplayAlert("Đăng xuất", "Bạn có chắc chắn muốn đăng xuất?", "Đồng ý", "Hủy");
+            bool confirm = await ApiResponseHelper.ShowShellConfirmAsync("Đăng xuất", "Bạn có chắc chắn muốn đăng xuất?", "Đồng ý", "Hủy");
             if (!confirm) return;
             
             await _presenceService.StopAsync();
-
-            var userSession = _serviceProvider.GetRequiredService<IUserSessionService>();
+            //_ = _serviceProvider.GetRequiredService<IUserSessionService>();
             var response = await _authService.LogoutAsync();
             if (!response.IsSuccess)
                 await ApiResponseHelper.ShowApiErrorsAsync(response, "Đăng xuất thất bại");
             var login = _serviceProvider.GetRequiredService<LoginPage>();
-            
-               Application.Current!.MainPage = new NavigationPage(login);
+
+            _anv.SetRootPage(new NavigationPage(login));
+
         }
         
     }

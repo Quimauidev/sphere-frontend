@@ -5,9 +5,9 @@ namespace Sphere.Views.Pages;
 
 public partial class RegisterPage : ContentPage
 {
-	public RegisterPage(IServiceProvider serviceProvider)
+	public RegisterPage(RegisterViewModel vm)
 	{
 		InitializeComponent();
-        BindingContext = serviceProvider.GetRequiredService<RegisterViewModel>();
+		BindingContext = vm;
 	}  
 }

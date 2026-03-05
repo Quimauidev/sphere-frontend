@@ -1,7 +1,10 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
+using Sphere.Common.Responses;
+using Sphere.Interfaces;
 using Sphere.Models;
+using Sphere.Models.Params;
 using Sphere.Platforms.Android;
 using Sphere.Reloads;
 using Sphere.Services.IService;
@@ -14,10 +17,11 @@ using System.Threading.Tasks;
 
 namespace Sphere.ViewModels
 {
-    public partial class ImagePickerViewModel : ObservableObject
+    public partial class ImagePickerViewModel : ObservableObject, IModalParameterReceiver<ImagePickerNavigationParam>
     {
         private readonly MediaStoreHelper _mediaStoreHelper;
         private readonly IImagePickerService _imagePickerService;
+        private readonly IShellNavigationService _nv;
 
         [ObservableProperty]
         private ObservableCollection<ImageItem> allImages = [];
@@ -28,11 +32,12 @@ namespace Sphere.ViewModels
         [ObservableProperty]
         private ObservableCollection<ImageItem> selectedImages = [];
 
-        public ImagePickerViewModel(MediaStoreHelper mediaStoreHelper, IImagePickerService imagePickerService)
+        public ImagePickerViewModel(MediaStoreHelper mediaStoreHelper, IImagePickerService imagePickerService, IShellNavigationService nv)
         {
             _mediaStoreHelper = mediaStoreHelper;
             _imagePickerService = imagePickerService;
             _ = LoadImages();
+            _nv = nv;
         }
 
         public int AlreadyPickedCount { get; set; } = 0;
@@ -69,7 +74,7 @@ namespace Sphere.ViewModels
             // Trả SelectedImages về ViewModel gọi picker
             WeakReferenceMessenger.Default.Send(new ImagePickerResultMessage(finalPaths));
 
-            await Shell.Current.Navigation.PopAsync();
+            await _nv.PopAsync();
         }
 
         private void ReorderSelectedImages()
@@ -84,7 +89,7 @@ namespace Sphere.ViewModels
         private bool _isToggling = false;
 
         [RelayCommand]
-        private void ToggleSelection(ImageItem image)
+        private async Task ToggleSelection(ImageItem image)
         {
             if (_isToggling) return;
             _isToggling = true;
@@ -102,12 +107,12 @@ namespace Sphere.ViewModels
                 {
                     if (AlreadyPickedCount + SelectedImages.Count >= MaxPickCount)
                     {
-                        Shell.Current.DisplayAlert("Thông báo", $"Chỉ được chọn tối đa {MaxPickCount} ảnh", "OK");
+                        await ApiResponseHelper.ShowShellAlertAsync("Thông báo", $"Chỉ được chọn tối đa {MaxPickCount} ảnh");
                         return;
                     }
-                        image.IsSelected = true;
-                        SelectedImages.Add(image);
-                        image.OrderNumber = SelectedImages.Count;
+                    image.IsSelected = true;
+                    SelectedImages.Add(image);
+                    image.OrderNumber = SelectedImages.Count;
                 }
             }
             finally
@@ -121,6 +126,11 @@ namespace Sphere.ViewModels
             int order = 1;
             foreach (var img in AllImages.Where(x => x.IsSelected))
                 img.OrderNumber = order++;
+        }
+
+        public async Task Receive(ImagePickerNavigationParam param)
+        {
+            AlreadyPickedCount = param.AlreadyPickedCount;
         }
     }
 }

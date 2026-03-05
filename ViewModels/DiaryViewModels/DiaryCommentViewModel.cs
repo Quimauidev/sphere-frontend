@@ -191,7 +191,7 @@ namespace Sphere.ViewModels.DiaryViewModels
             await LoadRepliesInternalAsync(parent, isFirstPage: false);
         }
 
-        public async void Receive(Guid parameter)
+        public async Task Receive(Guid parameter)
         {
             _diaryId = parameter;
             IsBusy = true;
@@ -645,6 +645,7 @@ namespace Sphere.ViewModels.DiaryViewModels
         {
             OnPropertyChanged(nameof(IsReplying));
         }
+
         [RelayCommand]
         private async Task RefreshCommentsAsync()
         {

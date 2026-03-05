@@ -5,7 +5,9 @@ using CommunityToolkit.Mvvm.Messaging;
 using Sphere.Common.Constans;
 using Sphere.Common.Helpers;
 using Sphere.Common.Responses;
+using Sphere.Interfaces;
 using Sphere.Models;
+using Sphere.Models.Params;
 using Sphere.Reloads;
 using Sphere.Services.IService;
 using Sphere.Services.Service;
@@ -21,7 +23,7 @@ using System.Windows.Input;
 
 namespace Sphere.ViewModels
 {
-    internal partial class PostDiaryViewModel : ObservableObject
+    public partial class PostDiaryViewModel : ObservableObject, IModalParameterReceiver<EditDiaryNavigationParam>
     {
         private readonly IDiaryService _diaryService;
         private readonly IServiceProvider _serviceProvider;
@@ -126,13 +128,7 @@ namespace Sphere.ViewModels
             WeakReferenceMessenger.Default.Unregister<ImagePickerResultMessage>(this);
             WeakReferenceMessenger.Default.Register<ImagePickerResultMessage>(this, OnImagePicked);
             // Gọi page chọn ảnh — Không còn return List
-            var page = _serviceProvider.GetRequiredService<ImagePickerPage>();  
-            // Ép BindingContext về đúng VM
-            if (page.BindingContext is ImagePickerViewModel vm)
-            {
-                vm.AlreadyPickedCount = PostDiaryModel.ImagePaths.Count;
-            }
-            await Shell.Current.Navigation.PushModalAsync(page);
+            await _nv.PushModalAsync<ImagePickerPage, ImagePickerNavigationParam>( new ImagePickerNavigationParam { AlreadyPickedCount = PostDiaryModel.ImagePaths.Count });
         }
 
         [RelayCommand]
@@ -159,7 +155,7 @@ namespace Sphere.ViewModels
 
             if (!isContentChanged && !isPrivacyChanged && !isImagesChanged)
             {
-                await Shell.Current.DisplayAlert("Thông báo", "Bạn chưa thay đổi dữ liệu mới nào", "OK");
+                await ApiResponseHelper.ShowAlertAsync("Bạn chưa thay đổi dữ liệu mới nào");
                 return;
             }
             // 4️ Không cho lưu nếu cả nội dung + ảnh đều trống
@@ -167,7 +163,7 @@ namespace Sphere.ViewModels
             // 4 Kiểm tra: nếu cả nội dung và ảnh đều trống
             if (string.IsNullOrWhiteSpace(PostDiaryModel.Content) && !hasAnyImage)
             {
-                await Shell.Current.DisplayAlert("Thông báo", "Nội dung hoặc ảnh không được để trống", "OK");
+                await ApiResponseHelper.ShowAlertAsync("Nội dung hoặc ảnh không được để trống");
                 return;
             }
             if(IsLoading) return;
@@ -205,7 +201,7 @@ namespace Sphere.ViewModels
                 return;
             }
 
-            if (!ValidatePostDiary())
+            if (!await ValidatePostDiary())
                 return;
            
             IsLoading = true;
@@ -225,10 +221,8 @@ namespace Sphere.ViewModels
                     SelectedPrivacy = Privacy.Public;
                     OnPropertyChanged(nameof(CanAddMoreImages));
                     OnPropertyChanged(nameof(PostDiaryModel));
-                    await Shell.Current.Navigation.PopModalAsync();
-
+                    await _nv.PopModalAsync();
                 }
-
             }
             finally
             {
@@ -236,7 +230,6 @@ namespace Sphere.ViewModels
                 IsLoading = false;
             }
         }
-        
 
         private void RefreshGalleryItems()
         {
@@ -277,14 +270,19 @@ namespace Sphere.ViewModels
             RefreshGalleryItems();
         }
 
-        private bool ValidatePostDiary()
+        private async Task<bool> ValidatePostDiary()
         {
             if (string.IsNullOrWhiteSpace(PostDiaryModel.Content) && PostDiaryModel.ImagePaths.Count == 0)
             {
-                Shell.Current.DisplayAlert("Thông báo", "Vui lòng nhập nội dung hoặc chọn ít nhất 1 ảnh", "OK");
+                await ApiResponseHelper.ShowAlertAsync("Vui lòng nhập nội dung hoặc chọn ít nhất 1 ảnh");
                 return false;
             }
             return true;
+        }
+
+        public async Task Receive(EditDiaryNavigationParam parameter)
+        {
+            await LoadForEditAsync(parameter.Diary);
         }
     }
 }

@@ -9,6 +9,6 @@ namespace Sphere.Common.Helpers
 {
     internal class PrivacyValues
     {
-        public static List<Privacy> All { get; } = [.. Enum.GetValues(typeof(Privacy)).Cast<Privacy>()];
+        public static List<Privacy> All { get; } = [.. Enum.GetValues<Privacy>().Cast<Privacy>()];
     }
 }

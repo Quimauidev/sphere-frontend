@@ -5,9 +5,9 @@ namespace Sphere.Views.Pages;
 
 public partial class LatestPage : ContentPage
 {
-	public LatestPage(IServiceProvider serviceProvider)
+	public LatestPage(HomeViewModel vm)
 	{
 		InitializeComponent();
-        BindingContext = serviceProvider.GetRequiredService<HomeViewModel>();
+        BindingContext = vm;
     }
 }

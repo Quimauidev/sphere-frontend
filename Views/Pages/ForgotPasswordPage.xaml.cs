@@ -4,9 +4,9 @@ namespace Sphere.Views.Pages;
 
 public partial class ForgotPasswordPage : ContentPage
 {
-	public ForgotPasswordPage(IServiceProvider serviceProvider)
+	public ForgotPasswordPage(ForgetPasswordViewModel vm)
 	{
 		InitializeComponent();
-		BindingContext = serviceProvider.GetRequiredService<ForgetPasswordViewModel>();
+		BindingContext = vm;
     }
 }

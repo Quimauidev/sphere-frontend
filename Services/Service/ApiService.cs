@@ -66,24 +66,24 @@ namespace Sphere.Services.Service
             if (string.IsNullOrWhiteSpace(content) || !content.TrimStart().StartsWith('{'))
             {
                 // Không phải JSON, trả về fallback
-                return ApiResponse<TResponse>.Fail(fallbackMessage, new List<ErrorDetail> { new ErrorDetail { Code = "InvalidResponse", Description = content } });
+                return ApiResponse<TResponse>.Fail(fallbackMessage, "InvalidResponse", content);
             }
             try
             {
                 var error = JsonSerializer.Deserialize<ApiResponse<object>>(content, options);
                 var message = error?.Message ?? fallbackMessage;
-                var errors = error?.Errors ?? new List<ErrorDetail> { new ErrorDetail { Code = "Unhandled", Description = message } };
+                var errors = error?.Errors ?? new List<ErrorDetail> { new() { Code = "Unhandled", Description = message } };
                 return ApiResponse<TResponse>.Fail(message, errors);
             }
             catch
             {
-                return ApiResponse<TResponse>.Fail(fallbackMessage, new List<ErrorDetail> { new ErrorDetail { Code = "DeserializeError", Description = fallbackMessage } });
+                return ApiResponse<TResponse>.Fail(fallbackMessage, "DeserializeError", fallbackMessage);
             }
         }
         private HttpRequestMessage BuildRequest<TRequest>(HttpMethod method, string endpoint, TRequest? data, bool requireAuth)
         {
             HttpRequestMessage request = new(method, endpoint);
-            if(requireAuth)
+            if (requireAuth)
             {
                 // Thêm Authorization nếu có token
                 var token = PreferencesHelper.GetAuthToken(); // Lấy token từ Preferences (hoặc SecureStorage)
@@ -91,8 +91,8 @@ namespace Sphere.Services.Service
                 {
                     request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
                 }
-            }    
-            
+            }
+
             // Xử lý nội dung gửi đi
             if (data != null)
             {
@@ -121,35 +121,21 @@ namespace Sphere.Services.Service
                     message.Contains("forcibly closed") ||
                     message.Contains("closed by the remote host"))
                 {
-                    return ApiResponse<TResponse>.Fail(
-                        "Máy chủ tạm thời không phản hồi",
-                        new List<ErrorDetail> {
-                    new ErrorDetail {
-                        Code = "ServerClosed",
-                        Description = "Kết nối bị đóng do máy chủ (có thể đang khởi động hoặc tạm ngưng). Vui lòng thử lại sau."
-                    }
-                        });
+                    return ApiResponse<TResponse>.Fail("Máy chủ tạm thời không phản hồi", "ServerClosed", "Kết nối bị đóng do máy chủ (có thể đang khởi động hoặc tạm ngưng). Vui lòng thử lại sau.");
                 }
 
-                return ApiResponse<TResponse>.Fail(
-                    "Lỗi kết nối đến máy chủ",
-                    new List<ErrorDetail> {
-                new ErrorDetail {
-                    Code = "WebException",
-                    Description = ex.Message
-                }
-                    });
+                return ApiResponse<TResponse>.Fail("Lỗi kết nối đến máy chủ", "WebException", ex.Message);
             }
             catch (HttpRequestException)
             {
-                return ApiResponse<TResponse>.Fail("Lỗi mạng", new List<ErrorDetail> { new ErrorDetail { Code = "NetworkError", Description = "Không có kết nối internet" } });
+                return ApiResponse<TResponse>.Fail("Lỗi mạng", "NetworkError", "Không có kết nối internet");
             }
             catch (TaskCanceledException)
             {
-                return ApiResponse<TResponse>.Fail("Hết thời gian kết nối", new List<ErrorDetail> { new ErrorDetail { Code = "Timeout", Description = "Không có kết nối internet hoặc quá thời gian chờ" } });
+                return ApiResponse<TResponse>.Fail("Hết thời gian kết nối", "Timeout", "Không có kết nối internet hoặc quá thời gian chờ");
             }
         }
-        private async Task<ApiResponse<TResponse>> SendWithRetryAsync<TRequest, TResponse>( HttpClient client, HttpMethod method, string endpoint, TRequest? data, bool requireAuth)
+        private async Task<ApiResponse<TResponse>> SendWithRetryAsync<TRequest, TResponse>(HttpClient client, HttpMethod method, string endpoint, TRequest? data, bool requireAuth)
         {
             var request = BuildRequest(method, endpoint, data, requireAuth);
             // Cấu hình JsonSerializer
@@ -166,37 +152,20 @@ namespace Sphere.Services.Service
             catch (WebException ex)
             {
                 var message = ex.Message.ToLowerInvariant();
-                if (message.Contains("socket") ||
-                    message.Contains("connection reset") ||
-                    message.Contains("forcibly closed") ||
-                    message.Contains("closed by the remote host"))
+                if (message.Contains("socket") || message.Contains("connection reset") || message.Contains("forcibly closed") || message.Contains("closed by the remote host"))
                 {
-                    return ApiResponse<TResponse>.Fail(
-                        "Máy chủ tạm thời không phản hồi",
-                        new List<ErrorDetail> {
-                    new ErrorDetail {
-                        Code = "ServerClosed",
-                        Description = "Kết nối bị đóng do máy chủ (có thể đang khởi động hoặc tạm ngưng). Vui lòng thử lại sau."
-                    }
-                        });
+                    return ApiResponse<TResponse>.Fail("Máy chủ tạm thời không phản hồi", "ServerClosed", "Kết nối bị đóng do máy chủ (có thể đang khởi động hoặc tạm ngưng). Vui lòng thử lại sau.");
                 }
 
-                return ApiResponse<TResponse>.Fail(
-                    "Lỗi kết nối đến máy chủ",
-                    new List<ErrorDetail> {
-                new ErrorDetail {
-                    Code = "WebException",
-                    Description = ex.Message
-                }
-                    });
+                return ApiResponse<TResponse>.Fail("Lỗi kết nối đến máy chủ", "WebException", ex.Message);
             }
             catch (HttpRequestException)
             {
-                return ApiResponse<TResponse>.Fail("Lỗi mạng", new List<ErrorDetail> { new ErrorDetail { Code = "NetworkError", Description = "Không có kết nối internet" } });
+                return ApiResponse<TResponse>.Fail("Lỗi mạng", "NetworkError", "Không có kết nối internet");
             }
             catch (TaskCanceledException)
             {
-                return ApiResponse<TResponse>.Fail("Hết thời gian kết nối", new List<ErrorDetail> { new ErrorDetail { Code = "Timeout", Description = "Không có kết nối internet hoặc quá thời gian chờ" } });
+                return ApiResponse<TResponse>.Fail("Hết thời gian kết nối", "Timeout", "Không có kết nối internet hoặc quá thời gian chờ");
             }
 
 
@@ -237,13 +206,11 @@ namespace Sphere.Services.Service
             }
             catch (JsonException jsonEx)
             {
-                return ApiResponse<TResponse>.Fail("Không đọc được dữ liệu từ máy chủ",
-                    new List<ErrorDetail> { new() { Code = "DeserializeError", Description = jsonEx.Message } });
+                return ApiResponse<TResponse>.Fail("Không đọc được dữ liệu từ máy chủ", "DeserializeError", jsonEx.Message);
             }
             catch (Exception ex)
             {
-                return ApiResponse<TResponse>.Fail("Lỗi hệ thống khi đọc dữ liệu",
-                    new List<ErrorDetail> { new() { Code = "UnhandledException", Description = ex.Message } });
+                return ApiResponse<TResponse>.Fail("Lỗi hệ thống khi đọc dữ liệu", "UnhandledException", ex.Message);
             }
         }
 

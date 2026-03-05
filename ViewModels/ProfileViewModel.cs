@@ -29,20 +29,20 @@ namespace Sphere.ViewModels
     public partial class ProfileViewModel : ObservableObject
     {
         private readonly IImagePickerService _imagePickerService;
-        private readonly IServiceProvider _serviceProvider;
         private readonly IUserProfileService _userProfileService;
         private readonly IUserSessionService _userSession;
         private readonly IShellNavigationService _nv;
+        private readonly IAppNavigationService _anv;
 
         [ObservableProperty]
         public partial bool ShouldShowBioToggle { get; set; }
         public DiaryListViewModel DiaryListVM { get; }
-        public ProfileViewModel(IUserSessionService userSession, IImagePickerService imagePickerService, IUserProfileService userProfileService, IServiceProvider serviceProvider, IDiaryService diaryService, IShellNavigationService nv)
+        public ProfileViewModel(IUserSessionService userSession, IImagePickerService imagePickerService, IUserProfileService userProfileService, IDiaryService diaryService,IAppNavigationService anv, IShellNavigationService nv)
         {
             _userSession = userSession;
             _imagePickerService = imagePickerService;
             _userProfileService = userProfileService;
-            _serviceProvider = serviceProvider;
+            _anv = anv;
             _nv = nv;
             var restoredUser = PreferencesHelper.LoadCurrentUser();
             if (restoredUser != null)
@@ -50,7 +50,7 @@ namespace Sphere.ViewModels
                 _userSession.CurrentUser = restoredUser;
             }
             CurrentUser = _userSession.CurrentUser;
-            DiaryListVM = new DiaryListViewModel(diaryService, serviceProvider, _nv);
+            DiaryListVM = new DiaryListViewModel(diaryService,_anv, _nv);
             _ = DiaryListVM.LoadFirstPage();
             
         }
@@ -172,7 +172,8 @@ namespace Sphere.ViewModels
             string displayName = imageType == "avatar" ? "ảnh đại diện" : "ảnh bìa";
             string? imageUrl = imageType == "avatar" ? AvatarDisplay : CoverPhotoDisplay;
 
-            var action = await Shell.Current.DisplayActionSheet(
+            // Use DisplayActionSheetAsync (supports multiple buttons) instead of DisplayAlertAsync
+            var action = await Shell.Current.DisplayActionSheetAsync(
                 $"Tùy chọn {displayName}",
                 "Hủy",
                 null,
@@ -215,17 +216,12 @@ namespace Sphere.ViewModels
         }
         private async Task DeleteImageAsync(string imageType)
         {
-            bool confirm = await Shell.Current.DisplayAlert(
-                "Xác nhận",
-                "Bạn có chắc muốn xoá ảnh không?",
-                "Xoá",
-                "Huỷ");
-
-            if (!confirm) return;
+            bool confirm = await ApiResponseHelper.ShowShellConfirmAsync( "Xác nhận", "Bạn có chắc muốn xoá ảnh không?", "Xoá", "Huỷ"); 
+            if (!confirm)
+                return;
 
             IsLoading = true;
             await PopupHelper.ShowLoadingAsync();
-
 
             try
             {

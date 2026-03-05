@@ -20,25 +20,32 @@ namespace Sphere.ViewModels
     {
         private readonly IDiamondsService _diamondsService;
         private readonly IUserSessionService _userSessionService;
+        private readonly IShellNavigationService _nv;
+
         [ObservableProperty]
         private ObservableCollection<DiamondModel> packages = [];
+
         [ObservableProperty]
         private bool isLoading;
+
         [ObservableProperty]
         private bool isRefreshing;
+
         [ObservableProperty]
         private long coins;
-        public DiamondViewModel(IDiamondsService diamondsService, IUserSessionService userSessionService)
+
+        public DiamondViewModel(IDiamondsService diamondsService, IUserSessionService userSessionService, IShellNavigationService nv)
         {
-            _diamondsService= diamondsService;
+            _diamondsService = diamondsService;
             _userSessionService = userSessionService;
+            _nv = nv;
             Coins = _userSessionService.CurrentUser!.UserProfileDTO!.Coins;
             _ = LoadPackagesAsync();
         }
-        
+
         public async Task LoadPackagesAsync(bool forceRefresh = false, bool showLoading = true)
         {
-            if(IsLoading) return;
+            if (IsLoading) return;
             IsLoading = true;
             if (showLoading)
                 await PopupHelper.ShowLoadingAsync();
@@ -65,7 +72,7 @@ namespace Sphere.ViewModels
                     PreferencesHelper.SaveDiamondPackages(response.Data);
                 }
                 else
-                   await ApiResponseHelper.ShowApiErrorsAsync(response);
+                    await ApiResponseHelper.ShowApiErrorsAsync(response);
             }
             finally
             {
@@ -84,10 +91,9 @@ namespace Sphere.ViewModels
 
             var popup = new RechargePopup(package, qrImagePath, _userSessionService);
             // Giống y như popup edit bio
-            var result = await Application.Current!.MainPage!.ShowPopupAsync(popup);
-
-            
+            _ = await _nv.ShowPopupAsync(popup);
         }
+
         [RelayCommand]
         private async Task RefreshPackagesAsync()
         {
@@ -104,9 +110,6 @@ namespace Sphere.ViewModels
             {
                 IsRefreshing = false;
             }
-            
         }
-
-
     }
 }

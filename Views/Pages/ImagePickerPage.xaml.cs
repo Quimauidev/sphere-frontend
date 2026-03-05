@@ -4,10 +4,10 @@ namespace Sphere.Views.Pages;
 
 public partial class ImagePickerPage : ContentPage
 {
-    public ImagePickerPage(IServiceProvider serviceProvider)
+    public ImagePickerPage(ImagePickerViewModel vm)
     {
         InitializeComponent();
-        BindingContext = serviceProvider.GetRequiredService<ImagePickerViewModel>();
+        BindingContext = vm;
     }
 
 }

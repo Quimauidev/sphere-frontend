@@ -4,8 +4,12 @@ using CommunityToolkit.Mvvm.Input;
 using Sphere;
 using Sphere.Common.Constans;
 using Sphere.Common.Responses;
+using Sphere.Database.EntitySQLite;
 using Sphere.Database.ServiceSQLite;
+using Sphere.Hubs;
+using Sphere.Interfaces;
 using Sphere.Models;
+using Sphere.Models.Params;
 using Sphere.Services.IService;
 using System;
 using System.Collections.Generic;
@@ -15,13 +19,23 @@ using System.Text;
 using System.Threading.Tasks;
 using static Sphere.Models.Request;
 using static System.Net.Mime.MediaTypeNames;
-using Sphere.Database.EntitySQLite;
-using Sphere.Hubs;
 
 namespace Sphere.ViewModels
 {
-    public partial class MessageViewModel : ObservableObject
+    public partial class MessageViewModel : ObservableObject, IModalParameterReceiver<MessageNavigationParam>
     {
+        [ObservableProperty]
+        public UserDiaryModel Partner = default!;
+        public async Task Receive(MessageNavigationParam param)
+        {
+            ConversationId = param.ConversationId;
+            Partner = param.Partner;
+            PartnerFullName = param.PartnerFullName;
+            PartnerAvatar = param.PartnerAvatar;
+
+            // Nếu cần load tin nhắn
+            //LoadMessagesCommand.Execute(null);
+        }
         private readonly IConversationService _conversationService;
         private readonly IUserSessionService _userSessionService;
         private readonly MessageHubService _hubService;
@@ -496,18 +510,14 @@ namespace Sphere.ViewModels
             });
         }
 
-        
-
-
+        [RelayCommand]
+        private static async Task OpenGallery() => await ApiResponseHelper.DisplayAlertSafe("Gallery", "Open gallery");
 
         [RelayCommand]
-        private void OpenGallery() => App.Current!.MainPage!.DisplayAlert("Gallery", "Open gallery", "OK");
+        private static async Task SendLocation() => await ApiResponseHelper.DisplayAlertSafe("Location", "Send location");
 
         [RelayCommand]
-        private void SendLocation() => App.Current!.MainPage!.DisplayAlert("Location", "Send location", "OK");
-
-        [RelayCommand]
-        private void Attach() => App.Current!.MainPage!.DisplayAlert("Attach", "Open attachments", "OK");
+        private static async Task Attach() => await ApiResponseHelper.DisplayAlertSafe("Attach", "Open attachments");
     }
 
 }

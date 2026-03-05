@@ -17,7 +17,7 @@ using System.Threading.Tasks;
 
 namespace Sphere.ViewModels
 {
-    internal partial class UserViewModel(IUserService userService, IUserSessionService userSessionService, IShellNavigationService nv) : ObservableObject
+    public partial class UserViewModel(IUserService userService, IUserSessionService userSessionService, IShellNavigationService nv) : ObservableObject
     {
         private readonly IUserService _userService = userService;
         private readonly IUserSessionService _userSession = userSessionService;

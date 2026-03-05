@@ -73,5 +73,7 @@ namespace Sphere.Common.Responses
         }
         public static async Task ShowShellAlertAsync(string title, string message)
             => await Shell.Current.DisplayAlertAsync(title, message, "OK");
+        public static async Task<bool> ShowShellConfirmAsync(string title, string message, string accept, string cancel)
+            => await Shell.Current.DisplayAlertAsync(title, message, accept, cancel);
     }
 }

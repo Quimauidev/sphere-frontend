@@ -1,4 +1,10 @@
-﻿using Sphere.Common.Helpers;
+﻿using System;
+using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.Maui;
+using Microsoft.Maui.Controls;
+using Microsoft.Maui.Essentials;
+using Sphere.Common.Helpers;
 using Sphere.Database.ServiceSQLite;
 using Sphere.Hubs;
 using Sphere.Services.IService;
@@ -14,8 +20,9 @@ namespace Sphere
         private readonly IAuthService _authService;
         private readonly IPermissionService _permissionService;
         private readonly ILocationService _locationService;
+        private readonly IAppNavigationService _anv;
 
-        public App(IServiceProvider serviceProvider, IAuthService authService, IPermissionService permissionService, ILocationService locationService)
+        public App(IServiceProvider serviceProvider, IAuthService authService, IPermissionService permissionService, ILocationService locationService, IAppNavigationService anv)
         {
             InitializeComponent();
 
@@ -23,9 +30,21 @@ namespace Sphere
             _authService = authService;
             _permissionService = permissionService;
             _locationService = locationService;
+            _anv = anv;
 
-            // Gán MainPage tạm thời (Splash / Loading)
-            MainPage = new ContentPage
+            // ① Khởi tạo SQLite table trước khi làm gì khác
+            var initializer = _serviceProvider.GetRequiredService<BaseSQLiteService>();
+            Task.Run(() => initializer.InitAsync()).Wait(); // đồng bộ để đảm bảo table đã tồn tại
+
+            // Start async initialization that will switch root page using UpdateRootPage(...)
+            _ = InitializeAppAsync();
+        }
+
+        // Override CreateWindow to provide initial window and handle any pending root page request.
+        protected override Window CreateWindow(IActivationState? activationState)
+        {
+            // Initial splash UI (replaces previous `MainPage = new ContentPage { ... }` usage).
+            var splash = new ContentPage
             {
                 Content = new ActivityIndicator
                 {
@@ -34,15 +53,13 @@ namespace Sphere
                     HeightRequest = 40,
                     HorizontalOptions = LayoutOptions.Center,
                     VerticalOptions = LayoutOptions.Center
-                },
+                }
             };
-            // ① Khởi tạo SQLite table trước khi làm gì khác
-            var initializer = _serviceProvider.GetRequiredService<BaseSQLiteService>();
-            Task.Run(() => initializer.InitAsync()).Wait(); // đồng bộ để đảm bảo table đã tồn tại
-            InitializeAppAsync();
+
+            return new Window(splash);
         }
 
-        private async void InitializeAppAsync()
+        private async Task InitializeAppAsync()
         {
             string? token = PreferencesHelper.GetAuthToken(); // lấy token từ Preferences
             var expiresAt = PreferencesHelper.GetAuthTokenExpiresAt(); // lấy thời gian hết hạn token từ Preferences
@@ -62,29 +79,29 @@ namespace Sphere
                         _serviceProvider
                     );
                     await _presenceService.StartAsync();
+
                     if (!PreferencesHelper.HasSeenIntro())
                     {
                         var intro = _serviceProvider.GetRequiredService<IntroPage>();
                         intro.OnFinishedIntro = () =>
                         {
-                            MainPage = new AppShell(_serviceProvider, _authService, _permissionService, _locationService, _presenceService);
+                            // Use helper to change root page
+                            _anv.SetRootPage(new AppShell(_serviceProvider, _authService, _permissionService,  _presenceService,_anv));
                         };
-                        MainPage = new NavigationPage(intro);   
+
+                        _anv.SetRootPage(new NavigationPage(intro));
                     }
                     else
                     {
-                        MainPage = new AppShell(_serviceProvider, _authService, _permissionService, _locationService, _presenceService);
+                        _anv.SetRootPage(new AppShell(_serviceProvider, _authService, _permissionService,  _presenceService, _anv));
                     }
 
                     return;
                 }
             }
-
+            var login = _serviceProvider.GetRequiredService<LoginPage>();
             // Nếu không có token hoặc hết hạn → chuyển sang LoginPage
-            MainThread.BeginInvokeOnMainThread(() =>
-            {
-                MainPage = new NavigationPage(_serviceProvider.GetRequiredService<LoginPage>());
-            });
-        }
+            _anv.SetRootPage(new NavigationPage(login));
+        }        
     }
 }

@@ -4,9 +4,9 @@ namespace Sphere.Views.Pages;
 
 public partial class MessageListPage : ContentPage
 {
-	public MessageListPage(IServiceProvider serviceProvider)
+	public MessageListPage(ConversationsViewModel vm)
 	{
 		InitializeComponent();
-        BindingContext = serviceProvider.GetRequiredService<ConversationsViewModel>();
+        BindingContext = vm;
     }
 }
