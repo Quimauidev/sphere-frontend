@@ -16,17 +16,17 @@ namespace Sphere
 {
     public partial class App : Application
     {
-        private PresenceService? _presenceService;
+        private readonly PresenceService _presenceService;
         private readonly IServiceProvider _serviceProvider;
         private readonly IAuthService _authService;
         private readonly IPermissionService _permissionService;
         private readonly IAppNavigationService _anv;
         private readonly ApiResponseHelper _res;
 
-        public App(IServiceProvider serviceProvider, IAuthService authService, IPermissionService permissionService, IAppNavigationService anv, ApiResponseHelper res)
+        public App(PresenceService presenceService, IServiceProvider serviceProvider, IAuthService authService, IPermissionService permissionService, IAppNavigationService anv, ApiResponseHelper res)
         {
             InitializeComponent();
-
+            _presenceService = presenceService;
             _serviceProvider = serviceProvider;
             _authService = authService;
             _permissionService = permissionService;
@@ -76,8 +76,12 @@ namespace Sphere
                     var userSession = _serviceProvider.GetRequiredService<IUserSessionService>();
                     userSession.CurrentUser = restoredUser;
 
-                    _presenceService = new PresenceService( "https://sphere-iqm8.onrender.com", restoredUser.UserProfileDTO!.Id, _serviceProvider, _anv);
-                    _ = _presenceService.StartAsync();
+                    var presenceService = _serviceProvider.GetRequiredService<PresenceService>();
+
+
+                    var userId = restoredUser.UserProfileDTO!.Id;
+
+                    _ = _presenceService.StartAsync(userId);
 
                     if (!PreferencesHelper.HasSeenIntro())
                     {

@@ -1,4 +1,6 @@
 ﻿using CommunityToolkit.Maui.Views;
+using Android.Content;
+using Android.Net;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Sphere.Common.Constans;
@@ -20,17 +22,19 @@ using System.Threading.Tasks;
 
 namespace Sphere.ViewModels
 {
-    public partial class LoginViewModel(IServiceProvider serviceProvider, IAuthService authService, IUserSessionService userSession, IUserProfileService userProfileService, IPermissionService permissionService, ILocationService locationService, IShellNavigationService nv, IAppNavigationService anv, ApiResponseHelper res) : ObservableObject
+    public partial class LoginViewModel(IServiceProvider serviceProvider, IAuthService authService, IUserSessionService userSession, IUserProfileService userProfileService, IPermissionService permissionService, ILocationService locationService, IShellNavigationService nv, PresenceService presence, IAppNavigationService anv, ApiResponseHelper res) : ObservableObject
     {
         private readonly IAuthService _authService = authService;
 
         private readonly ILocationService _locationService = locationService;
         private readonly IPermissionService _permissionService = permissionService;
+        //private readonly PresenceService _presence = presence;
         private readonly IServiceProvider _serviceProvider = serviceProvider;
         private readonly IUserProfileService _userProfileService = userProfileService;
         private readonly IUserSessionService _userSession = userSession;
         private readonly IShellNavigationService _nv = nv;
         private readonly IAppNavigationService _anv = anv;
+
         private bool _isCheckingGps;
 
         [ObservableProperty]
@@ -46,9 +50,11 @@ namespace Sphere.ViewModels
         public string PasswordIcon => IsPasswordVisible ? "\U000F0209" : "\U000F0208";
 
         [RelayCommand]
-        public async Task ForgotPassword()
+        public Task TogglePassword()
         {
-            await _nv.PushModalAsync<ForgotPasswordPage>();
+            IsPasswordVisible = !IsPasswordVisible;
+            OnPropertyChanged(nameof(PasswordIcon));
+            return Task.CompletedTask;
         }
 
         [RelayCommand]
@@ -56,79 +62,51 @@ namespace Sphere.ViewModels
         {
             if (string.IsNullOrWhiteSpace(LoginModel.PhoneNumber))
             {
-                await _anv.DisplayAlertAsync("Thông báo","Vui lòng nhập số điện thoại.");
+                await _anv.DisplayAlertAsync("Thông báo", "Vui lòng nhập số điện thoại.");
                 return;
             }
 
             if (string.IsNullOrWhiteSpace(LoginModel.Password))
             {
-                await _anv.DisplayAlertAsync("Thông báo","Vui lòng nhập mật khẩu.");
+                await _anv.DisplayAlertAsync("Thông báo", "Vui lòng nhập mật khẩu.");
                 return;
             }
 
             if (IsLoading) return;
+
             IsLoading = true;
             await PopupHelper.ShowLoadingAsync();
 
             try
             {
                 var response = await _authService.LoginAsync(LoginModel);
-                if (response.IsSuccess)
+
+                if (!response.IsSuccess)
                 {
-                    PreferencesHelper.SetAuthToken(response.Data!.Token);
-                    PreferencesHelper.SetRefreshToken(response.Data.RefreshToken);
-                    PreferencesHelper.SetRefreshTokenId(response.Data.RefreshTokenId.ToString());
-                    PreferencesHelper.SetAuthTokenExpiresAt(DateTime.UtcNow.AddSeconds(response.Data.ExpiresIn));
-                    // Gọi API lấy profile (user + userprofile)
-                    var profile = await _userProfileService.GetUserProfileMeAsync();
+                    await res.ShowApiErrorsAsync(response, "Đăng nhập thất bại");
+                    return;
+                }
 
-                    if (profile.IsSuccess)
-                    {
-                        // Gán vào session
-                        _userSession.CurrentUser = profile.Data!;
+                SaveTokens(response.Data!);
 
-                        PreferencesHelper.SaveCurrentUser(profile.Data!);
+                var profile = await _userProfileService.GetUserProfileMeAsync();
 
-                        KeyboardService.HideKeyboard();
+                if (!profile.IsSuccess)
+                {
+                    await _authService.LogoutAsync();
+                    await res.ShowApiErrorsAsync(profile, "Không lấy được hồ sơ người dùng");
+                    return;
+                }
 
-                        // Sau khi gán CurrentUser và Preferences
-                        var newUserId = profile.Data!.UserProfileDTO!.Id;
+                await SetupUserSessionAsync(profile.Data!);
 
-                        // Xóa dữ liệu conversation cũ
-                        var convVm = _serviceProvider.GetService<ConversationsViewModel>();
-                        if (convVm != null)
-                            await convVm.ClearConversationsAsync();
-
-                        // Tạo instance mới PresenceService
-                        var presenceService = new PresenceService("https://sphere-iqm8.onrender.com", newUserId, _serviceProvider, _anv);
-                        await presenceService.StartAsync(); // online ngay sau khi login    
-                        if (!PreferencesHelper.HasSeenIntro())
-                        {
-                            var intro = _serviceProvider.GetRequiredService<IntroPage>();
-                            intro.OnFinishedIntro = async () =>
-                            {
-                                _anv.SetRootPage(new AppShell(_serviceProvider, _authService, _permissionService,  presenceService, _anv, res));
-                                await Task.Delay(200);
-
-                                _permissionService.ReturnedFromSettings -= OnReturnedFromSettings;
-                            };
-                            _anv.SetRootPage(new NavigationPage(intro));
-                        }
-                        else
-                        {
-                            _anv.SetRootPage(new AppShell(_serviceProvider, _authService, _permissionService,  presenceService, _anv, res));
-                            _permissionService.ReturnedFromSettings -= OnReturnedFromSettings;
-                        }
-                    }
-                    else
-                    {
-                        await _authService.LogoutAsync();
-                        await res.ShowApiErrorsAsync(profile, "Không lấy được hồ sơ người dùng");
-                    }
+                if (!PreferencesHelper.HasSeenIntro())
+                {
+                    await ShowIntroAsync();
                 }
                 else
                 {
-                    await res.ShowApiErrorsAsync(response, "Đăng nhập thất bại");
+                    await InitAppAsync();   
                 }
             }
             finally
@@ -137,21 +115,114 @@ namespace Sphere.ViewModels
                 IsLoading = false;
             }
         }
-        [RelayCommand]
-        public async Task Register()
+        private void SaveTokens(TokenResponse data)
         {
-            if (IsLoading) return;
-            await _nv.PushModalAsync<RegisterPage>();
+            PreferencesHelper.SetAuthToken(data.Token);
+            PreferencesHelper.SetRefreshToken(data.RefreshToken);
+            PreferencesHelper.SetRefreshTokenId(data.RefreshTokenId.ToString());
+            PreferencesHelper.SetAuthTokenExpiresAt(DateTime.UtcNow.AddSeconds(data.ExpiresIn));
         }
-
-        [RelayCommand]
-        public Task TogglePassword()
+        private async Task SetupUserSessionAsync(UserWithUserProfileModel user)
         {
-            IsPasswordVisible = !IsPasswordVisible;
-            OnPropertyChanged(nameof(PasswordIcon));
-            return Task.CompletedTask;
-        }
+            _userSession.CurrentUser = user;
+            PreferencesHelper.SaveCurrentUser(user);
 
+            KeyboardService.HideKeyboard();
+
+            var convVm = _serviceProvider.GetService<ConversationsViewModel>();
+            if (convVm != null)
+                await convVm.ClearConversationsAsync();
+        }
+        private async Task ShowIntroAsync()
+        {
+            var intro = _serviceProvider.GetRequiredService<IntroPage>();
+
+            intro.OnFinishedIntro = async () =>
+            {
+                PreferencesHelper.SetIntroShown();
+                await InitAppAsync();
+            };
+
+            _anv.SetRootPage(new NavigationPage(intro));
+        }
+        private async Task InitAppAsync()
+        {
+            //var shell = _serviceProvider.GetRequiredService<AppShell>();
+
+            await MainThread.InvokeOnMainThreadAsync(() => { _anv.SetRootPage(new AppShell(_serviceProvider, _authService, _permissionService, presence, _anv, res)); });
+
+            await Task.Delay(200);
+
+            await InitializeServicesAsync();
+            
+        }
+        private async Task RequestInitialPermissionsAsync()
+        {
+            try
+            {
+                var result = await _permissionService.RequestPermissionAsync(AppPermission.Location);
+
+                switch (result)
+                {
+                    case PermissionResult.Granted:
+                        await UpdateUserLocationAsync();
+                        break;
+
+                    case PermissionResult.Denied:
+                        // user từ chối lần 1 -> không làm gì
+                        break;
+
+                    case PermissionResult.DeniedDontAskAgain:
+                        // dialog mở settings đã xử lý trong PermissionService
+                        break;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Permission error: {ex.Message}");
+            }
+        }
+        private async Task InitializeServicesAsync()
+        {
+            try
+            {
+                var presenceService = _serviceProvider.GetRequiredService<PresenceService>();
+                var userId = _userSession.CurrentUser!.UserProfileDTO!.Id;
+                await presenceService.StartAsync(userId);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Init services error: {ex.Message}");
+            }
+            await RequestInitialPermissionsAsync();
+        }
+        
+        private async Task UpdateUserLocationAsync()
+        {
+            try
+            {
+                var location = await GetStableLocationAsync();
+                if (location == null)
+                {
+                    await _anv.DisplayAlertAsync("Vị trí", "Không lấy được vị trí từ thiết bị.");
+                    return;
+                }
+
+                var dto = new UserLocationModel
+                {
+                    Latitude = location.Latitude,
+                    Longitude = location.Longitude,
+                    LastUpdated = DateTime.UtcNow,
+                    IsVisible = true
+                };
+
+                await _locationService.UpdateLocationAsync(dto);
+            }
+            catch (Exception ex)
+            {
+                await _anv.DisplayAlertAsync("Lỗi", $"Có lỗi xảy ra khi lấy hoặc gửi vị trí: {ex.Message}");
+            }
+        }
         private async Task<Location?> GetStableLocationAsync(int samples = 5, int maxAccuracyMeters = 50)
         {
             var locs = new List<Location>();
@@ -174,7 +245,7 @@ namespace Sphere.ViewModels
                 }
             }
 
-            if (!locs.Any()) return null;
+            if (locs.Count == 0) return null;
 
             // Lấy trung bình để giảm sai số
             double avgLat = locs.Average(l => l.Latitude);
@@ -183,51 +254,17 @@ namespace Sphere.ViewModels
             return new Location(avgLat, avgLon);
         }
 
-        private async void OnReturnedFromSettings()
+        [RelayCommand]
+        public async Task Register()
         {
-            if (_isCheckingGps) return;
-            _isCheckingGps = true;
-
-            try
-            {
-                bool granted = await _permissionService.EnsureGrantedAsync(AppPermission.Location);
-                if (granted)
-                    await UpdateUserLocationAsync();
-            }
-            finally
-            {
-                _isCheckingGps = false;
-            }
+            
+            await _nv.PushModalAsync<RegisterPage>();
         }
 
-        private async Task UpdateUserLocationAsync()
+        [RelayCommand]
+        public async Task ForgotPassword()
         {
-            try
-            {
-                var granted = await _permissionService.EnsureGrantedAsync(AppPermission.Location);
-                if (!granted) return;
-
-                var location = await GetStableLocationAsync();
-                if (location == null)
-                {
-                    await _anv.DisplayAlertAsync("Vị trí", "Không lấy được vị trí từ thiết bị.");
-                    return;
-                }
-
-                var dto = new UserLocationModel
-                {
-                    Latitude = location.Latitude,
-                    Longitude = location.Longitude,
-                    LastUpdated = DateTime.UtcNow,
-                    IsVisible = true
-                };
-
-                await _locationService.UpdateLocationAsync(dto);
-            }
-            catch (Exception ex)
-            {
-                await _anv.DisplayAlertAsync( "Lỗi", $"Có lỗi xảy ra khi lấy hoặc gửi vị trí: {ex.Message}");
-            }
+            await _nv.PushModalAsync<ForgotPasswordPage>();
         }
     }
 }

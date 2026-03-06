@@ -19,6 +19,7 @@ namespace Sphere
         private readonly PresenceService _presenceService;
         private readonly IServiceProvider _serviceProvider;
         private readonly IAppNavigationService _anv;
+        private bool IsLoading;
 
         public AppShell(IServiceProvider serviceProvider, IAuthService authService, IPermissionService permissionService,  PresenceService presenceService, IAppNavigationService anv, ApiResponseHelper res)
         {
@@ -40,24 +41,41 @@ namespace Sphere
             if (!Preferences.Get("LocationAsked", false))
             {
                 Preferences.Set("LocationAsked", true);
-
-                await _permissionService.EnsureGrantedAsync(AppPermission.Location);
+                await _permissionService.RequestPermissionAsync(AppPermission.Location);
             }
         }
 
         private async void OnLogoutClicked(object sender, EventArgs e)
         {
+            if (IsLoading)
+                return;
             bool confirm = await ApiResponseHelper.ShowShellConfirmAsync("Đăng xuất", "Bạn có chắc chắn muốn đăng xuất?", "Đồng ý", "Hủy");
-            if (!confirm) return;
-            
-            await _presenceService.StopAsync();
-            //_ = _serviceProvider.GetRequiredService<IUserSessionService>();
-            var response = await _authService.LogoutAsync();
-            if (!response.IsSuccess)
-                await _res.ShowApiErrorsAsync(response, "Đăng xuất thất bại");
-            var login = _serviceProvider.GetRequiredService<LoginPage>();
+            if (!confirm)
+                return;
+            IsLoading = true;
+            await PopupHelper.ShowLoadingAsync();
+            try
+            {
+                await _presenceService.StopAsync();
 
-            _anv.SetRootPage(new NavigationPage(login));
+                var response = await _authService.LogoutAsync();
+
+                if (!response.IsSuccess)
+                {
+                    await _res.ShowApiErrorsAsync(response, "Đăng xuất thất bại");
+                    return;
+                }
+
+                var login = _serviceProvider.GetRequiredService<LoginPage>();
+
+                _anv.SetRootPage(new NavigationPage(login));
+            }
+            finally
+            {
+                // chuẩn thứ tự
+                await PopupHelper.HideLoadingAsync();
+                IsLoading = false;
+            }
 
         }
         

@@ -34,6 +34,12 @@ namespace Sphere.Common.Constans
         Empty,
         Error,
     }
+    public enum PermissionResult
+    {
+        Granted, // cho phép
+        Denied, // từ chối vẫn cho phép hỏi lại
+        DeniedDontAskAgain // từ chối và không hỏi lại
+    }
 
     public enum MessageStatus
     {

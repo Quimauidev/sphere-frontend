@@ -18,9 +18,8 @@ public class MediaStoreHelper
 
     public async Task<List<Android.Net.Uri>> GetImageUrisAsync(int limit = 50, int offset = 0)
     {
-        bool granted = await _permissionService!.EnsureGrantedAsync(AppPermission.ReadImages);
-
-        if (!granted)
+        var permissionResult = await _permissionService.RequestPermissionAsync(AppPermission.ReadImages);
+        if (permissionResult != PermissionResult.Granted)
         {
             return [];
         }

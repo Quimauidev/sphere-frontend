@@ -108,9 +108,9 @@ namespace Sphere.ViewModels
                 NearbyState = UiViewState.Loading;
                 IsRefreshing = true;
 
-                var granted = await _permissionService.EnsureGrantedAsync(AppPermission.Location);
+                var permissionResult = await _permissionService.RequestPermissionAsync(AppPermission.Location);
                 var gpsEnabled = _permissionService.IsGpsEnabled();
-                if (!granted || !gpsEnabled || token.IsCancellationRequested || !IsLocationEnabled)
+                if (permissionResult != PermissionResult.Granted || !gpsEnabled || token.IsCancellationRequested || !IsLocationEnabled)
                 {
                     // ⚠ Đồng bộ switch với permission/GPS
                     if (IsLocationEnabled)
@@ -205,8 +205,8 @@ namespace Sphere.ViewModels
                 if (token?.IsCancellationRequested == true || !IsLocationEnabled)
                     return;
 
-                var granted = await _permissionService.EnsureGrantedAsync(AppPermission.Location);
-                if (!granted || token?.IsCancellationRequested == true || !IsLocationEnabled)
+                var permissionResult = await _permissionService.RequestPermissionAsync(AppPermission.Location);
+                if (permissionResult != PermissionResult.Granted || token?.IsCancellationRequested == true || !IsLocationEnabled)
                 {
                     NearbyState = UiViewState.Error;
                     return;
@@ -322,17 +322,15 @@ namespace Sphere.ViewModels
 
             try
             {
-                bool granted = await _permissionService.EnsureGrantedAsync(AppPermission.Location);
+                var permissionResult = await _permissionService.RequestPermissionAsync(AppPermission.Location);
                 bool gpsEnabled = await _permissionService.CheckGpsStatusAsync();
-                if (granted && gpsEnabled)
+                if (permissionResult == PermissionResult.Granted && gpsEnabled)
                 {
-
                     // ✅ Nếu quyền OK và GPS bật → bật switch
                     if (!IsLocationEnabled) IsLocationEnabled = true;
                     _locationCts?.Cancel();
                     _locationCts?.Dispose();
                     _locationCts = new CancellationTokenSource();
-
                     await LoadNearbyInternalAsync(_locationCts.Token);
                 }
                 else
@@ -373,8 +371,8 @@ namespace Sphere.ViewModels
             try
             {
                 // Lấy vị trí mới
-                var granted = await _permissionService.EnsureGrantedAsync(AppPermission.Location);
-                if (!granted || !IsLocationEnabled)
+                var permissionResult = await _permissionService.RequestPermissionAsync(AppPermission.Location);
+                if (permissionResult != PermissionResult.Granted || !IsLocationEnabled)
                 {
                     NearbyState = UiViewState.Error;
                     return;

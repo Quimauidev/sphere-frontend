@@ -7,6 +7,7 @@ using Sphere.Common.Constans;
 using Sphere.Common.Responses;
 using Sphere.Database.ServiceSQLite;
 using Sphere.Extensions;
+using Sphere.Hubs;
 using Sphere.Platforms.Android;
 using Sphere.Platforms.Android.Handlers;
 using Sphere.Services.IService;
@@ -39,6 +40,7 @@ namespace Sphere
             builder.Services.AddHttpClient();
             builder.Services.RegisterServices();
             builder.Services.AddSingleton<ApiResponseHelper>();
+            
             builder.ConfigureMauiHandlers(handlers =>
             {
                 handlers.AddHandler(typeof(GlideImage), typeof(GlideImageHandler));

@@ -60,7 +60,6 @@ namespace Sphere.ViewModels
             IsLoading = true;
             await PopupHelper.ShowLoadingAsync();
 
-
             try
             {
                 var response = await _authService.RegisterAsync(RegisterModel);
@@ -92,7 +91,7 @@ namespace Sphere.ViewModels
             if (birthday > today)
                 return "Ngày sinh không thể là ngày trong tương lai.";
 
-            if (birthday > today.AddYears(-15))
+            if (birthday > today.AddYears(-16))
                 return "Bạn phải từ 16 tuổi trở lên để đăng ký.";
 
             if (string.IsNullOrWhiteSpace(RegisterModel.PhoneNumber))

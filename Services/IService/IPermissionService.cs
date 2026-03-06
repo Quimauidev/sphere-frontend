@@ -9,13 +9,10 @@ namespace Sphere.Services.IService
 {
     public interface IPermissionService
     {
-        Task<bool> EnsureGrantedAsync(AppPermission permission);
+        Task<PermissionResult> RequestPermissionAsync(AppPermission permission); 
         Task<bool> CheckGpsStatusAsync();
-
-        // 👇 Thêm dòng này
         event Action? ReturnedFromSettings;
         bool IsGpsEnabled();
-        // 🔹 Thêm event
         event Action? GpsTurnedOff;
     }
 }

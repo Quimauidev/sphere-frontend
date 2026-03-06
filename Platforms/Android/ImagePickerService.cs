@@ -22,8 +22,8 @@ namespace Sphere.Platforms.Android
 
         public async Task<string?> PickSingleImageAsync()
         {
-            var granted = await _permissionService.EnsureGrantedAsync(AppPermission.ReadImages);
-            if (!granted) return null;
+            var permissionResult = await _permissionService.RequestPermissionAsync(AppPermission.ReadImages);
+            if (permissionResult != PermissionResult.Granted) return null;
 
             _taskCompletionSource = new TaskCompletionSource<List<string>>();
 
