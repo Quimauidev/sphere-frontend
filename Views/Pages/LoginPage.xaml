@@ -21,7 +21,6 @@
 
             <Grid ColumnDefinitions="*, Auto">
                 <Entry
-                    Grid.Column="0"
                     IsPassword="{Binding IsPasswordVisible, Converter={StaticResource InverseBoolConverter}}"
                     MaxLength="30"
                     Placeholder="Mật khẩu"
@@ -40,6 +39,7 @@
                     </ImageButton.Source>
                 </ImageButton>
             </Grid>
+
         </StackLayout>
 
         <Button

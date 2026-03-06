@@ -20,11 +20,11 @@
                 HorizontalOptions="Center"
                 Spacing="5">
 
-                <Frame
+                <Border
                     Padding="0"
-                    BorderColor="White"
-                    CornerRadius="50"
                     HeightRequest="100"
+                    Stroke="White"
+                    StrokeShape="50"
                     WidthRequest="100">
                     <Image
                         x:Name="AvatarImage"
@@ -34,7 +34,7 @@
                             <TapGestureRecognizer Command="{Binding ShowImageOptionsCommand}" CommandParameter="avatar" />
                         </Image.GestureRecognizers>
                     </Image>
-                </Frame>
+                </Border>
 
                 <StackLayout
                     HorizontalOptions="End"
@@ -88,19 +88,14 @@
         </VerticalStackLayout>
 
         <!--  Frame Kim Cương  -->
-        <Frame
+        <Border
             Padding="0"
             BackgroundColor="White"
-            BorderColor="#DADADA"
-            CornerRadius="20"
-            HasShadow="True"
             HeightRequest="40"
+            Stroke="#DADADA"
+            StrokeShape="20"
             WidthRequest="150">
             <Grid ColumnDefinitions="40,*,40">
-
-
-
-
                 <!--  Icon Kim Cương  -->
                 <Label
                     FontSize="20"
@@ -123,16 +118,16 @@
                 </Label>
 
                 <!--  Nút Hành động / Icon thêm  -->
-                <Frame
+                <Border
                     Grid.Column="2"
                     Padding="5"
                     BackgroundColor="#E5F0FF"
-                    CornerRadius="15"
                     HorizontalOptions="Center"
+                    StrokeShape="15"
                     VerticalOptions="Center">
-                    <Frame.GestureRecognizers>
+                    <Border.GestureRecognizers>
                         <TapGestureRecognizer Command="{Binding ManageCoinsCommand}" />
-                    </Frame.GestureRecognizers>
+                    </Border.GestureRecognizers>
                     <Image HeightRequest="20" WidthRequest="20">
                         <Image.Source>
                             <FontImageSource
@@ -141,10 +136,10 @@
                                 Color="#1877F2" />
                         </Image.Source>
                     </Image>
-                </Frame>
+                </Border>
             </Grid>
 
-        </Frame>
+        </Border>
 
 
         <HorizontalStackLayout
@@ -153,11 +148,11 @@
             Spacing="10">
 
             <!--  Nút Theo dõi  -->
-            <Frame
+            <Border
                 Padding="10"
                 BackgroundColor="#1DA1F2"
-                CornerRadius="20"
-                HorizontalOptions="Center">
+                HorizontalOptions="Center"
+                StrokeShape="20">
                 <HorizontalStackLayout
                     HorizontalOptions="Center"
                     Spacing="8"
@@ -175,15 +170,15 @@
                         Text="Theo dõi"
                         TextColor="White" />
                 </HorizontalStackLayout>
-            </Frame>
+            </Border>
 
             <!--  Nút Nhắn tin  -->
-            <Frame
+            <Border
                 Padding="10"
                 BackgroundColor="White"
-                BorderColor="#1DA1F2"
-                CornerRadius="20"
-                HorizontalOptions="Center">
+                HorizontalOptions="Center"
+                Stroke="#1DA1F2"
+                StrokeShape="20">
                 <HorizontalStackLayout
                     HorizontalOptions="Center"
                     Spacing="8"
@@ -201,7 +196,7 @@
                         Text="Nhắn tin"
                         TextColor="#1DA1F2" />
                 </HorizontalStackLayout>
-            </Frame>
+            </Border>
 
         </HorizontalStackLayout>
 
@@ -247,11 +242,10 @@
             </ImageButton>
         </Grid>
         <BoxView BackgroundColor="LightGray" HeightRequest="2" />
-        <Frame
+        <Border
             Margin="10"
             Padding="0"
-            BorderColor="LightGray"
-            HasShadow="True">
+            Stroke="LightGray">
             <Editor
                 Margin="5"
                 IsReadOnly="True"
@@ -260,6 +254,6 @@
                     <TapGestureRecognizer Command="{Binding PostStatusCommand}" />
                 </Editor.GestureRecognizers>
             </Editor>
-        </Frame>
+        </Border>
     </VerticalStackLayout>
 </ContentView>

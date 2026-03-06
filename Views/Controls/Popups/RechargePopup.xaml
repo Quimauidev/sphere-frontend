@@ -29,10 +29,10 @@
 
 
         <!--  STK  -->
-        <Frame
+        <Border
             Padding="10"
             BackgroundColor="#f0f0f0"
-            CornerRadius="12">
+            StrokeShape="12">
             <Grid ColumnDefinitions="*, Auto" ColumnSpacing="10">
                 <Label
                     Grid.Column="0"
@@ -53,14 +53,14 @@
                     </ImageButton.Source>
                 </ImageButton>
             </Grid>
-        </Frame>
+        </Border>
 
 
         <!--  Số tài khoản  -->
-        <Frame
+        <Border
             Padding="10"
             BackgroundColor="#f0f0f0"
-            CornerRadius="12">
+            StrokeShape="12">
             <Grid ColumnDefinitions="*, Auto" ColumnSpacing="10">
                 <Label
                     Grid.Column="0"
@@ -81,23 +81,23 @@
                     </ImageButton.Source>
                 </ImageButton>
             </Grid>
-        </Frame>
+        </Border>
 
 
         <!--  Tên chủ tài khoản  -->
-        <Frame
+        <Border
             Padding="10"
             BackgroundColor="#f0f0f0"
-            CornerRadius="12">
+            StrokeShape="12">
             <Label Text="{Binding AccountName}" VerticalOptions="Center" />
-        </Frame>
+        </Border>
 
 
         <!--  Số tiền  -->
-        <Frame
+        <Border
             Padding="10"
             BackgroundColor="#f0f0f0"
-            CornerRadius="12">
+            StrokeShape="12">
             <Grid ColumnDefinitions="*, Auto" ColumnSpacing="10">
                 <Label
                     Grid.Column="0"
@@ -118,14 +118,14 @@
                     </ImageButton.Source>
                 </ImageButton>
             </Grid>
-        </Frame>
+        </Border>
 
 
         <!--  Nội dung chuyển khoản  -->
-        <Frame
+        <Border
             Padding="10"
             BackgroundColor="#f0f0f0"
-            CornerRadius="12">
+            StrokeShape="12">
             <Grid ColumnDefinitions="*, Auto" ColumnSpacing="10">
                 <Label
                     Grid.Column="0"
@@ -146,7 +146,7 @@
                     </ImageButton.Source>
                 </ImageButton>
             </Grid>
-        </Frame>
+        </Border>
 
         <Button Command="{Binding SaveQrCommand}" Text="Lưu QR về máy" />
 

@@ -14,15 +14,14 @@
                 <CollectionView.ItemTemplate>
                     <DataTemplate>
                         <Grid Padding="10" ColumnDefinitions="Auto,*,Auto">
-                            <Frame
+                            <Border
                                 Padding="0"
                                 BackgroundColor="#eee"
-                                CornerRadius="24"
-                                HasShadow="False"
                                 HeightRequest="48"
+                                StrokeShape="24"
                                 WidthRequest="48">
                                 <Image Aspect="AspectFill" Source="{Binding PartnerAvatar}" />
-                            </Frame>
+                            </Border>
                             <StackLayout
                                 Grid.Column="1"
                                 Padding="10,0"

@@ -45,14 +45,14 @@
                                 Source="{Binding ContentUriString}"
                                 WidthRequest="100" />
 
-                            <Frame
+                            <Border
                                 Padding="0"
                                 BackgroundColor="#512BD4"
-                                BorderColor="White"
-                                CornerRadius="12"
                                 HeightRequest="24"
                                 HorizontalOptions="End"
                                 IsVisible="{Binding IsSelected}"
+                                Stroke="White"
+                                StrokeShape="12"
                                 VerticalOptions="Start"
                                 WidthRequest="24">
                                 <Label
@@ -61,7 +61,7 @@
                                     Text="{Binding OrderNumber}"
                                     TextColor="White"
                                     VerticalTextAlignment="Center" />
-                            </Frame>
+                            </Border>
 
                         </Grid>
 

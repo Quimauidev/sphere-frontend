@@ -9,7 +9,7 @@
 
     <VerticalStackLayout Padding="10,0,10,0">
 
-        <Frame Padding="10" BorderColor="LightGray">
+        <Border Padding="10" Stroke="LightGray">
             <VerticalStackLayout>
                 <Grid ColumnDefinitions="Auto,*,Auto">
                     <!--  Avatar  -->
@@ -90,6 +90,6 @@
                 <local:DiaryContentView BindingContext="{Binding Model.DiaryDTO}" />
 
             </VerticalStackLayout>
-        </Frame>
+        </Border>
     </VerticalStackLayout>
 </ContentView>

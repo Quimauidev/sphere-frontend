@@ -7,8 +7,8 @@
     xmlns:local="clr-namespace:Sphere.Views.Controls">
 
     <VerticalStackLayout Padding="10,0,10,0">
-        <Frame Padding="10" BorderColor="LightGray">
+        <Border Padding="10" Stroke="LightGray">
             <local:DiaryContentView BindingContext="{Binding .}" />
-        </Frame>
+        </Border>
     </VerticalStackLayout>
 </ContentView>

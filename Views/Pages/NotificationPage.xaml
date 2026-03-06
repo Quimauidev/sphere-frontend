@@ -4,7 +4,7 @@
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     Title="NotificationPage">
-    
+
     <VerticalStackLayout>
         <!--  5 trạng thái  -->
         <CollectionView
@@ -15,18 +15,17 @@
             SelectionMode="Single">
             <CollectionView.ItemTemplate>
                 <DataTemplate>
-                    <Frame
+                    <Border
                         Margin="5"
                         Padding="10"
                         BackgroundColor="{Binding ., Converter={StaticResource StateToColorConverter}}"
-                        BorderColor="LightGray"
-                        CornerRadius="10"
-                        HasShadow="False">
+                        Stroke="LightGray"
+                        StrokeShape="10">
                         <Label
                             HorizontalOptions="Center"
                             Text="{Binding .}"
                             VerticalOptions="Center" />
-                    </Frame>
+                    </Border>
                 </DataTemplate>
             </CollectionView.ItemTemplate>
         </CollectionView>
@@ -35,11 +34,11 @@
         <CollectionView Margin="0,10,0,0" ItemsSource="{Binding Items}">
             <CollectionView.ItemTemplate>
                 <DataTemplate>
-                    <Frame
+                    <Border
                         Margin="0,5"
                         Padding="10"
-                        BorderColor="LightGray"
-                        CornerRadius="10">
+                        Stroke="LightGray"
+                        StrokeShape="10">
                         <StackLayout Orientation="Horizontal" Spacing="10">
                             <Image
                                 HeightRequest="40"
@@ -50,7 +49,7 @@
                                 <Label FontSize="14" Text="{Binding Content}" />
                             </StackLayout>
                         </StackLayout>
-                    </Frame>
+                    </Border>
                 </DataTemplate>
             </CollectionView.ItemTemplate>
         </CollectionView>

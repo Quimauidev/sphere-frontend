@@ -16,22 +16,10 @@
             Padding="20"
             BackgroundColor="White"
             HeightRequest="300"
+            StrokeShape="RoundRectangle 20"
             StrokeThickness="0"
             TranslationY="300"
             VerticalOptions="End">
-
-            <Border.StrokeShape>
-                <RoundRectangle CornerRadius="20" />
-            </Border.StrokeShape>
-
-            <Border.Shadow>
-                <Shadow
-                    Brush="Black"
-                    Opacity="0.2"
-                    Radius="10"
-                    Offset="0,4" />
-            </Border.Shadow>
-
             <Label Text="Đây là Bottom Sheet!" />
 
         </Border>
