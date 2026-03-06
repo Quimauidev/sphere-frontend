@@ -21,6 +21,7 @@ namespace Sphere.ViewModels
         private readonly IDiamondsService _diamondsService;
         private readonly IUserSessionService _userSessionService;
         private readonly IShellNavigationService _nv;
+        private readonly ApiResponseHelper _res;
 
         [ObservableProperty]
         private ObservableCollection<DiamondModel> packages = [];
@@ -34,13 +35,15 @@ namespace Sphere.ViewModels
         [ObservableProperty]
         private long coins;
 
-        public DiamondViewModel(IDiamondsService diamondsService, IUserSessionService userSessionService, IShellNavigationService nv)
+        public DiamondViewModel(IDiamondsService diamondsService, IUserSessionService userSessionService, IShellNavigationService nv, ApiResponseHelper res)
         {
             _diamondsService = diamondsService;
             _userSessionService = userSessionService;
             _nv = nv;
+            _res = res;
             Coins = _userSessionService.CurrentUser!.UserProfileDTO!.Coins;
             _ = LoadPackagesAsync();
+            
         }
 
         public async Task LoadPackagesAsync(bool forceRefresh = false, bool showLoading = true)
@@ -72,7 +75,7 @@ namespace Sphere.ViewModels
                     PreferencesHelper.SaveDiamondPackages(response.Data);
                 }
                 else
-                    await ApiResponseHelper.ShowApiErrorsAsync(response);
+                    await _res.ShowApiErrorsAsync(response);
             }
             finally
             {

@@ -6,6 +6,7 @@ using Android.OS;
 using AndroidX.Core.App;
 using AndroidX.Core.Content;
 using Sphere.Common.Constans;
+using Sphere.Common.Responses;
 using Sphere.Extensions;
 using Sphere.Platforms.Android;
 using Sphere.Services.IService;
@@ -21,6 +22,7 @@ namespace Sphere.Services.Service
     public class PermissionService : IPermissionService
     {
         private TaskCompletionSource<bool>? _tcs;
+        private readonly IAppNavigationService _anv;
 
         // 🔔 Event khi người dùng bật GPS xong quay lại app
         // 🧠 Singleton để MainActivity và ViewModel có thể truy cập
@@ -34,9 +36,10 @@ namespace Sphere.Services.Service
         public event Action? GpsTurnedOff;
 
 
-        public PermissionService()
+        public PermissionService(IAppNavigationService anv)
         {
             Instance = this;
+            _anv = anv; 
         }
         
 
@@ -67,16 +70,12 @@ namespace Sphere.Services.Service
                 if (ActivityCompat.ShouldShowRequestPermissionRationale(activity, permission))
                 {
                     // Hệ thống còn hiển thị popup → request quyền bình thường
-                    ActivityCompat.RequestPermissions(activity, new[] { permission }, 1234);
+                    ActivityCompat.RequestPermissions(activity, [permission], 1234);
                     return await _tcs.Task; // true nếu người dùng cấp, false nếu từ chối
                 }
                 else
                 {
-                    bool openSettings = await Application.Current!.MainPage!.DisplayAlert(
-                        "Cần cấp quyền",
-                        $"Ứng dụng cần quyền truy cập {permissionType.ToFriendlyName()}.",
-                        "Mở cài đặt",
-                        "Hủy");
+                    bool openSettings = await _anv.ShowConfirmAsync("Cần cấp quyền", $"Ứng dụng cần quyền truy cập {permissionType.ToFriendlyName()}.", "Mở cài đặt", "Hủy");
 
                     if (openSettings)
                     {
@@ -134,12 +133,7 @@ namespace Sphere.Services.Service
                 {
 
 
-                    bool open = await Application.Current!.MainPage!.DisplayAlert(
-                        "GPS đang tắt",
-                        "Bạn cần bật GPS để tìm quanh đây.",
-                        "Mở cài đặt",
-                        "Hủy");
-
+                    bool open = await _anv.ShowConfirmAsync( "GPS đang tắt", "Bạn cần bật GPS để tìm quanh đây.", "Mở cài đặt", "Hủy"); 
                     if (open)
                     {
                         try
@@ -150,7 +144,7 @@ namespace Sphere.Services.Service
                         }
                         catch
                         {
-                            await Application.Current!.MainPage!.DisplayAlert("Lỗi", "Không thể mở cài đặt GPS.", "OK");
+                            await _anv.DisplayAlertAsync("Lỗi", "Không thể mở cài đặt GPS.");
                         }
                     }
                 }

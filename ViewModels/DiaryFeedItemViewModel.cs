@@ -28,6 +28,9 @@ namespace Sphere.ViewModels
         private readonly IFollowService _followService;
         private readonly IConversationService _conversationService;
         private readonly IShellNavigationService _nv;
+        private readonly IAppNavigationService _anv;
+        private readonly ApiResponseHelper _res;
+        
 
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(ShouldShowFollowButton))] // cập nhật UI khi thay đổi trạng thái
@@ -38,13 +41,15 @@ namespace Sphere.ViewModels
         [ObservableProperty]
         private Guid userId;
 
-        public DiaryFeedItemViewModel(UserWithDiaryModel model, Guid currentUserId, IFollowService followService, IConversationService conversationService, IShellNavigationService nv)
+        public DiaryFeedItemViewModel(UserWithDiaryModel model, Guid currentUserId, IFollowService followService, IConversationService conversationService, IShellNavigationService nv, IAppNavigationService anv, ApiResponseHelper res)
         {
             Model = model ?? throw new ArgumentNullException(nameof(model));
             _followService = followService;
             _conversationService = conversationService;
             _nv = nv;
-            var user = model.UserDiaryDTO ?? throw new ArgumentNullException(nameof(model.UserDiaryDTO));
+            _anv = anv;
+            _res = res;
+            var user = model.UserDiaryDTO ?? throw new ArgumentNullException(nameof(model));
             UserId = user.Id;
 
             // 🔹 Thiết lập trạng thái online ban đầu
@@ -154,12 +159,12 @@ namespace Sphere.ViewModels
                 PreferencesHelper.SetChatUnlocked(Model.UserDiaryDTO.Id, true);
                 if (!alreadyUnlocked)
                 {
-                    await ApiResponseHelper.DisplayAlertSafe("Mở khóa thành công", $"Bạn đã mở khóa cuộc trò chuyện. Số dư còn lại: {response.Data.NewBalance} 💎");
+                    await _anv.DisplayAlertAsync("Mở khóa thành công", $"Bạn đã mở khóa cuộc trò chuyện. Số dư còn lại: {response.Data.NewBalance} 💎");
                 }
                 await _nv.PushModalAsync<MessagePage, MessageNavigationParam>( new MessageNavigationParam { ConversationId = response.Data.ConversationId!.Value, Partner = Model.UserDiaryDTO! });
             }
             else
-                await ApiResponseHelper.ShowApiErrorsAsync(response, "Không thể mở chat");
+                await _res.ShowApiErrorsAsync(response, "Không thể mở chat");
         }
 
         [RelayCommand]
@@ -178,7 +183,7 @@ namespace Sphere.ViewModels
                 }
                 else
                 {
-                    await ApiResponseHelper.ShowApiErrorsAsync(response, "Theo dõi thất bại");
+                    await _res.ShowApiErrorsAsync(response, "Theo dõi thất bại");
                 }
             }
             finally

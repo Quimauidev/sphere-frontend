@@ -1,5 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Sphere.Common.Responses;
 
 namespace Sphere.Models
 {
@@ -35,25 +36,12 @@ namespace Sphere.Models
             if (Comment.IsOwner)
             {
                 // 👑 Comment của mình
-                action = await Application.Current!.MainPage!
-                    .DisplayActionSheet(
-                        "Tùy chọn",
-                        "Hủy",
-                        null,
-                        "Chỉnh sửa",
-                        "Xóa",
-                        "Sao chép");
+                action = await Shell.Current.DisplayActionSheetAsync( "Tùy chọn", "Hủy", null, "Chỉnh sửa", "Xóa", "Sao chép");
             }
             else
             {
                 // 👤 Comment người khác
-                action = await Application.Current!.MainPage!
-                    .DisplayActionSheet(
-                        "Tùy chọn",
-                        "Hủy",
-                        null,
-                        "Tố cáo",
-                        "Sao chép");
+                action = await Shell.Current.DisplayActionSheetAsync( "Tùy chọn", "Hủy", null, "Tố cáo", "Sao chép");
             }
 
             if (string.IsNullOrEmpty(action) || action == "Hủy")
@@ -85,8 +73,7 @@ namespace Sphere.Models
 
         private async Task HandleDeleteAsync()
         {
-            bool confirm = await Application.Current!.MainPage!
-                .DisplayAlert("Xóa bình luận", "Bạn chắc chắn muốn xóa?", "Xóa", "Hủy");
+            bool confirm = await ApiResponseHelper.ShowShellConfirmAsync("Xóa bình luận", "Bạn chắc chắn muốn xóa?", "Xóa", "Hủy");
 
             if (!confirm)
                 return;
@@ -95,10 +82,9 @@ namespace Sphere.Models
         }
 
 
-        private async Task HandleReportAsync()
+        private static async Task HandleReportAsync()
         {
-            await Application.Current!.MainPage!
-                .DisplayAlert("Tố cáo", "Bình luận đã được gửi tố cáo", "OK");
+            await ApiResponseHelper.ShowShellAlertAsync("Tố cáo", "Bình luận đã được gửi tố cáo");
 
             // TODO: gọi API report
         }

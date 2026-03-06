@@ -5,6 +5,7 @@ using Microsoft.Maui;
 using Microsoft.Maui.Controls;
 using Microsoft.Maui.Essentials;
 using Sphere.Common.Helpers;
+using Sphere.Common.Responses;
 using Sphere.Database.ServiceSQLite;
 using Sphere.Hubs;
 using Sphere.Services.IService;
@@ -19,25 +20,18 @@ namespace Sphere
         private readonly IServiceProvider _serviceProvider;
         private readonly IAuthService _authService;
         private readonly IPermissionService _permissionService;
-        private readonly ILocationService _locationService;
         private readonly IAppNavigationService _anv;
+        private readonly ApiResponseHelper _res;
 
-        public App(IServiceProvider serviceProvider, IAuthService authService, IPermissionService permissionService, ILocationService locationService, IAppNavigationService anv)
+        public App(IServiceProvider serviceProvider, IAuthService authService, IPermissionService permissionService, IAppNavigationService anv, ApiResponseHelper res)
         {
             InitializeComponent();
 
             _serviceProvider = serviceProvider;
             _authService = authService;
             _permissionService = permissionService;
-            _locationService = locationService;
             _anv = anv;
-
-            // ① Khởi tạo SQLite table trước khi làm gì khác
-            var initializer = _serviceProvider.GetRequiredService<BaseSQLiteService>();
-            Task.Run(() => initializer.InitAsync()).Wait(); // đồng bộ để đảm bảo table đã tồn tại
-
-            // Start async initialization that will switch root page using UpdateRootPage(...)
-            _ = InitializeAppAsync();
+            _res = res;
         }
 
         // Override CreateWindow to provide initial window and handle any pending root page request.
@@ -55,12 +49,21 @@ namespace Sphere
                     VerticalOptions = LayoutOptions.Center
                 }
             };
+            // chạy async sau khi UI đã có
+            
+            var window = new Window(splash);
 
-            return new Window(splash);
+            // chạy async sau khi UI đã có
+            _ = InitializeAppAsync();
+
+            return window;
         }
 
         private async Task InitializeAppAsync()
         {
+            // ① Khởi tạo SQLite table trước khi làm gì khác
+            var initializer = _serviceProvider.GetRequiredService<BaseSQLiteService>();
+            await initializer.InitAsync(); // đồng bộ để đảm bảo table đã tồn tại
             string? token = PreferencesHelper.GetAuthToken(); // lấy token từ Preferences
             var expiresAt = PreferencesHelper.GetAuthTokenExpiresAt(); // lấy thời gian hết hạn token từ Preferences
             var isExpired = expiresAt.HasValue && DateTime.UtcNow > expiresAt.Value; // kiểm tra nếu token đã hết hạn
@@ -73,27 +76,23 @@ namespace Sphere
                     var userSession = _serviceProvider.GetRequiredService<IUserSessionService>();
                     userSession.CurrentUser = restoredUser;
 
-                    _presenceService = new PresenceService(
-                        "https://sphere-iqm8.onrender.com",
-                        restoredUser.UserProfileDTO!.Id,
-                        _serviceProvider
-                    );
-                    await _presenceService.StartAsync();
+                    _presenceService = new PresenceService( "https://sphere-iqm8.onrender.com", restoredUser.UserProfileDTO!.Id, _serviceProvider, _anv);
+                    _ = _presenceService.StartAsync();
 
                     if (!PreferencesHelper.HasSeenIntro())
                     {
                         var intro = _serviceProvider.GetRequiredService<IntroPage>();
-                        intro.OnFinishedIntro = () =>
+                        intro.OnFinishedIntro = async () =>
                         {
                             // Use helper to change root page
-                            _anv.SetRootPage(new AppShell(_serviceProvider, _authService, _permissionService,  _presenceService,_anv));
+                            await MainThread.InvokeOnMainThreadAsync(() => { _anv.SetRootPage(new AppShell(_serviceProvider, _authService, _permissionService, _presenceService, _anv, _res)); });
                         };
 
                         _anv.SetRootPage(new NavigationPage(intro));
                     }
                     else
                     {
-                        _anv.SetRootPage(new AppShell(_serviceProvider, _authService, _permissionService,  _presenceService, _anv));
+                        await MainThread.InvokeOnMainThreadAsync(() => { _anv.SetRootPage(new AppShell( _serviceProvider, _authService, _permissionService, _presenceService, _anv, _res)); });
                     }
 
                     return;

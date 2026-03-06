@@ -1,7 +1,9 @@
 ﻿using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.AspNetCore.SignalR.Client;
 using Sphere.Common.Helpers;
+using Sphere.Common.Responses;
 using Sphere.Reloads;
+using Sphere.Services.IService;
 using Sphere.Views.Pages;
 using System;
 using System.Collections.Generic;
@@ -17,18 +19,19 @@ namespace Sphere.Hubs
         private readonly string _hubUrl;
         private readonly Guid _currentUserId;
         private readonly IServiceProvider _serviceProvider;
-        private HubConnection _hubConnection;
+        private readonly HubConnection _hubConnection;
+        private readonly IAppNavigationService _anv;
 
         public static Dictionary<Guid, bool> OnlineUsersCache { get; } = [];
 
         public event Action? Connected;
 
-        public PresenceService(string hubUrl, Guid currentUserId, IServiceProvider serviceProvider)
+        public PresenceService(string hubUrl, Guid currentUserId, IServiceProvider serviceProvider, IAppNavigationService anv)
         {
             _hubUrl = hubUrl;
             _currentUserId = currentUserId;
             _serviceProvider = serviceProvider;
-
+            _anv = anv;
             _hubConnection = new HubConnectionBuilder()
                 .WithUrl($"{_hubUrl}/presenceHub?userId={_currentUserId}")
                 .WithAutomaticReconnect()
@@ -58,16 +61,17 @@ namespace Sphere.Hubs
             {
                 await MainThread.InvokeOnMainThreadAsync(async () =>
                 {
-                    await Application.Current!.MainPage!.DisplayAlert("Đăng nhập nơi khác", message, "OK");
+                    await _anv.DisplayAlertAsync("Đăng nhập nơi khác", message);
 
                     await StopAsync();
                     PreferencesHelper.ClearAuthToken();
                     PreferencesHelper.ClearCurrentUser();
 
-                    var loginPage = _serviceProvider.GetRequiredService<LoginPage>();
-                    Application.Current!.MainPage = new NavigationPage(loginPage);
+                    var login = _serviceProvider.GetRequiredService<LoginPage>();
+                    _anv.SetRootPage(new NavigationPage(login));
                 });
             });
+            
         }
 
         public async Task StartAsync()

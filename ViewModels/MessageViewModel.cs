@@ -24,6 +24,7 @@ namespace Sphere.ViewModels
 {
     public partial class MessageViewModel : ObservableObject, IModalParameterReceiver<MessageNavigationParam>
     {
+        private readonly IAppNavigationService _anv;
         [ObservableProperty]
         public UserDiaryModel Partner = default!;
         public async Task Receive(MessageNavigationParam param)
@@ -71,16 +72,13 @@ namespace Sphere.ViewModels
         public Action? ScrollToLastMessage { get; set; }
         public Action<MessageModel>? ScrollToMessage { get; set; }
 
-        public MessageViewModel(
-            IConversationService conversationService,
-            IUserSessionService userSessionService,
-            MessageHubService hubService,
-            MessageSQLiteService localMessageDb)
+        public MessageViewModel( IConversationService conversationService, IUserSessionService userSessionService, MessageHubService hubService, MessageSQLiteService localMessageDb, IAppNavigationService anv)
         {
             _conversationService = conversationService;
             _userSessionService = userSessionService;
             _hubService = hubService;
             _localMessageDb = localMessageDb;
+            _anv = anv;
         }
 
         public void SetPartner(UserDiaryModel partner)
@@ -511,13 +509,13 @@ namespace Sphere.ViewModels
         }
 
         [RelayCommand]
-        private static async Task OpenGallery() => await ApiResponseHelper.DisplayAlertSafe("Gallery", "Open gallery");
+        private async Task OpenGallery() => await _anv.DisplayAlertAsync("Gallery", "Open gallery");
 
         [RelayCommand]
-        private static async Task SendLocation() => await ApiResponseHelper.DisplayAlertSafe("Location", "Send location");
+        private async Task SendLocation() => await _anv.DisplayAlertAsync("Location", "Send location");
 
         [RelayCommand]
-        private static async Task Attach() => await ApiResponseHelper.DisplayAlertSafe("Attach", "Open attachments");
+        private async Task Attach() => await _anv.DisplayAlertAsync("Attach", "Open attachments");
     }
 
 }

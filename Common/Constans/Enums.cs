@@ -33,7 +33,6 @@ namespace Sphere.Common.Constans
         Success,
         Empty,
         Error,
-        Offline
     }
 
     public enum MessageStatus

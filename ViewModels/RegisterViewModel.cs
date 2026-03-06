@@ -13,10 +13,12 @@ using System.Text.RegularExpressions;
 
 namespace Sphere.ViewModels
 {
-    public partial class RegisterViewModel(IAuthService authService, IShellNavigationService nv) : ObservableObject
+    public partial class RegisterViewModel(IAuthService authService, IShellNavigationService nv, IAppNavigationService anv, ApiResponseHelper res) : ObservableObject
     {
         private readonly IAuthService _authService = authService;
         private readonly IShellNavigationService _nv = nv;
+        private readonly IAppNavigationService _anv = anv;
+        private readonly ApiResponseHelper _res = res;
 
         [ObservableProperty]
         public partial bool IsLoading { get; set; }
@@ -49,7 +51,7 @@ namespace Sphere.ViewModels
 
             if (!string.IsNullOrEmpty(validationError))
             {
-                await ApiResponseHelper.ShowAlertAsync(validationError);
+                await _anv.DisplayAlertAsync("Thông báo",validationError);
                 return;
             }
 
@@ -65,12 +67,12 @@ namespace Sphere.ViewModels
 
                 if (response.IsSuccess)
                 {
-                    await ApiResponseHelper.ShowApiSuccessAsync(response, "Thành công");
+                    await _res.ShowApiSuccessAsync(response, "Thành công");
                     await _nv.PopModalAsync();
                 }
                 else
                 {
-                    await ApiResponseHelper.ShowApiErrorsAsync(response, "Thất bại");
+                    await _res.ShowApiErrorsAsync(response, "Thất bại");
                 }
             }
             finally
@@ -107,10 +109,13 @@ namespace Sphere.ViewModels
             if (RegisterModel.Password != RegisterModel.ConfirmPassword)
                 return "Mật khẩu không khớp.";
 
-            if (!Regex.IsMatch(RegisterModel.FullName, @"^[a-zA-ZÀ-ỹ0-9\s]+$"))
+            if (!FullNameRegex().IsMatch(RegisterModel.FullName))
                 return "Họ và tên không được chứa ký tự đặc biệt.";
 
             return null;
         }
+
+        [GeneratedRegex(@"^[a-zA-ZÀ-ỹ0-9\s]+$")]
+        private static partial Regex FullNameRegex();
     }
 }

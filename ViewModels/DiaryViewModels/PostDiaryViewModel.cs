@@ -29,7 +29,9 @@ namespace Sphere.ViewModels
         private readonly IServiceProvider _serviceProvider;
         private readonly IMediaUploadService _mediaUploadService;
         private readonly IShellNavigationService _nv;
-        public PostDiaryViewModel(IDiaryService diaryService, IServiceProvider serviceProvider, IMediaUploadService mediaUploadService, IShellNavigationService nv)
+        private readonly IAppNavigationService _anv;
+        private readonly ApiResponseHelper _res;
+        public PostDiaryViewModel(IDiaryService diaryService, IServiceProvider serviceProvider, IMediaUploadService mediaUploadService, IShellNavigationService nv, IAppNavigationService anv, ApiResponseHelper res)
         {
             _diaryService = diaryService;
             _serviceProvider = serviceProvider;
@@ -45,6 +47,8 @@ namespace Sphere.ViewModels
 
             RefreshGalleryItems();
             _nv = nv;
+            _anv = anv;
+            _res = res;
         }
 
         public bool CanAddMoreImages => PostDiaryModel.ImagePaths.Count < 9;
@@ -155,15 +159,15 @@ namespace Sphere.ViewModels
 
             if (!isContentChanged && !isPrivacyChanged && !isImagesChanged)
             {
-                await ApiResponseHelper.ShowAlertAsync("Bạn chưa thay đổi dữ liệu mới nào");
+                await _anv.DisplayAlertAsync("Thông báo","Bạn chưa thay đổi dữ liệu mới nào");
                 return;
             }
             // 4️ Không cho lưu nếu cả nội dung + ảnh đều trống
-            bool hasAnyImage = (_originalDiary.Images!.Count - removeImageIds.Count) > 0 || newImagePaths.Any();
+            bool hasAnyImage = (_originalDiary.Images!.Count - removeImageIds.Count) > 0 || newImagePaths.Count != 0;
             // 4 Kiểm tra: nếu cả nội dung và ảnh đều trống
             if (string.IsNullOrWhiteSpace(PostDiaryModel.Content) && !hasAnyImage)
             {
-                await ApiResponseHelper.ShowAlertAsync("Nội dung hoặc ảnh không được để trống");
+                await _anv.DisplayAlertAsync("Thông báo","Nội dung hoặc ảnh không được để trống");
                 return;
             }
             if(IsLoading) return;
@@ -182,7 +186,7 @@ namespace Sphere.ViewModels
                 }
                 else
                 {
-                    await ApiResponseHelper.ShowApiErrorsAsync(response);
+                    await _res.ShowApiErrorsAsync(response);
                 }
             }
             finally
@@ -274,7 +278,7 @@ namespace Sphere.ViewModels
         {
             if (string.IsNullOrWhiteSpace(PostDiaryModel.Content) && PostDiaryModel.ImagePaths.Count == 0)
             {
-                await ApiResponseHelper.ShowAlertAsync("Vui lòng nhập nội dung hoặc chọn ít nhất 1 ảnh");
+                await _anv.DisplayAlertAsync("Thông báo", "Vui lòng nhập nội dung hoặc chọn ít nhất 1 ảnh");
                 return false;
             }
             return true;

@@ -11,19 +11,30 @@
     <Grid>
         <BoxView BackgroundColor="#80000000" />
         <!--  Lớp overlay mờ nếu muốn  -->
-        <Frame
+        <Border
             x:Name="SheetContent"
             Padding="20"
             BackgroundColor="White"
-            CornerRadius="20"
-            HasShadow="True"
             HeightRequest="300"
+            StrokeThickness="0"
             TranslationY="300"
             VerticalOptions="End">
-            <!--  Bắt đầu ngoài màn hình  -->
+
+            <Border.StrokeShape>
+                <RoundRectangle CornerRadius="20" />
+            </Border.StrokeShape>
+
+            <Border.Shadow>
+                <Shadow
+                    Brush="Black"
+                    Opacity="0.2"
+                    Radius="10"
+                    Offset="0,4" />
+            </Border.Shadow>
+
             <Label Text="Đây là Bottom Sheet!" />
 
-        </Frame>
+        </Border>
     </Grid>
 
 </toolkit:Popup>

@@ -17,11 +17,12 @@ using System.Threading.Tasks;
 
 namespace Sphere.ViewModels
 {
-    public partial class UserViewModel(IUserService userService, IUserSessionService userSessionService, IShellNavigationService nv) : ObservableObject
+    public partial class UserViewModel(IUserService userService, IUserSessionService userSessionService, IShellNavigationService nv, ApiResponseHelper res) : ObservableObject
     {
         private readonly IUserService _userService = userService;
         private readonly IUserSessionService _userSession = userSessionService;
         private readonly IShellNavigationService _nv = nv;
+        private readonly ApiResponseHelper _res = res;
 
         private UserModel? OldUserModel;
 
@@ -124,7 +125,7 @@ namespace Sphere.ViewModels
                 }
                 else
                 {
-                    await ApiResponseHelper.ShowApiErrorsAsync(response!, "Cập nhật thất bại");
+                    await _res.ShowApiErrorsAsync(response!, "Cập nhật thất bại");
                 }
             }
             finally

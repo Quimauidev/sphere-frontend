@@ -1,17 +1,18 @@
-﻿using CommunityToolkit.Maui;
+﻿using Android.Content.Res;
+using CommunityToolkit.Maui;
 using FFImageLoading.Maui;
 using Microsoft.Extensions.Logging;
+using Microsoft.Maui.Platform;
 using Sphere.Common.Constans;
+using Sphere.Common.Responses;
+using Sphere.Database.ServiceSQLite;
 using Sphere.Extensions;
 using Sphere.Platforms.Android;
 using Sphere.Platforms.Android.Handlers;
 using Sphere.Services.IService;
 using Sphere.Services.Service;
-using Sphere.Views.Controls;
 using Sphere.ViewModels;
-using Android.Content.Res;
-using Microsoft.Maui.Platform;
-using Sphere.Database.ServiceSQLite;
+using Sphere.Views.Controls;
 
 namespace Sphere
 {
@@ -37,7 +38,7 @@ namespace Sphere
             builder.Services.AddSingleton<MediaStoreHelper>();
             builder.Services.AddHttpClient();
             builder.Services.RegisterServices();
-            
+            builder.Services.AddSingleton<ApiResponseHelper>();
             builder.ConfigureMauiHandlers(handlers =>
             {
                 handlers.AddHandler(typeof(GlideImage), typeof(GlideImageHandler));

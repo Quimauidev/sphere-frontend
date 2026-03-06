@@ -23,7 +23,8 @@ namespace Sphere.ViewModels
         private readonly IConversationService _conversationService;
         private readonly ConversationSQLiteService _localConversationDb;
         private readonly IShellNavigationService _nv;
-
+        private readonly ApiResponseHelper _res;
+        private readonly IAppNavigationService _anv;
         public ObservableCollection<ConversationModel> Conversations { get; } = [];
 
         [ObservableProperty]
@@ -32,11 +33,13 @@ namespace Sphere.ViewModels
         [ObservableProperty]
         private bool isLoading;
 
-        public ConversationsViewModel(IConversationService conversationService, ConversationSQLiteService localConversationDb, IShellNavigationService nv)
+        public ConversationsViewModel(IConversationService conversationService, ConversationSQLiteService localConversationDb, IShellNavigationService nv, ApiResponseHelper res, IAppNavigationService anv)
         {
             _conversationService = conversationService;
             _localConversationDb = localConversationDb; 
             _nv = nv;
+            _res = res;
+            _anv = anv;
             _ = LoadAsync();
         }
 
@@ -82,12 +85,12 @@ namespace Sphere.ViewModels
                 }
                 else
                 {
-                    await ApiResponseHelper.ShowApiErrorsAsync(resp, "Không thể tải cuộc trò chuyện");
+                    await _res.ShowApiErrorsAsync(resp, "Không thể tải cuộc trò chuyện");
                 }
             }
             catch (Exception ex)
             {
-                await ApiResponseHelper.DisplayAlertSafe("Lỗi", $"Đã có lỗi xảy ra {ex.Message}");
+                await _anv.DisplayAlertAsync("Lỗi", $"Đã có lỗi xảy ra {ex.Message}");
             }
             finally
             {

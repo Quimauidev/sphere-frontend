@@ -16,10 +16,11 @@ using System.Threading.Tasks;
 
 namespace Sphere.ViewModels.DiaryViewModels
 {
-    public partial class DiaryCommentViewModel : BaseViewModel, IModalParameterReceiver<Guid>
+    public partial class DiaryCommentViewModel(IDiaryService diaryService, ApiResponseHelper res) : BaseViewModel, IModalParameterReceiver<Guid>
     {
+        private readonly ApiResponseHelper _res = res;
         private const int PageSize = 20;
-        private readonly IDiaryService _diaryService;
+        private readonly IDiaryService _diaryService = diaryService;
         private Guid _diaryId;
 
         private bool _isLoaded;
@@ -57,11 +58,6 @@ namespace Sphere.ViewModels.DiaryViewModels
 
         [ObservableProperty]
         private DiaryCommentUIModel? replyToComment;
-
-        public DiaryCommentViewModel(IDiaryService diaryService)
-        {
-            _diaryService = diaryService;
-        }
 
         public ObservableCollection<DiaryCommentUIModel> Comments { get; } = [];
         public ObservableCollection<DiaryCommentFlatItem> FlatComments { get; } = [];
@@ -105,7 +101,7 @@ namespace Sphere.ViewModels.DiaryViewModels
                 var res = await _diaryService.SetCommentLikeAsync(item.Comment.Id);
 
                 if (!res.IsSuccess)
-                    await ApiResponseHelper.ShowApiErrorsAsync(res, "Thao tác thích thất bại");
+                    await _res.ShowApiErrorsAsync(res, "Thao tác thích thất bại");
 
                 // ✅ Sync nhẹ (chỉ khi lệch)
                 if (item.IsLiked != res.Data!.IsLiked)
@@ -237,7 +233,7 @@ namespace Sphere.ViewModels.DiaryViewModels
                     var update = await _diaryService.UpdateCommentAsync(EditingCommentId.Value, content, EditingReplyToUserId);
                     if (!update.IsSuccess)
                     {
-                        await ApiResponseHelper.ShowApiErrorsAsync(update, "Cập nhật bình luận thất bại");
+                        await _res.ShowApiErrorsAsync(update, "Cập nhật bình luận thất bại");
                         return;
                     }
 
@@ -285,7 +281,7 @@ namespace Sphere.ViewModels.DiaryViewModels
                 var res = await _diaryService.CreateCommentAsync(_diaryId, NewCommentContent!.Trim(), replyId);
                 if (!res.IsSuccess)
                 {
-                    await ApiResponseHelper.ShowApiErrorsAsync(res, "Gửi bình luận thất bại");
+                    await _res.ShowApiErrorsAsync(res, "Gửi bình luận thất bại");
                 }
                 if (replyId == null)
                 {
@@ -565,7 +561,7 @@ namespace Sphere.ViewModels.DiaryViewModels
                 Console.WriteLine($"[DeleteComment] FAILED - CommentId: {item.Id}");
                 Console.WriteLine($"Message: {res.Message}");
                 Console.WriteLine($"Errors: {string.Join(", ", res.Errors?.Select(e => e.Description) ?? [])}");
-                await ApiResponseHelper.ShowApiErrorsAsync(res, "Xóa bình luận thất bại");
+                await _res.ShowApiErrorsAsync(res, "Xóa bình luận thất bại");
                 IsBusy = false;
                 return;
             }

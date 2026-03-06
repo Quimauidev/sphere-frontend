@@ -33,24 +33,26 @@ namespace Sphere.ViewModels
         private readonly IUserSessionService _userSession;
         private readonly IShellNavigationService _nv;
         private readonly IAppNavigationService _anv;
+        private readonly ApiResponseHelper _res;
 
         [ObservableProperty]
         public partial bool ShouldShowBioToggle { get; set; }
         public DiaryListViewModel DiaryListVM { get; }
-        public ProfileViewModel(IUserSessionService userSession, IImagePickerService imagePickerService, IUserProfileService userProfileService, IDiaryService diaryService,IAppNavigationService anv, IShellNavigationService nv)
+        public ProfileViewModel(IUserSessionService userSession, IImagePickerService imagePickerService, IUserProfileService userProfileService, IDiaryService diaryService,IAppNavigationService anv, IShellNavigationService nv, ApiResponseHelper res)
         {
             _userSession = userSession;
             _imagePickerService = imagePickerService;
             _userProfileService = userProfileService;
             _anv = anv;
             _nv = nv;
+            _res = res;
             var restoredUser = PreferencesHelper.LoadCurrentUser();
             if (restoredUser != null)
             {
                 _userSession.CurrentUser = restoredUser;
             }
             CurrentUser = _userSession.CurrentUser;
-            DiaryListVM = new DiaryListViewModel(diaryService,_anv, _nv);
+            DiaryListVM = new DiaryListViewModel(diaryService, _anv, _nv,_res);
             _ = DiaryListVM.LoadFirstPage();
             
         }
@@ -156,7 +158,7 @@ namespace Sphere.ViewModels
                 }
                 else
                 {
-                    await ApiResponseHelper.ShowApiErrorsAsync(response!, "Thất bại");
+                    await _res.ShowApiErrorsAsync(response!, "Thất bại");
                 }
             }
             finally
@@ -249,7 +251,7 @@ namespace Sphere.ViewModels
                     PreferencesHelper.SaveCurrentUser(CurrentUser);
                 }
                 else
-                    await ApiResponseHelper.ShowApiErrorsAsync(response!, "Không thể xoá ảnh");
+                    await _res.ShowApiErrorsAsync(response!, "Không thể xoá ảnh");
             }
             finally
             {
@@ -292,7 +294,7 @@ namespace Sphere.ViewModels
                     PreferencesHelper.SaveCurrentUser(CurrentUser);
                 }
                 else
-                    await ApiResponseHelper.ShowApiErrorsAsync(response!, "Thất bại");
+                    await _res.ShowApiErrorsAsync(response!, "Thất bại");
             }
             finally
             {

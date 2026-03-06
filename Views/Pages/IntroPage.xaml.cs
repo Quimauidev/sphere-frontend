@@ -5,7 +5,7 @@ namespace Sphere.Views.Pages;
 
 public partial class IntroPage : ContentPage
 {
-    public Action? OnFinishedIntro;
+    public Func<Task>? OnFinishedIntro;
     public IntroPage()
 	{
 		InitializeComponent();
@@ -20,15 +20,14 @@ public partial class IntroPage : ContentPage
 
         if (layout != null)
         {
-            // Slide layout lên trên + fade out
             await Task.WhenAll(
-            layout.FadeTo(0, 500),
-            layout.TranslateTo(0, -layout.Height, 500),
-            layout.ScaleTo(0.95, 500) // co layout 5% khi slide
-            );
+                layout.FadeToAsync(0, 500),
+                layout.TranslateToAsync(0, -layout.Height, 500),
+                layout.ScaleToAsync(0.95, 500));
 
         }
         // Chuyển đến HomePage
-        OnFinishedIntro?.Invoke();
+        if (OnFinishedIntro != null)
+            await OnFinishedIntro();
     }
 }

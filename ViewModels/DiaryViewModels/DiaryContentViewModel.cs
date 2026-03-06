@@ -26,9 +26,10 @@ namespace Sphere.ViewModels.DiaryViewModels
     {
         private readonly IDiaryService _diaryService;
         private readonly IAppNavigationService _anv;
-        private readonly IShellNavigationService _nv; 
+        private readonly IShellNavigationService _nv;
+        private readonly ApiResponseHelper _res;
 
-        public DiaryContentViewModel(IDiaryService diaryService, DiaryModel model, IAppNavigationService anv, IShellNavigationService nv)
+        public DiaryContentViewModel(IDiaryService diaryService, DiaryModel model, IAppNavigationService anv, IShellNavigationService nv, ApiResponseHelper res)
         {
             _diaryService = diaryService;
             Model = model;
@@ -37,6 +38,7 @@ namespace Sphere.ViewModels.DiaryViewModels
             IsLiked = Model.IsLiked;
             _anv = anv;
             _nv = nv;
+            _res = res;
         }
 
         public DiaryModel Model { get; private set; }
@@ -44,7 +46,7 @@ namespace Sphere.ViewModels.DiaryViewModels
         public Privacy Privacy => Model.Privacy;
         public string? Content => Model.Content;
 
-        public List<DiaryImageDTO>? Images => Model.Images ?? new List<DiaryImageDTO>();
+        public List<DiaryImageDTO>? Images => Model.Images ?? [];
 
         public double ImageItemHeight => Model.ImageItemHeight;
         public double ImageItemWidth => Model.ImageItemWidth;
@@ -106,7 +108,7 @@ namespace Sphere.ViewModels.DiaryViewModels
                 }
                 else
                 {
-                    await ApiResponseHelper.ShowApiErrorsAsync(response, "Xóa thất bại");
+                    await _res.ShowApiErrorsAsync(response, "Xóa thất bại");
                 }
             }
             finally
@@ -120,7 +122,7 @@ namespace Sphere.ViewModels.DiaryViewModels
         [RelayCommand]
         private async Task ReportDiary()
         {
-            await ApiResponseHelper.DisplayAlertSafe("Tố cáo", "Chức năng tố cáo sẽ được phát triển sau.");
+            await _anv.DisplayAlertAsync("Tố cáo", "Chức năng tố cáo sẽ được phát triển sau.");
         }
 
         [ObservableProperty]
@@ -150,7 +152,7 @@ namespace Sphere.ViewModels.DiaryViewModels
                 var res = await _diaryService.SetLikeAsync(Model.Id);
 
                 if (!res.IsSuccess)
-                   await ApiResponseHelper.ShowApiErrorsAsync(res, "Thao tác thích thất bại");
+                   await _res.ShowApiErrorsAsync(res, "Thao tác thích thất bại");
 
                 // ✅ Sync nhẹ (chỉ khi lệch)
                 if (IsLiked != res.Data!.IsLiked)

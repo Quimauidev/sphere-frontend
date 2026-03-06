@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using Sphere.Common.Constans;
 using Sphere.Common.Helpers;
+using Sphere.Common.Responses;
 using Sphere.Hubs;
 using Sphere.Models;
 using Sphere.Reloads;
@@ -20,7 +21,7 @@ using System.Threading.Tasks;
 
 namespace Sphere.ViewModels
 {
-    public partial class HomeViewModel : ObservableObject
+    public partial class HomeViewModel : BaseViewModel
     {
         private readonly IDiaryService _diaryService;
         private readonly IFollowService _followService;
@@ -28,6 +29,8 @@ namespace Sphere.ViewModels
         private readonly IUserProfileService _userProfileService;
         private readonly IConversationService _conversationService;
         private readonly IShellNavigationService _nv;
+        private readonly IAppNavigationService _anv;
+        private readonly ApiResponseHelper _res;
 
         public ObservableCollection<DiaryFeedItemViewModel> FollowingPosts { get; } = [];
         public ObservableCollection<DiaryFeedItemViewModel> PopularPosts { get; } = [];
@@ -65,7 +68,7 @@ namespace Sphere.ViewModels
         private bool _latestLoading;
         private bool _latestHasNoMoreData;
 
-        public HomeViewModel(IDiaryService diaryService, IFollowService followService, IUserSessionService userSessionService, IUserProfileService userProfileService, IConversationService conversationService, IShellNavigationService nv)
+        public HomeViewModel(IDiaryService diaryService, IFollowService followService, IUserSessionService userSessionService, IUserProfileService userProfileService, IConversationService conversationService, IShellNavigationService nv, IAppNavigationService anv, ApiResponseHelper res)
         {
             _diaryService = diaryService;
             _followService = followService;
@@ -73,6 +76,8 @@ namespace Sphere.ViewModels
             _userProfileService = userProfileService;
             _conversationService = conversationService;
             _nv = nv;
+            _anv = anv;
+            _res = res;
             // Khởi động load
             _ = LoadFollowingAsync(forceReload: true);
             _ = LoadPopularAsync(forceReload: true);
@@ -83,8 +88,7 @@ namespace Sphere.ViewModels
                 void UpdateList(ObservableCollection<DiaryFeedItemViewModel> list)
                 {
                     var user = list.FirstOrDefault(u => u.UserId == m.Value.UserId);
-                    if (user != null)
-                        user.IsOnline = m.Value.IsOnline;
+                    user?.IsOnline = m.Value.IsOnline;
                 }
 
                 UpdateList(FollowingPosts);
@@ -108,7 +112,7 @@ namespace Sphere.ViewModels
                 RefreshList(PopularPosts);
                 RefreshList(LatestPosts);
             });
-            
+           
         }
 
         [RelayCommand]
@@ -162,14 +166,14 @@ namespace Sphere.ViewModels
                     var items = response.Data?
                     .Select(d =>
                     {
-                        var vm = new DiaryFeedItemViewModel(d, currentUserId, _followService, _conversationService, _nv);
+                        var vm = new DiaryFeedItemViewModel(d, currentUserId, _followService, _conversationService, _nv, _anv,_res);
                         vm.IsOnline = PresenceService.OnlineUsersCache.ContainsKey(vm.UserId)
                          ? PresenceService.OnlineUsersCache[vm.UserId]
                          : d.UserDiaryDTO?.IsOnline ?? false;
 
                         return vm;
                     })
-                    .ToList() ?? new List<DiaryFeedItemViewModel>();
+                    .ToList() ?? [];
 
                     if (forceReload) FollowingPosts.Clear();
                     foreach (var item in items) FollowingPosts.Add(item);
@@ -190,9 +194,7 @@ namespace Sphere.ViewModels
                               ?? response.Message
                               ?? "Có lỗi xảy ra";
                     FollowingErrorMessage = msg;
-                    FollowingState = response.Errors?.Any(e => e.Code is "NetworkError" or "Timeout" or "UnhandledException") == true
-                        ? UiViewState.Offline
-                        : UiViewState.Error;
+                    FollowingState = UiViewState.Error;
                 }
             }
             finally
@@ -231,7 +233,7 @@ namespace Sphere.ViewModels
                     var items = response.Data?
                     .Select(d =>
                     {
-                        var vm = new DiaryFeedItemViewModel(d, currentUserId, _followService, _conversationService, _nv);
+                        var vm = new DiaryFeedItemViewModel(d, currentUserId, _followService, _conversationService, _nv,_anv,_res);
                         vm.IsOnline = PresenceService.OnlineUsersCache.ContainsKey(vm.UserId)
                          ? PresenceService.OnlineUsersCache[vm.UserId]
                          : d.UserDiaryDTO?.IsOnline ?? false;
@@ -260,9 +262,7 @@ namespace Sphere.ViewModels
                               ?? response.Message
                               ?? "Có lỗi xảy ra";
                     PopularErrorMessage = msg;
-                    PopularState = response.Errors?.Any(e => e.Code is "NetworkError" or "Timeout" or "UnhandledException") == true
-                        ? UiViewState.Offline
-                        : UiViewState.Error;
+                    PopularState = UiViewState.Error;
                 }
             }
             finally
@@ -301,7 +301,7 @@ namespace Sphere.ViewModels
                     var items = response.Data?
                    .Select(d =>
                    {
-                       var vm = new DiaryFeedItemViewModel(d, currentUserId, _followService, _conversationService, _nv);
+                       var vm = new DiaryFeedItemViewModel(d, currentUserId, _followService, _conversationService, _nv, _anv, _res);
                        vm.IsOnline = PresenceService.OnlineUsersCache.ContainsKey(vm.UserId)
                          ? PresenceService.OnlineUsersCache[vm.UserId]
                          : d.UserDiaryDTO?.IsOnline ?? false;
@@ -330,9 +330,7 @@ namespace Sphere.ViewModels
                               ?? response.Message
                               ?? "Có lỗi xảy ra";
                     LatestErrorMessage = msg;
-                    LatestState = response.Errors?.Any(e => e.Code is "NetworkError" or "Timeout" or "UnhandledException") == true
-                        ? UiViewState.Offline
-                        : UiViewState.Error;
+                    LatestState = UiViewState.Error;
                 }
             }
             finally

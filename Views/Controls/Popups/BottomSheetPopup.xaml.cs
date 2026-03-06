@@ -7,7 +7,6 @@ public partial class BottomSheetPopup : Popup
 	public BottomSheetPopup()
 	{
 		InitializeComponent();
-        SheetContent.TranslateTo(0, 0, 300, Easing.SinOut);
+        SheetContent.TranslateToAsync(0, 0, 300, Easing.SinOut);
     }
-   
 }

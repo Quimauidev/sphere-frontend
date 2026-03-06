@@ -20,7 +20,7 @@ using System.Threading.Tasks;
 
 namespace Sphere.ViewModels
 {
-    public partial class LoginViewModel(IServiceProvider serviceProvider, IAuthService authService, IUserSessionService userSession, IUserProfileService userProfileService, IPermissionService permissionService, ILocationService locationService, IShellNavigationService nv, IAppNavigationService anv) : ObservableObject
+    public partial class LoginViewModel(IServiceProvider serviceProvider, IAuthService authService, IUserSessionService userSession, IUserProfileService userProfileService, IPermissionService permissionService, ILocationService locationService, IShellNavigationService nv, IAppNavigationService anv, ApiResponseHelper res) : ObservableObject
     {
         private readonly IAuthService _authService = authService;
 
@@ -56,13 +56,13 @@ namespace Sphere.ViewModels
         {
             if (string.IsNullOrWhiteSpace(LoginModel.PhoneNumber))
             {
-                await ApiResponseHelper.ShowAlertAsync("Vui lòng nhập số điện thoại.");
+                await _anv.DisplayAlertAsync("Thông báo","Vui lòng nhập số điện thoại.");
                 return;
             }
 
             if (string.IsNullOrWhiteSpace(LoginModel.Password))
             {
-                await ApiResponseHelper.ShowAlertAsync("Vui lòng nhập mật khẩu.");
+                await _anv.DisplayAlertAsync("Thông báo","Vui lòng nhập mật khẩu.");
                 return;
             }
 
@@ -100,14 +100,14 @@ namespace Sphere.ViewModels
                             await convVm.ClearConversationsAsync();
 
                         // Tạo instance mới PresenceService
-                        var presenceService = new PresenceService("https://sphere-iqm8.onrender.com", newUserId, _serviceProvider);
+                        var presenceService = new PresenceService("https://sphere-iqm8.onrender.com", newUserId, _serviceProvider, _anv);
                         await presenceService.StartAsync(); // online ngay sau khi login    
                         if (!PreferencesHelper.HasSeenIntro())
                         {
                             var intro = _serviceProvider.GetRequiredService<IntroPage>();
                             intro.OnFinishedIntro = async () =>
                             {
-                                _anv.SetRootPage(new AppShell(_serviceProvider, _authService, _permissionService,  presenceService, _anv));
+                                _anv.SetRootPage(new AppShell(_serviceProvider, _authService, _permissionService,  presenceService, _anv, res));
                                 await Task.Delay(200);
 
                                 _permissionService.ReturnedFromSettings -= OnReturnedFromSettings;
@@ -116,19 +116,19 @@ namespace Sphere.ViewModels
                         }
                         else
                         {
-                            _anv.SetRootPage(new AppShell(_serviceProvider, _authService, _permissionService,  presenceService, _anv));
+                            _anv.SetRootPage(new AppShell(_serviceProvider, _authService, _permissionService,  presenceService, _anv, res));
                             _permissionService.ReturnedFromSettings -= OnReturnedFromSettings;
                         }
                     }
                     else
                     {
                         await _authService.LogoutAsync();
-                        await ApiResponseHelper.ShowApiErrorsAsync(profile, "Không lấy được hồ sơ người dùng");
+                        await res.ShowApiErrorsAsync(profile, "Không lấy được hồ sơ người dùng");
                     }
                 }
                 else
                 {
-                    await ApiResponseHelper.ShowApiErrorsAsync(response, "Đăng nhập thất bại");
+                    await res.ShowApiErrorsAsync(response, "Đăng nhập thất bại");
                 }
             }
             finally
@@ -210,7 +210,7 @@ namespace Sphere.ViewModels
                 var location = await GetStableLocationAsync();
                 if (location == null)
                 {
-                    await ApiResponseHelper.DisplayAlertSafe("Vị trí", "Không lấy được vị trí từ thiết bị.");
+                    await _anv.DisplayAlertAsync("Vị trí", "Không lấy được vị trí từ thiết bị.");
                     return;
                 }
 
@@ -226,7 +226,7 @@ namespace Sphere.ViewModels
             }
             catch (Exception ex)
             {
-                await ApiResponseHelper.DisplayAlertSafe( "Lỗi", $"Có lỗi xảy ra khi lấy hoặc gửi vị trí: {ex.Message}");
+                await _anv.DisplayAlertAsync( "Lỗi", $"Có lỗi xảy ra khi lấy hoặc gửi vị trí: {ex.Message}");
             }
         }
     }

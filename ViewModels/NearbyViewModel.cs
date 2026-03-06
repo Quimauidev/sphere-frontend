@@ -16,7 +16,7 @@ using System.Threading.Tasks;
 
 namespace Sphere.ViewModels
 {
-    public partial class NearbyViewModel : ObservableObject
+    public partial class NearbyViewModel : BaseViewModel
     {
         private readonly INearbyService _nearbyService;
         private readonly IPermissionService _permissionService;
@@ -24,6 +24,8 @@ namespace Sphere.ViewModels
         private DateTime? _lastLoadTime;
         private readonly TimeSpan _minLoadInterval = TimeSpan.FromSeconds(30);
         private readonly IShellNavigationService _nv;
+        private readonly IAppNavigationService _anv;
+
         [ObservableProperty]
         private UiViewState nearbyState;
 
@@ -48,7 +50,7 @@ namespace Sphere.ViewModels
         [ObservableProperty]
         private ObservableCollection<NearbyModel> nearby = [];
 
-        public NearbyViewModel( INearbyService nearbyService, IPermissionService permissionService, IShellNavigationService nv)
+        public NearbyViewModel( INearbyService nearbyService, IPermissionService permissionService, IShellNavigationService nv, IAppNavigationService anv)
         {
             _nearbyService = nearbyService;
             _permissionService = permissionService;
@@ -56,6 +58,7 @@ namespace Sphere.ViewModels
             // 🔹 Đọc trạng thái đã lưu
             IsLocationEnabled = PreferencesHelper.GetLocationEnabled();
             _nv = nv;
+            _anv = anv;
         }
         public async Task InitAsync()
         {
@@ -176,7 +179,7 @@ namespace Sphere.ViewModels
             }
             catch (Exception ex)
             {
-                await ApiResponseHelper.DisplayAlertSafe("Lỗi",$"Đã có lỗi xảy ra khi tắt chia sẻ vị trí: {ex.Message}. Vui lòng thử lại.");
+                await _anv.DisplayAlertAsync("Lỗi",$"Đã có lỗi xảy ra khi tắt chia sẻ vị trí: {ex.Message}. Vui lòng thử lại.");
             }
             finally
             {
@@ -205,7 +208,7 @@ namespace Sphere.ViewModels
                 var granted = await _permissionService.EnsureGrantedAsync(AppPermission.Location);
                 if (!granted || token?.IsCancellationRequested == true || !IsLocationEnabled)
                 {
-                    NearbyState = UiViewState.Offline;
+                    NearbyState = UiViewState.Error;
                     return;
                 }
                 // --- Giới hạn gọi API theo thời gian ---
@@ -280,7 +283,7 @@ namespace Sphere.ViewModels
             }
         }
 
-        private async Task<Location?> GetStableLocationAsync(int samples = 5, int maxAccuracyMeters = 50)
+        private static async Task<Location?> GetStableLocationAsync(int samples = 5, int maxAccuracyMeters = 50)
         {
             var locs = new List<Location>();
             var request = new GeolocationRequest(GeolocationAccuracy.High, TimeSpan.FromSeconds(10));
@@ -301,7 +304,7 @@ namespace Sphere.ViewModels
                 }
             }
 
-            if (!locs.Any()) return null;
+            if (locs.Count == 0) return null;
 
             // Lấy trung bình để giảm sai số
             double avgLat = locs.Average(l => l.Latitude);
@@ -373,7 +376,7 @@ namespace Sphere.ViewModels
                 var granted = await _permissionService.EnsureGrantedAsync(AppPermission.Location);
                 if (!granted || !IsLocationEnabled)
                 {
-                    NearbyState = UiViewState.Offline;
+                    NearbyState = UiViewState.Error;
                     return;
                 }
                 var location = await GetStableLocationAsync();

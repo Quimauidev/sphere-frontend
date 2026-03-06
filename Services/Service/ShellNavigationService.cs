@@ -9,14 +9,10 @@ using System.Threading.Tasks;
 
 namespace Sphere.Services.Service
 {
-    internal class ShellNavigationService : IShellNavigationService
+    internal class ShellNavigationService(IServiceProvider serviceProvider) : IShellNavigationService
     {
-        private readonly IServiceProvider _serviceProvider;
-        public ShellNavigationService(IServiceProvider serviceProvider)
-        {
-            _serviceProvider = serviceProvider;
-           
-        }
+        private readonly IServiceProvider _serviceProvider = serviceProvider;
+
         private static Window Window => Application.Current?.Windows[0] ?? throw new InvalidOperationException("No active window");
         private static INavigation Navigation => Window.Page?.Navigation ?? throw new InvalidOperationException("Navigation not available");
 

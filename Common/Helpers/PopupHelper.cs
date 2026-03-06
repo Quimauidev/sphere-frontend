@@ -15,7 +15,7 @@ namespace Sphere.Common.Helpers
 
         private static Page? GetCurrentPage()
         {
-            return Shell.Current ?? Application.Current?.MainPage;
+            return Shell.Current ?? (Application.Current?.Windows.Count > 0 ? Application.Current.Windows[0].Page : null);
         }
 
         public static Task ShowLoadingAsync()
@@ -45,7 +45,7 @@ namespace Sphere.Common.Helpers
             {
                 if (_loadingPopup != null)
                 {
-                    _loadingPopup.Close();
+                    _loadingPopup?.Close();
                     _loadingPopup = null;
                 }
 

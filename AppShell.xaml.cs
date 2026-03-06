@@ -13,13 +13,14 @@ namespace Sphere
 {
     public partial class AppShell : Shell
     {
+        private readonly ApiResponseHelper _res;
         private readonly IAuthService _authService;
         private readonly IPermissionService _permissionService;
         private readonly PresenceService _presenceService;
         private readonly IServiceProvider _serviceProvider;
         private readonly IAppNavigationService _anv;
 
-        public AppShell(IServiceProvider serviceProvider, IAuthService authService, IPermissionService permissionService,  PresenceService presenceService, IAppNavigationService anv)
+        public AppShell(IServiceProvider serviceProvider, IAuthService authService, IPermissionService permissionService,  PresenceService presenceService, IAppNavigationService anv, ApiResponseHelper res)
         {
             InitializeComponent();
             _serviceProvider = serviceProvider;
@@ -27,6 +28,7 @@ namespace Sphere
             _permissionService = permissionService;
             _presenceService = presenceService;
             _anv = anv;
+            _res = res;
             // Khi AppShell load lần đầu, yêu cầu quyền
             RequestLocationPermissionFirstTime();
             
@@ -52,7 +54,7 @@ namespace Sphere
             //_ = _serviceProvider.GetRequiredService<IUserSessionService>();
             var response = await _authService.LogoutAsync();
             if (!response.IsSuccess)
-                await ApiResponseHelper.ShowApiErrorsAsync(response, "Đăng xuất thất bại");
+                await _res.ShowApiErrorsAsync(response, "Đăng xuất thất bại");
             var login = _serviceProvider.GetRequiredService<LoginPage>();
 
             _anv.SetRootPage(new NavigationPage(login));
