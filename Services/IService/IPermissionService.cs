@@ -11,6 +11,7 @@ namespace Sphere.Services.IService
     {
         Task<PermissionResult> RequestPermissionAsync(AppPermission permission); 
         Task<bool> CheckGpsStatusAsync();
+        Task ShowGpsDialogAsync();
         event Action? ReturnedFromSettings;
         bool IsGpsEnabled();
         event Action? GpsTurnedOff;

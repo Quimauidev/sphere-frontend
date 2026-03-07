@@ -147,14 +147,27 @@ namespace Sphere.ViewModels
         }
         private async Task InitAppAsync()
         {
-            //var shell = _serviceProvider.GetRequiredService<AppShell>();
-
             await MainThread.InvokeOnMainThreadAsync(() => { _anv.SetRootPage(new AppShell(_serviceProvider, _authService, _permissionService, presence, _anv, res)); });
 
             await Task.Delay(200);
 
             await InitializeServicesAsync();
             
+        }
+        
+        private async Task InitializeServicesAsync()
+        {
+            try
+            {
+                var presenceService = _serviceProvider.GetRequiredService<PresenceService>();
+                var userId = _userSession.CurrentUser!.UserProfileDTO!.Id;
+                await presenceService.StartAsync(userId);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Init services error: {ex.Message}");
+            }
+            await RequestInitialPermissionsAsync();
         }
         private async Task RequestInitialPermissionsAsync()
         {
@@ -165,6 +178,11 @@ namespace Sphere.ViewModels
                 switch (result)
                 {
                     case PermissionResult.Granted:
+                        if (!_permissionService.IsGpsEnabled())
+                        {
+                            await _permissionService.ShowGpsDialogAsync();
+                            return;
+                        }
                         await UpdateUserLocationAsync();
                         break;
 
@@ -182,21 +200,6 @@ namespace Sphere.ViewModels
                 Console.WriteLine($"Permission error: {ex.Message}");
             }
         }
-        private async Task InitializeServicesAsync()
-        {
-            try
-            {
-                var presenceService = _serviceProvider.GetRequiredService<PresenceService>();
-                var userId = _userSession.CurrentUser!.UserProfileDTO!.Id;
-                await presenceService.StartAsync(userId);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Init services error: {ex.Message}");
-            }
-            await RequestInitialPermissionsAsync();
-        }
-        
         private async Task UpdateUserLocationAsync()
         {
             try
@@ -223,35 +226,42 @@ namespace Sphere.ViewModels
                 await _anv.DisplayAlertAsync("Lỗi", $"Có lỗi xảy ra khi lấy hoặc gửi vị trí: {ex.Message}");
             }
         }
-        private async Task<Location?> GetStableLocationAsync(int samples = 5, int maxAccuracyMeters = 50)
+        private async Task<Location?> GetStableLocationAsync(int samples = 3, int maxAccuracyMeters = 80)
         {
+            // thử lấy location cache trước
+            var last = await Geolocation.Default.GetLastKnownLocationAsync();
+            if (last != null && last.Accuracy <= maxAccuracyMeters)
+                return last;
             var locs = new List<Location>();
-            var request = new GeolocationRequest(GeolocationAccuracy.High, TimeSpan.FromSeconds(10));
+            var request = new GeolocationRequest(GeolocationAccuracy.High, TimeSpan.FromSeconds(8));
 
             for (int i = 0; i < samples; i++)
             {
+                if (!_permissionService.IsGpsEnabled())
+                    return null;
                 try
                 {
                     var loc = await Geolocation.Default.GetLocationAsync(request);
                     if (loc != null && loc.Accuracy <= maxAccuracyMeters)
                         locs.Add(loc);
 
-                    await Task.Delay(500); // đợi GPS fix lại
+                    
                 }
                 catch (Exception ex)
                 {
                     Console.WriteLine($"Lỗi lấy GPS: {ex.Message}");
-                    await Task.Delay(500);
                 }
+                await Task.Delay(700); // đợi GPS fix lại
             }
 
-            if (locs.Count == 0) return null;
+            if (locs.Count == 0)
+                return null;
 
             // Lấy trung bình để giảm sai số
-            double avgLat = locs.Average(l => l.Latitude);
-            double avgLon = locs.Average(l => l.Longitude);
-
-            return new Location(avgLat, avgLon);
+            //double avgLat = locs.Average(l => l.Latitude);
+            //double avgLon = locs.Average(l => l.Longitude);
+            //return new Location(avgLat, avgLon);
+            return locs.OrderBy(l => l.Accuracy).First();// chọn location chính xác nhất
         }
 
         [RelayCommand]

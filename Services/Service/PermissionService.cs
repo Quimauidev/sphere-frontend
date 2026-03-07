@@ -5,6 +5,7 @@ using Android.Locations;
 using Android.OS;
 using AndroidX.Core.App;
 using AndroidX.Core.Content;
+using AndroidX.Lifecycle;
 using Sphere.Common.Constans;
 using Sphere.Common.Responses;
 using Sphere.Extensions;
@@ -28,21 +29,21 @@ namespace Sphere.Services.Service
 
         // 🔔 Event khi người dùng bật GPS xong quay lại app
         // 🧠 Singleton để MainActivity và ViewModel có thể truy cập
-        private bool _justReturnedFromSettings; // ⚡️Flag tránh popup lặp lại
-        private bool _gpsDialogOpen = false;
-
-        public static PermissionService Instance { get; private set; } = null!;
+        
+        private bool _justReturnedFromSettings; // Tránh GPS status đọc sai ngay sau khi quay lại từ Settings.
+        private bool _gpsDialogOpen = false; // Ngăn popup bật GPS mở nhiều lần cùng lúc. Tránh popup lặp lại
 
         // 🔁 Sự kiện sẽ bắn ra khi người dùng quay lại từ Settings
         public event Action? ReturnedFromSettings;
         public event Action? GpsTurnedOff;
+        public static PermissionService Instance { get; private set; } = null!;
 
 
         public PermissionService(IAppNavigationService anv)
         {
-        Instance = this;
-        _anv = anv;
-    }
+            Instance = this;
+            _anv = anv;
+        }
 
         // API chính: RequestPermissionAsync
         public async Task<PermissionResult> RequestPermissionAsync(AppPermission permission)
@@ -110,9 +111,7 @@ namespace Sphere.Services.Service
             var grantedResult = await _tcs.Task;
 
             Preferences.Set($"permission_{permission}", true);
-            return grantedResult
-                ? PermissionResult.Granted
-                : PermissionResult.Denied;
+            return grantedResult ? PermissionResult.Granted : PermissionResult.Denied;
         }
 
         // Tách: HandleDontAskAgain
@@ -154,7 +153,7 @@ namespace Sphere.Services.Service
                 _ => throw new NotSupportedException()
             };
         }
-
+        // API chính: CheckGpsStatusAsync
         public async Task<bool> CheckGpsStatusAsync()
         {
             // ⏳ Nếu vừa trở lại từ Settings → đợi hệ thống cập nhật GPS
@@ -163,21 +162,11 @@ namespace Sphere.Services.Service
                 _justReturnedFromSettings = false;
                 await Task.Delay(1500);
             }
-            var activity = Platform.CurrentActivity!;
-            var lm = (LocationManager?)activity.GetSystemService(Context.LocationService);
-            if (lm == null)
-                return false;
 
-            bool isGpsEnabled = lm.IsProviderEnabled(LocationManager.GpsProvider)
-                             || lm.IsProviderEnabled(LocationManager.NetworkProvider);
+            if (IsGpsEnabled())
+                return true;
 
-            if (isGpsEnabled)
-                return true; // ✅ GPS đang bật
-                             // ❌ GPS tắt → tắt switch ngay
-            if (!isGpsEnabled)
-            {
-                GpsTurnedOff?.Invoke();
-            }
+            GpsTurnedOff?.Invoke();
 
             if (_gpsDialogOpen)
                 return false; // ❗ Không mở thêm popup nếu đã có
@@ -188,22 +177,7 @@ namespace Sphere.Services.Service
             {
                 try
                 {
-
-
-                    bool open = await _anv.ShowConfirmAsync( "GPS đang tắt", "Bạn cần bật GPS để tìm quanh đây.", "Mở cài đặt", "Hủy"); 
-                    if (open)
-                    {
-                        try
-                        {
-                            var intent = new Intent(Android.Provider.Settings.ActionLocationSourceSettings);
-                            intent.SetFlags(ActivityFlags.NewTask);
-                            activity.StartActivity(intent);
-                        }
-                        catch
-                        {
-                            await _anv.DisplayAlertAsync("Lỗi", "Không thể mở cài đặt GPS.");
-                        }
-                    }
+                    await ShowGpsDialogAsync();
                 }
                 finally
                 {
@@ -215,20 +189,38 @@ namespace Sphere.Services.Service
             return false;
         }
 
+        // Hiển thị dialog yêu cầu bật GPS, sau đó mở Settings. Không chờ user bật GPS xong, để tránh bị kẹt UI nếu user không bật GPS.
+        public async Task ShowGpsDialogAsync()
+        {
+            if (_gpsDialogOpen) return; // Không mở thêm nếu đã có
+            _gpsDialogOpen = true;
+            bool open = await _anv.ShowConfirmAsync( "GPS đang tắt", "Bạn cần bật GPS để tìm quanh đây.", "Mở cài đặt", "Hủy");
+            _gpsDialogOpen = false;
+            if (open)
+            {
+                var intent = new Intent(Android.Provider.Settings.ActionLocationSourceSettings);
+                intent.SetFlags(ActivityFlags.NewTask);
+                Platform.CurrentActivity?.StartActivity(intent);
+            }
+        }
+        // check GPS status ngay lập tức, không chờ user quay lại từ Settings. Dùng để cập nhật trạng thái GPS trong app (ví dụ: tắt GPS ngoài app)
         public bool IsGpsEnabled()
         {
             var lm = (LocationManager?)Platform.CurrentActivity?.GetSystemService(Context.LocationService);
-            if (lm == null) return false;
+            if (lm == null)
+                return false;
             return lm.IsProviderEnabled(LocationManager.GpsProvider) || lm.IsProviderEnabled(LocationManager.NetworkProvider);
         }
+        // Event này dùng để báo cho ViewModel biết user vừa quay lại từ Settings.
         public void NotifyReturnedFromSettings()
         {
-            // ✅ Gọi khi quay lại từ Settings (trong MainActivity.OnResume)
+            // Gọi khi quay lại từ Settings (trong MainActivity.OnResume)
             _justReturnedFromSettings = true;
-            // ✅ Đảm bảo đóng popup GPS nếu đang mở
+            // Đảm bảo đóng popup GPS nếu đang mở
             _gpsDialogOpen = false;
-            // 🔥 GPS đã bật → bắn event
-            ReturnedFromSettings?.Invoke();
+            // Nếu GPS đã bật thì bắn event cho ViewModel
+            if (IsGpsEnabled())
+                ReturnedFromSettings?.Invoke();
         }
     }
 }
