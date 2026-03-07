@@ -46,11 +46,11 @@
             Grid.Row="1"
             HeightRequest="40"
             HorizontalOptions="Center"
-            IsRunning="{Binding IsRefreshing}">
+            IsRunning="True">
             <ActivityIndicator.IsVisible>
                 <MultiBinding Converter="{StaticResource NearbyItemVisibilityConverter}" ConverterParameter="Loading">
                     <Binding Path="IsLocationEnabled" />
-                    <Binding Path="NearbyState" />
+                    <Binding Path="UiState" />
                 </MultiBinding>
             </ActivityIndicator.IsVisible>
         </ActivityIndicator>
@@ -64,7 +64,7 @@
             <StackLayout.IsVisible>
                 <MultiBinding Converter="{StaticResource NearbyItemVisibilityConverter}" ConverterParameter="Error">
                     <Binding Path="IsLocationEnabled" />
-                    <Binding Path="NearbyState" />
+                    <Binding Path="UiState" />
                 </MultiBinding>
             </StackLayout.IsVisible>
 
@@ -72,7 +72,7 @@
                 FontAttributes="Bold"
                 FontSize="16"
                 HorizontalTextAlignment="Center"
-                Text="Đã xảy ra lỗi khi tải dữ liệu."
+                Text="{Binding ErrorMessage}"
                 TextColor="Red" />
             <Button
                 Command="{Binding LoadFirstNearbyCommand}"
@@ -89,7 +89,7 @@
             <StackLayout.IsVisible>
                 <MultiBinding Converter="{StaticResource NearbyItemVisibilityConverter}" ConverterParameter="Empty">
                     <Binding Path="IsLocationEnabled" />
-                    <Binding Path="NearbyState" />
+                    <Binding Path="UiState" />
                 </MultiBinding>
             </StackLayout.IsVisible>
 
@@ -104,31 +104,6 @@
                 WidthRequest="100" />
         </StackLayout>
 
-        <!--  Offline  -->
-        <StackLayout
-            Grid.Row="1"
-            HorizontalOptions="Center"
-            Spacing="30"
-            VerticalOptions="Center">
-            <StackLayout.IsVisible>
-                <MultiBinding Converter="{StaticResource NearbyItemVisibilityConverter}" ConverterParameter="Offline">
-                    <Binding Path="IsLocationEnabled" />
-                    <Binding Path="NearbyState" />
-                </MultiBinding>
-            </StackLayout.IsVisible>
-
-            <Label
-                FontAttributes="Bold"
-                FontSize="16"
-                HorizontalTextAlignment="Center"
-                Text="Không có kết nối mạng."
-                TextColor="Red" />
-            <Button
-                Command="{Binding LoadFirstNearbyCommand}"
-                Text="Thử lại"
-                WidthRequest="100" />
-        </StackLayout>
-
         <!--  Success / danh sách Nearby  -->
         <RefreshView
             Grid.Row="1"
@@ -137,7 +112,7 @@
             <RefreshView.IsVisible>
                 <MultiBinding Converter="{StaticResource NearbyItemVisibilityConverter}" ConverterParameter="Success">
                     <Binding Path="IsLocationEnabled" />
-                    <Binding Path="NearbyState" />
+                    <Binding Path="UiState" />
                 </MultiBinding>
             </RefreshView.IsVisible>
 

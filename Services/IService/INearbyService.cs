@@ -1,5 +1,6 @@
-﻿using Sphere.Common.Constans;
+﻿using Android.Media.TV;
 using Sphere.Common.Responses;
+using Sphere.DTOs;
 using Sphere.Models;
 using System;
 using System.Collections.Generic;
@@ -13,5 +14,7 @@ namespace Sphere.Services.IService
     {
         Task<ApiResponse<IEnumerable<NearbyModel>>> GetNearbyUsersAsync(NearbyRequest request);
         Task<ApiResponse<object>> UpdateLocationAsync(UpdateLocationRequest request);
+        Task<ApiResponse<object>> CreateLocationAsync(CreateLocationRequest request);
+        Task<ApiResponse<object>> SetLocationVisibilityAsync(bool isVisible);
     }
 }

@@ -20,6 +20,8 @@ namespace Sphere.Common.Helpers
         // 🔹 Vị trí tìm quanh đây
         private const string LocationEnabledKey = "LocationEnabled";
         private const string DiamondPackagesKey = "DiamondPackages";
+        // 🔹 Đã có location record trên server hay chưa
+        private const string HasLocationRecordKey = "HasLocationRecord";
 
 
         // Lưu trạng thái đã mở khóa
@@ -51,6 +53,20 @@ namespace Sphere.Common.Helpers
         public static void ClearLocationEnabled()
         {
             Preferences.Remove(LocationEnabledKey);
+        }
+        public static bool GetHasLocationRecord()
+        {
+            return Preferences.Get(HasLocationRecordKey, false);
+        }
+
+        public static void SetHasLocationRecord(bool value)
+        {
+            Preferences.Set(HasLocationRecordKey, value);
+        }
+
+        public static void ClearHasLocationRecord()
+        {
+            Preferences.Remove(HasLocationRecordKey);
         }
         public static bool HasSeenIntro()
         {
@@ -138,6 +154,7 @@ namespace Sphere.Common.Helpers
             ClearRefreshTokenId();
             ClearLocationEnabled();
             ClearDiamondPackages();
+            ClearHasLocationRecord();
         }
     }
 }

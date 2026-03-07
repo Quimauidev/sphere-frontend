@@ -1,5 +1,6 @@
 ﻿using Android.Content;
 using Android.Locations;
+using Sphere.Common.Constans;
 using Sphere.Services.IService;
 using Sphere.ViewModels;
 
@@ -18,8 +19,11 @@ public partial class NearbyPage : ContentPage
     }
     private void HandleGpsTurnedOff()
     {
-        if (_viewModel.IsLocationEnabled)
-            _viewModel.IsLocationEnabled = false;
+        //if (_viewModel.IsLocationEnabled)
+        //    _viewModel.IsLocationEnabled = false;
+
+        _viewModel.UiState = UiViewState.Error;
+        _viewModel.ErrorMessage = "GPS đã bị tắt.";
     }
     protected override async void OnAppearing()
     {
@@ -31,10 +35,12 @@ public partial class NearbyPage : ContentPage
         _permissionService.GpsTurnedOff -= HandleGpsTurnedOff;
         _permissionService.GpsTurnedOff += HandleGpsTurnedOff;
         // Chỉ gọi InitAsync nếu chưa có dữ liệu Nearby
-        if (_viewModel.Nearby == null || _viewModel.Nearby.Count == 0)
-        {
-            await _viewModel.InitAsync();
-        }
+        //if (_viewModel.Nearby == null || _viewModel.Nearby.Count == 0)
+        //{
+        //    await _viewModel.InitAsync();
+        //}
+
+        await _viewModel.InitAsync();
     }
 
     protected override void OnDisappearing()

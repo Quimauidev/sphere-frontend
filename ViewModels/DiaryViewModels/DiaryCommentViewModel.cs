@@ -33,9 +33,6 @@ namespace Sphere.ViewModels.DiaryViewModels
         private Guid? editingReplyToUserId;
 
         [ObservableProperty]
-        private string? errorMessage;
-
-        [ObservableProperty]
         private bool hasMoreComments = true;
 
         [ObservableProperty]

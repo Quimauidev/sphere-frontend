@@ -1,5 +1,4 @@
-﻿using Sphere.Common.Constans;
-using Sphere.Common.Responses;
+﻿using Sphere.Common.Responses;
 using Sphere.Models;
 using Sphere.Services.IService;
 using System;
@@ -9,14 +8,13 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.WebUtilities;
+using Sphere.DTOs;
 
 namespace Sphere.Services.Service
 {
     internal class NearbyService(IApiService apiService) : INearbyService
     {
         private readonly IApiService _apiService = apiService;
-
-
         public async Task<ApiResponse<IEnumerable<NearbyModel>>> GetNearbyUsersAsync(NearbyRequest request)
         {
             var url = QueryHelpers.AddQueryString("api/nearby", new Dictionary<string, string?>
@@ -31,6 +29,16 @@ namespace Sphere.Services.Service
 
             // Trả về trực tiếp Task từ _apiService (không cần await nếu không xử lý thêm).
             return await _apiService.GetAsync<IEnumerable<NearbyModel>>(url);
+        }
+
+        public async Task<ApiResponse<object>> CreateLocationAsync(CreateLocationRequest request)
+        {
+            return await _apiService.PostAsync<CreateLocationRequest, object>("api/nearby", request);
+        }
+
+        public async Task<ApiResponse<object>> SetLocationVisibilityAsync(bool isVisible)
+        {
+            return await _apiService.PutAsync<object, object>("api/nearby/visibility", isVisible);
         }
 
         public async Task<ApiResponse<object>> UpdateLocationAsync(UpdateLocationRequest request)

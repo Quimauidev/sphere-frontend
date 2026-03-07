@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Sphere.Common.Constans
+namespace Sphere.DTOs
 {
     public class UpdateLocationRequest
     {

@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.Input;
 using Sphere.Common.Constans;
 using Sphere.Common.Helpers;
 using Sphere.Common.Responses;
+using Sphere.DTOs;
 using Sphere.Models;
 using Sphere.Services.IService;
 using Sphere.Services.Service;
@@ -18,6 +19,8 @@ namespace Sphere.ViewModels
 {
     public partial class NearbyViewModel : BaseViewModel
     {
+        // Biến kiểm soát task hiện tại để tránh chạy song song
+        private Task? _currentNearbyTask;
         private readonly INearbyService _nearbyService;
         private readonly IPermissionService _permissionService;
         private CancellationTokenSource? _locationCts;
@@ -25,10 +28,7 @@ namespace Sphere.ViewModels
         private readonly TimeSpan _minLoadInterval = TimeSpan.FromSeconds(30);
         private readonly IShellNavigationService _nv;
         private readonly IAppNavigationService _anv;
-
-        [ObservableProperty]
-        private UiViewState nearbyState;
-
+       
         private const int PageSize = 20;
         private int _nearbyPage = 1;
 
@@ -46,9 +46,16 @@ namespace Sphere.ViewModels
 
         [ObservableProperty]
         private Gender? selectedGender;
+        private bool _isEnablingLocation;
 
         [ObservableProperty]
         private ObservableCollection<NearbyModel> nearby = [];
+
+        private bool HasLocationRecord
+        {
+            get => PreferencesHelper.GetHasLocationRecord();
+            set => PreferencesHelper.SetHasLocationRecord(value);
+        }
 
         public NearbyViewModel( INearbyService nearbyService, IPermissionService permissionService, IShellNavigationService nv, IAppNavigationService anv)
         {
@@ -60,9 +67,7 @@ namespace Sphere.ViewModels
             _nv = nv;
             _anv = anv;
         }
-        /// <summary>
-        /// Yêu cầu cấp quyền vị trí và kiểm tra GPS, trả về true nếu đủ điều kiện.
-        /// </summary>
+        // Yêu cầu cấp quyền vị trí và kiểm tra GPS, trả về true nếu đủ điều kiện.
         private async Task<bool> RequestLocationPermissionAndGpsAsync()
         {
             var permissionResult = await _permissionService.RequestPermissionAsync(AppPermission.Location);
@@ -76,9 +81,7 @@ namespace Sphere.ViewModels
             return true;
         }
 
-        /// <summary>
-        /// Lấy vị trí GPS chính xác, trả về null nếu không lấy được.
-        /// </summary>
+        // Lấy vị trí GPS chính xác, trả về null nếu không lấy được.
         private async Task<Location?> GetAccurateLocationAsync(int samples = 3, int maxAccuracyMeters = 80)
         {
             var last = await Geolocation.Default.GetLastKnownLocationAsync();
@@ -110,7 +113,7 @@ namespace Sphere.ViewModels
         {
             if (IsLocationEnabled)
             {
-                NearbyState = UiViewState.Loading;
+                 UiState= UiViewState.Loading;
                 _locationCts = new CancellationTokenSource();
                 await EnableLocationAndLoadNearbyAsync(_locationCts.Token);
             }
@@ -135,13 +138,15 @@ namespace Sphere.ViewModels
             _locationCts?.Dispose();
             _locationCts = new CancellationTokenSource();
 
+            // Đảm bảo chỉ chạy 1 task
+            _currentNearbyTask = null;
+
             if (value)
             {
-                _ = EnableLocationAndLoadNearbyAsync(_locationCts.Token);
-            }    
+                _currentNearbyTask = EnableLocationAndLoadNearbyAsync(_locationCts.Token);
+            }
             else
             {
-                _locationCts?.Cancel();
                 Nearby.Clear();
                 _ = DisableLocationAsync();
             }
@@ -149,50 +154,94 @@ namespace Sphere.ViewModels
 
         private async Task EnableLocationAndLoadNearbyAsync(CancellationToken token)
         {
+            if (_isEnablingLocation) return;
+            _isEnablingLocation = true;
+
             try
             {
-                NearbyState = UiViewState.Loading;
+                
+                UiState = UiViewState.Loading;
                 IsRefreshing = true;
-                if (!await RequestLocationPermissionAndGpsAsync() || token.IsCancellationRequested || !IsLocationEnabled)
+
+                var checkGps = await RequestLocationPermissionAndGpsAsync();
+                if (!checkGps || token.IsCancellationRequested)
                 {
                     if (IsLocationEnabled)
                         IsLocationEnabled = false;
+                    ErrorMessage = "Không thể truy cập vị trí. Vui lòng kiểm tra quyền và GPS.";
                     return;
                 }
+
                 var now = DateTime.UtcNow;
                 if (_lastLoadTime.HasValue && now - _lastLoadTime.Value < _minLoadInterval)
                 {
                     await LoadNearbyInternalAsync(token);
                     return;
                 }
+
                 var location = await GetAccurateLocationAsync();
                 if (location == null || token.IsCancellationRequested || !IsLocationEnabled)
                 {
-                    NearbyState = UiViewState.Error;
+                    UiState = UiViewState.Error;
+                    ErrorMessage = "Không lấy được vị trí hiện tại.";
                     return;
                 }
-                var updateReq = new UpdateLocationRequest
+
+                if (!HasLocationRecord)
                 {
-                    Latitude = location.Latitude,
-                    Longitude = location.Longitude,
-                    IsVisible = true
-                };
-                var updateResp = await _nearbyService.UpdateLocationAsync(updateReq);
-                if (!updateResp.IsSuccess || token.IsCancellationRequested || !IsLocationEnabled)
-                {
-                    NearbyState = UiViewState.Error;
-                    return;
+                    var createResp = await _nearbyService.CreateLocationAsync(new CreateLocationRequest
+                    {
+                        Latitude = location.Latitude,
+                        Longitude = location.Longitude
+                    });
+
+                    if (!createResp.IsSuccess)
+                    {
+                        var errorCode = createResp.Errors?.FirstOrDefault()?.Code;
+
+                        if (errorCode == "LocationExists")
+                        {
+                            await _nearbyService.SetLocationVisibilityAsync(true);
+                            HasLocationRecord = true;
+                        }
+                        else
+                        {
+                            UiState = UiViewState.Error;
+                            ErrorMessage = createResp.Errors?.FirstOrDefault()?.Description
+                                           ?? createResp.Message
+                                           ?? "Không thể tạo vị trí.";
+                            return;
+                        }
+                    }
+                    else
+                    {
+                        HasLocationRecord = true;
+                    }
                 }
+                else
+                {
+                    var visibleResp = await _nearbyService.SetLocationVisibilityAsync(true);
+
+                    if (!visibleResp.IsSuccess)
+                    {
+                        UiState = UiViewState.Error;
+                        ErrorMessage = "Không thể bật chia sẻ vị trí.";
+                        return;
+                    }
+                }
+
                 _lastLoadTime = now;
                 if (IsLocationEnabled && !token.IsCancellationRequested)
-                    await LoadNearbyInternalAsync(token);
+                    await LoadNearbyInternalAsync(token, forceReload: true); // Chỉ gọi 1 lần, forceReload để đảm bảo đúng trạng thái
             }
             catch
             {
-                NearbyState = UiViewState.Error;
+                UiState = UiViewState.Error;
+                ErrorMessage = "Đã xảy ra lỗi không xác định.";
             }
             finally
             {
+                _isEnablingLocation = false;
                 IsRefreshing = false;
             }
         }
@@ -202,14 +251,10 @@ namespace Sphere.ViewModels
             try
             {
                 IsRefreshing = true;
-
-                // 🔹 Gửi API để ẩn vị trí
-                var updateReq = new UpdateLocationRequest
+                if (HasLocationRecord)
                 {
-                    IsVisible = false
-                };
-
-                var resp = await _nearbyService.UpdateLocationAsync(updateReq);
+                    await _nearbyService.SetLocationVisibilityAsync(false);
+                }
 
                 // 🔹 Xóa danh sách nearby
                 Nearby.Clear();
@@ -228,37 +273,49 @@ namespace Sphere.ViewModels
         {
             try
             {
-                if (_nearbyLoading || (_nearbyHasNoMoreData && !forceReload)) return;
+                if (_nearbyLoading || (_nearbyHasNoMoreData && !forceReload))
+                    return;
+
                 _nearbyLoading = true;
+
+                if (_nearbyPage == 1 || forceReload)
+                    UiState = UiViewState.Loading;
+
                 IsRefreshing = forceReload;
+
                 if (forceReload)
                 {
                     _nearbyPage = 1;
                     _nearbyHasNoMoreData = false;
                     Nearby.Clear();
-                    NearbyState = UiViewState.Loading;
                 }
 
                 if (token?.IsCancellationRequested == true || !IsLocationEnabled)
                     return;
 
-                if (!await RequestLocationPermissionAndGpsAsync() || token?.IsCancellationRequested == true || !IsLocationEnabled)
-                {
-                    NearbyState = UiViewState.Error;
-                    return;
-                }
-                // --- Giới hạn gọi API theo thời gian ---
+                //if (!await RequestLocationPermissionAndGpsAsync())
+                //{
+                //    UiState = UiViewState.Error;
+                //    ErrorMessage = "Không thể truy cập vị trí. Vui lòng kiểm tra quyền và GPS.";
+                //    return;
+                //}
+
                 var now = DateTime.UtcNow;
+
                 if (!forceReload && _lastLoadTime.HasValue && now - _lastLoadTime.Value < _minLoadInterval)
                 {
-                    // Quá gần lần load trước, chỉ return
+                    UiState = Nearby.Count > 0
+                        ? UiViewState.Success
+                        : UiViewState.Empty;
                     return;
                 }
 
                 var location = await GetAccurateLocationAsync();
-                if (location == null || token?.IsCancellationRequested == true || !IsLocationEnabled)
+
+                if (location == null)
                 {
-                    NearbyState = UiViewState.Error;
+                    UiState = UiViewState.Error;
+                    ErrorMessage = "Không lấy được vị trí hiện tại.";
                     return;
                 }
 
@@ -273,23 +330,19 @@ namespace Sphere.ViewModels
                 };
 
                 var resp = await _nearbyService.GetNearbyUsersAsync(req);
-                if (token?.IsCancellationRequested == true || !IsLocationEnabled)
-                    return;
 
                 if (!resp.IsSuccess)
                 {
-                    // Nếu đang load thêm → không đổi trạng thái toàn trang
                     if (forceReload)
                     {
-                        Nearby.Clear();
-                        NearbyState = UiViewState.Error;
+                        ErrorMessage = resp.Errors?.FirstOrDefault()?.Description ?? resp.Message ?? "Có lỗi xảy ra";
+                        UiState = UiViewState.Error;
                     }    
                     return;
                 }
 
                 var data = resp.Data ?? [];
-                
-                if (forceReload) Nearby.Clear();
+
                 if (data.Any())
                 {
                     foreach (var item in data)
@@ -297,64 +350,31 @@ namespace Sphere.ViewModels
 
                     _nearbyHasNoMoreData = data.Count() < PageSize;
                     _nearbyPage++;
-                    _lastLoadTime = now; // lưu thời điểm lần cuối load Nearby
-                    NearbyState = UiViewState.Success;
+                    _lastLoadTime = now;
+
+                    UiState = UiViewState.Success;
                 }
                 else
                 {
                     _nearbyHasNoMoreData = true;
+
                     if (_nearbyPage == 1)
-                        NearbyState = UiViewState.Empty;
+                        UiState = UiViewState.Empty;
                 }
             }
             catch
             {
                 if (forceReload)
-                    NearbyState = UiViewState.Error;
+                {
+                    UiState = UiViewState.Error;
+                    ErrorMessage = "Đã xảy ra lỗi không xác định.";
+                }
             }
             finally
             {
                 _nearbyLoading = false;
                 IsRefreshing = false;
             }
-        }
-
-        private async Task<Location?> GetStableLocationAsync(int samples = 3, int maxAccuracyMeters = 80)
-        {
-            // thử lấy location cache trước
-            var last = await Geolocation.Default.GetLastKnownLocationAsync();
-            if (last != null && last.Accuracy <= maxAccuracyMeters)
-                return last;
-            var locs = new List<Location>();
-            var request = new GeolocationRequest(GeolocationAccuracy.High, TimeSpan.FromSeconds(8));
-
-            for (int i = 0; i < samples; i++)
-            {
-                if (!_permissionService.IsGpsEnabled())
-                    return null;
-                try
-                {
-                    var loc = await Geolocation.Default.GetLocationAsync(request);
-                    if (loc != null && loc.Accuracy <= maxAccuracyMeters)
-                        locs.Add(loc);
-
-
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"Lỗi lấy GPS: {ex.Message}");
-                }
-                await Task.Delay(700); // đợi GPS fix lại
-            }
-
-            if (locs.Count == 0)
-                return null;
-
-            // Lấy trung bình để giảm sai số
-            //double avgLat = locs.Average(l => l.Latitude);
-            //double avgLon = locs.Average(l => l.Longitude);
-            //return new Location(avgLat, avgLon);
-            return locs.OrderBy(l => l.Accuracy).First();// chọn location chính xác nhất
         }
 
         private bool _isCheckingGps;
@@ -373,16 +393,12 @@ namespace Sphere.ViewModels
                     // ✅ Nếu quyền OK và GPS bật → bật switch
                     if (!IsLocationEnabled)
                         IsLocationEnabled = true;
-                    _locationCts?.Cancel();
-                    _locationCts?.Dispose();
-                    _locationCts = new CancellationTokenSource();
-                    await LoadNearbyInternalAsync(_locationCts.Token);
+                    // Không gọi LoadNearbyInternalAsync trực tiếp, chỉ để OnIsLocationEnabledChanged xử lý
                 }
                 else
                 {
-                    // ❌ Nếu permission/GPS không OK → tắt switch
-                    if (IsLocationEnabled)
-                        IsLocationEnabled = false;
+                    UiState = UiViewState.Error;
+                    ErrorMessage = "GPS chưa được bật.";
                 }
             }
             finally
@@ -419,28 +435,47 @@ namespace Sphere.ViewModels
                 // Lấy vị trí mới
                 if (!await RequestLocationPermissionAndGpsAsync() || !IsLocationEnabled)
                 {
-                    NearbyState = UiViewState.Error;
+                    UiState = UiViewState.Error;
                     return;
                 }
                 var location = await GetAccurateLocationAsync();
                 if (location == null)
                 {
-                    NearbyState = UiViewState.Error;
+                    UiState = UiViewState.Error;
                     return;
                 }
-                // Update vị trí lên server
-                var updateReq = new UpdateLocationRequest
+                if (!HasLocationRecord)
                 {
-                    Latitude = location.Latitude,
-                    Longitude = location.Longitude,
-                    IsVisible = true
-                };
-                var updateResp = await _nearbyService.UpdateLocationAsync(updateReq);
-                if (!updateResp.IsSuccess)
-                {
-                    NearbyState = UiViewState.Error;
-                    return;
+                    var createResp = await _nearbyService.CreateLocationAsync(new CreateLocationRequest
+                    {
+                        Latitude = location.Latitude,
+                        Longitude = location.Longitude
+                    });
+
+                    if (!createResp.IsSuccess)
+                    {
+                        UiState = UiViewState.Error;
+                        return;
+                    }
+
+                    HasLocationRecord = true;
                 }
+                else
+                {
+                    var updateResp = await _nearbyService.UpdateLocationAsync(new UpdateLocationRequest
+                    {
+                        Latitude = location.Latitude,
+                        Longitude = location.Longitude
+                    });
+
+                    if (!updateResp.IsSuccess)
+                    {
+                        ErrorMessage = updateResp.Errors?.FirstOrDefault()?.Description ?? updateResp.Message ?? "Có lỗi xảy ra";
+                        UiState = UiViewState.Error;
+                        return;
+                    }
+                }
+
                 // Load lại danh sách nearby
                 _nearbyPage = 1;
                 Nearby.Clear();
