@@ -1,5 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using ExCSS;
 using Sphere.Common.Constans;
 using Sphere.Common.Helpers;
 using Sphere.Common.Responses;
@@ -14,13 +15,14 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using static Android.Icu.Util.LocaleData;
 
 namespace Sphere.ViewModels
 {
     public partial class NearbyViewModel : BaseViewModel
     {
         // Biến kiểm soát task hiện tại để tránh chạy song song
-        private Task? _currentNearbyTask;
+        private readonly SemaphoreSlim _nearbyLock = new(1, 1);
         private readonly INearbyService _nearbyService;
         private readonly IPermissionService _permissionService;
         private CancellationTokenSource? _locationCts;
@@ -29,11 +31,12 @@ namespace Sphere.ViewModels
         private readonly IShellNavigationService _nv;
         private readonly IAppNavigationService _anv;
        
-        private const int PageSize = 20;
-        private int _nearbyPage = 1;
+        private const int _pageSize = 20;
+        private int _page = 1;
 
-        private bool _nearbyLoading;
-        private bool _nearbyHasNoMoreData;
+        private bool _noMoreData;
+        [ObservableProperty]
+        private bool nearbyLoading;
 
         [ObservableProperty]
         private int distance = 60; // khoảng cách mặc định 60 km
@@ -47,10 +50,11 @@ namespace Sphere.ViewModels
         [ObservableProperty]
         private Gender? selectedGender;
         private bool _isEnablingLocation;
+        private Location? _currentLocation;
 
         [ObservableProperty]
         private ObservableCollection<NearbyModel> nearby = [];
-
+        // Trạng thái đã lưu để biết đã tạo record vị trí trên server chưa, tránh trường hợp bật
         private bool HasLocationRecord
         {
             get => PreferencesHelper.GetHasLocationRecord();
@@ -61,271 +65,220 @@ namespace Sphere.ViewModels
         {
             _nearbyService = nearbyService;
             _permissionService = permissionService;
-
-            // 🔹 Đọc trạng thái đã lưu
-            IsLocationEnabled = PreferencesHelper.GetLocationEnabled();
             _nv = nv;
             _anv = anv;
+            // 🔹 Đọc trạng thái đã lưu
+            IsLocationEnabled = PreferencesHelper.GetLocationEnabled();
+            
         }
-        // Yêu cầu cấp quyền vị trí và kiểm tra GPS, trả về true nếu đủ điều kiện.
-        private async Task<bool> RequestLocationPermissionAndGpsAsync()
+        //private async Task<bool> RequestLocationPermissionAndGpsAsync()
+        //{
+        //    var permissionResult = await _permissionService.RequestPermissionAsync(AppPermission.Location);
+        //    if (permissionResult != PermissionResult.Granted)
+        //        return false;
+        //    if (!_permissionService.IsGpsEnabled())
+        //    {
+        //        await _permissionService.ShowGpsDialogAsync();
+        //        return false;
+        //    }
+        //    return true;
+        //}
+
+        //private async Task<Location?> GetAccurateLocationAsync(int samples = 3, int maxAccuracyMeters = 80)
+        //{
+        //    var last = await Geolocation.Default.GetLastKnownLocationAsync();
+        //    if (last != null && last.Accuracy <= maxAccuracyMeters)
+        //        return last;
+        //    var locs = new List<Location>();
+        //    var request = new GeolocationRequest(GeolocationAccuracy.High, TimeSpan.FromSeconds(8));
+        //    for (int i = 0; i < samples; i++)
+        //    {
+        //        if (!_permissionService.IsGpsEnabled())
+        //            return null;
+        //        try
+        //        {
+        //            var loc = await Geolocation.Default.GetLocationAsync(request);
+        //            if (loc != null && loc.Accuracy <= maxAccuracyMeters)
+        //                locs.Add(loc);
+        //        }
+        //        catch (Exception ex)
+        //        {
+        //            Console.WriteLine($"Lỗi lấy GPS: {ex.Message}");
+        //        }
+        //        await Task.Delay(700);
+        //    }
+        //    if (locs.Count == 0)
+        //        return null;
+        //    return locs.OrderBy(l => l.Accuracy).First();
+        //}
+        // Phương thức khởi tạo để gọi sau khi tạo instance
+        public async Task InitAsync()
         {
-            var permissionResult = await _permissionService.RequestPermissionAsync(AppPermission.Location);
-            if (permissionResult != PermissionResult.Granted)
+            _currentLocation = null;
+            if (IsLocationEnabled)
+            {
+                _locationCts = new CancellationTokenSource();
+                await EnableLocationAsync(_locationCts.Token);
+            }
+        }
+        // Khi IsLocationEnabled thay đổi, lưu trạng thái và thực hiện enable/disable location
+        partial void OnIsLocationEnabledChanged(bool value)
+        {
+            PreferencesHelper.SetLocationEnabled(value);
+
+            _locationCts?.Cancel();
+            _locationCts?.Dispose();
+            _locationCts = new CancellationTokenSource();
+
+            if (value)
+                _ = EnableLocationAsync(_locationCts.Token);
+            else
+                _ = DisableLocationAsync();
+        }
+        // Phương thức enable location với kiểm soát để tránh chạy song song
+        private async Task EnableLocationAsync(CancellationToken token)
+        {
+            Console.WriteLine("EnsureLocationRecord called");
+            if (_isEnablingLocation) return;
+
+            _isEnablingLocation = true;
+
+            try
+            {
+                UiState = UiViewState.Loading;
+
+                if (!await CheckPermissionAndGps())
+                {
+                    IsLocationEnabled = false;
+                    UiState = UiViewState.Error;
+                    ErrorMessage = "Không thể truy cập GPS.";
+                    return;
+                }
+                _currentLocation = await GetAccurateLocationAsync();
+                Console.WriteLine($"[GPS] EnableLocationAsync: {_currentLocation?.Latitude}, {_currentLocation?.Longitude}");
+                if (_currentLocation == null)
+                {
+                    UiState = UiViewState.Error;
+                    ErrorMessage = "Không lấy được vị trí.";
+                    return;
+                }
+                await EnsureLocationRecord();
+
+                await ReloadNearby();
+            }
+            finally
+            {
+                _isEnablingLocation = false;
+            }
+        }
+
+        public async Task<bool> CheckPermissionAndGps()
+        {
+            var permission = await _permissionService.RequestPermissionAsync(AppPermission.Location);
+
+            if (permission != PermissionResult.Granted)
                 return false;
+
             if (!_permissionService.IsGpsEnabled())
             {
                 await _permissionService.ShowGpsDialogAsync();
                 return false;
             }
+
             return true;
         }
-
-        // Lấy vị trí GPS chính xác, trả về null nếu không lấy được.
-        private async Task<Location?> GetAccurateLocationAsync(int samples = 3, int maxAccuracyMeters = 80)
+        // Kiểm tra nếu đã có record vị trí, nếu có thì update, nếu chưa thì tạo mới
+        private async Task EnsureLocationRecord()
         {
-            var last = await Geolocation.Default.GetLastKnownLocationAsync();
-            if (last != null && last.Accuracy <= maxAccuracyMeters)
-                return last;
-            var locs = new List<Location>();
-            var request = new GeolocationRequest(GeolocationAccuracy.High, TimeSpan.FromSeconds(8));
-            for (int i = 0; i < samples; i++)
+            Console.WriteLine($"HasLocationRecord: {HasLocationRecord}");
+            if (!HasLocationRecord)
             {
-                if (!_permissionService.IsGpsEnabled())
-                    return null;
-                try
-                {
-                    var loc = await Geolocation.Default.GetLocationAsync(request);
-                    if (loc != null && loc.Accuracy <= maxAccuracyMeters)
-                        locs.Add(loc);
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"Lỗi lấy GPS: {ex.Message}");
-                }
-                await Task.Delay(700);
-            }
-            if (locs.Count == 0)
-                return null;
-            return locs.OrderBy(l => l.Accuracy).First();
-        }
-        public async Task InitAsync()
-        {
-            if (IsLocationEnabled)
-            {
-                 UiState= UiViewState.Loading;
-                _locationCts = new CancellationTokenSource();
-                await EnableLocationAndLoadNearbyAsync(_locationCts.Token);
-            }
-        }
-
-
-        [RelayCommand]
-        public async Task LoadFirstNearby()
-        {
-            _nearbyPage = 1;
-            Nearby.Clear();
-
-            await LoadNearbyInternalAsync(forceReload: true);
-        }
-
-        partial void OnIsLocationEnabledChanged(bool value)
-        {
-            PreferencesHelper.SetLocationEnabled(value);
-
-            // Hủy task cũ nếu có
-            _locationCts?.Cancel();
-            _locationCts?.Dispose();
-            _locationCts = new CancellationTokenSource();
-
-            // Đảm bảo chỉ chạy 1 task
-            _currentNearbyTask = null;
-
-            if (value)
-            {
-                _currentNearbyTask = EnableLocationAndLoadNearbyAsync(_locationCts.Token);
+                await CreateLocationAsync();
             }
             else
             {
-                Nearby.Clear();
-                _ = DisableLocationAsync();
+                Console.WriteLine("CALL SetLocationVisibilityAsync(true)");
+                await _nearbyService.SetLocationVisibilityAsync(true);
             }
+            
         }
-
-        private async Task EnableLocationAndLoadNearbyAsync(CancellationToken token)
+        // phương thức update vị chung
+        private async Task CreateLocationAsync()
         {
-            if (_isEnablingLocation) return;
-            _isEnablingLocation = true;
+            
+            var resp = await _nearbyService.CreateLocationAsync(new CreateLocationRequest
+            {
+                Latitude = _currentLocation!.Latitude,
+                Longitude = _currentLocation!.Longitude
+            });
 
+            if (resp.IsSuccess)
+                HasLocationRecord = true;
+
+        }
+        // Cố gắng lấy vị trí chính xác, ưu tiên vị trí gần đây nếu có và đủ chính xác, nếu không thì yêu cầu vị trí mới
+        private async Task<Location?> GetAccurateLocationAsync()
+        {
             try
             {
-                
-                UiState = UiViewState.Loading;
-                IsRefreshing = true;
+                var last = await Geolocation.Default.GetLastKnownLocationAsync();
 
-                var checkGps = await RequestLocationPermissionAndGpsAsync();
-                if (!checkGps || token.IsCancellationRequested)
-                {
-                    if (IsLocationEnabled)
-                        IsLocationEnabled = false;
-                    ErrorMessage = "Không thể truy cập vị trí. Vui lòng kiểm tra quyền và GPS.";
-                    return;
-                }
+                if (last != null && last.Accuracy <= 100)
+                    return last;
 
-                var now = DateTime.UtcNow;
-                if (_lastLoadTime.HasValue && now - _lastLoadTime.Value < _minLoadInterval)
-                {
-                    await LoadNearbyInternalAsync(token);
-                    return;
-                }
+                var request = new GeolocationRequest(
+                    GeolocationAccuracy.High,
+                    TimeSpan.FromSeconds(8));
 
-                var location = await GetAccurateLocationAsync();
-                if (location == null || token.IsCancellationRequested || !IsLocationEnabled)
-                {
-                    UiState = UiViewState.Error;
-                    ErrorMessage = "Không lấy được vị trí hiện tại.";
-                    return;
-                }
+                var loc = await Geolocation.Default.GetLocationAsync(request);
 
-                if (!HasLocationRecord)
-                {
-                    var createResp = await _nearbyService.CreateLocationAsync(new CreateLocationRequest
-                    {
-                        Latitude = location.Latitude,
-                        Longitude = location.Longitude
-                    });
-
-                    if (!createResp.IsSuccess)
-                    {
-                        var errorCode = createResp.Errors?.FirstOrDefault()?.Code;
-
-                        if (errorCode == "LocationExists")
-                        {
-                            await _nearbyService.SetLocationVisibilityAsync(true);
-                            HasLocationRecord = true;
-                        }
-                        else
-                        {
-                            UiState = UiViewState.Error;
-                            ErrorMessage = createResp.Errors?.FirstOrDefault()?.Description
-                                           ?? createResp.Message
-                                           ?? "Không thể tạo vị trí.";
-                            return;
-                        }
-                    }
-                    else
-                    {
-                        HasLocationRecord = true;
-                    }
-                }
-                else
-                {
-                    var visibleResp = await _nearbyService.SetLocationVisibilityAsync(true);
-
-                    if (!visibleResp.IsSuccess)
-                    {
-                        UiState = UiViewState.Error;
-                        ErrorMessage = "Không thể bật chia sẻ vị trí.";
-                        return;
-                    }
-                }
-
-                _lastLoadTime = now;
-                if (IsLocationEnabled && !token.IsCancellationRequested)
-                    await LoadNearbyInternalAsync(token, forceReload: true); // Chỉ gọi 1 lần, forceReload để đảm bảo đúng trạng thái
+                return loc;
             }
             catch
             {
-                UiState = UiViewState.Error;
-                ErrorMessage = "Đã xảy ra lỗi không xác định.";
-            }
-            finally
-            {
-                _isEnablingLocation = false;
-                IsRefreshing = false;
+                return null;
             }
         }
-
-        private async Task DisableLocationAsync()
+        // Phương thức reload dữ liệu nearby, reset paging và trạng thái
+        private async Task ReloadNearby()
         {
-            try
-            {
-                IsRefreshing = true;
-                if (HasLocationRecord)
-                {
-                    await _nearbyService.SetLocationVisibilityAsync(false);
-                }
+            _page = 1;
+            _noMoreData = false;
+            Nearby.Clear();
 
-                // 🔹 Xóa danh sách nearby
-                Nearby.Clear();
-            }
-            catch (Exception ex)
-            {
-                await _anv.DisplayAlertAsync("Lỗi",$"Đã có lỗi xảy ra khi tắt chia sẻ vị trí: {ex.Message}. Vui lòng thử lại.");
-            }
-            finally
-            {
-                IsRefreshing = false;
-            }
+            await LoadNearby();
         }
-
-        private async Task LoadNearbyInternalAsync(CancellationToken? token = default, bool forceReload = false)
+        // Phương thức load dữ liệu nearby, kiểm soát để tránh chạy song song, và xử lý paging
+        private async Task LoadNearby()
         {
+            if (NearbyLoading || _noMoreData || !IsLocationEnabled)
+                return;
+
+            if (!await _nearbyLock.WaitAsync(0))
+                return;
+
             try
             {
-                if (_nearbyLoading || (_nearbyHasNoMoreData && !forceReload))
-                    return;
+                NearbyLoading = true;
 
-                _nearbyLoading = true;
+                Console.WriteLine($"[GPS] LoadNearby using: {_currentLocation?.Latitude}, {_currentLocation?.Longitude}");
+                _currentLocation = await GetAccurateLocationAsync();
 
-                if (_nearbyPage == 1 || forceReload)
-                    UiState = UiViewState.Loading;
-
-                IsRefreshing = forceReload;
-
-                if (forceReload)
-                {
-                    _nearbyPage = 1;
-                    _nearbyHasNoMoreData = false;
-                    Nearby.Clear();
-                }
-
-                if (token?.IsCancellationRequested == true || !IsLocationEnabled)
-                    return;
-
-                //if (!await RequestLocationPermissionAndGpsAsync())
-                //{
-                //    UiState = UiViewState.Error;
-                //    ErrorMessage = "Không thể truy cập vị trí. Vui lòng kiểm tra quyền và GPS.";
-                //    return;
-                //}
-
-                var now = DateTime.UtcNow;
-
-                if (!forceReload && _lastLoadTime.HasValue && now - _lastLoadTime.Value < _minLoadInterval)
-                {
-                    UiState = Nearby.Count > 0
-                        ? UiViewState.Success
-                        : UiViewState.Empty;
-                    return;
-                }
-
-                var location = await GetAccurateLocationAsync();
-
-                if (location == null)
+                Console.WriteLine($"[GPS] Refresh using: {_currentLocation?.Latitude}, {_currentLocation?.Longitude}");
+                if (_currentLocation == null)
                 {
                     UiState = UiViewState.Error;
-                    ErrorMessage = "Không lấy được vị trí hiện tại.";
+                    ErrorMessage = "Không lấy được vị trí.";
                     return;
                 }
 
                 var req = new NearbyRequest
                 {
-                    Latitude = location.Latitude,
-                    Longitude = location.Longitude,
+                    Latitude = _currentLocation!.Latitude,
+                    Longitude = _currentLocation.Longitude,
                     DistanceKm = Distance,
-                    Page = _nearbyPage,
-                    PageSize = PageSize,
+                    Page = _page,
+                    PageSize = _pageSize,
                     Gender = SelectedGender
                 };
 
@@ -333,83 +286,92 @@ namespace Sphere.ViewModels
 
                 if (!resp.IsSuccess)
                 {
-                    if (forceReload)
-                    {
-                        ErrorMessage = resp.Errors?.FirstOrDefault()?.Description ?? resp.Message ?? "Có lỗi xảy ra";
-                        UiState = UiViewState.Error;
-                    }    
+                    UiState = UiViewState.Error;
+                    ErrorMessage = resp.Message;
                     return;
                 }
 
                 var data = resp.Data ?? [];
 
-                if (data.Any())
+                if (!data.Any())
                 {
-                    foreach (var item in data)
-                        Nearby.Add(item);
-
-                    _nearbyHasNoMoreData = data.Count() < PageSize;
-                    _nearbyPage++;
-                    _lastLoadTime = now;
-
-                    UiState = UiViewState.Success;
-                }
-                else
-                {
-                    _nearbyHasNoMoreData = true;
-
-                    if (_nearbyPage == 1)
+                    if (_page == 1)
                         UiState = UiViewState.Empty;
+
+                    _noMoreData = true;
+                    return;
                 }
-            }
-            catch
-            {
-                if (forceReload)
-                {
-                    UiState = UiViewState.Error;
-                    ErrorMessage = "Đã xảy ra lỗi không xác định.";
-                }
+
+                foreach (var item in data)
+                    Nearby.Add(item);
+
+                _page++;
+
+                _lastLoadTime = DateTime.UtcNow;
+
+                UiState = UiViewState.Success;
             }
             finally
             {
-                _nearbyLoading = false;
-                IsRefreshing = false;
+                NearbyLoading = false;
+                _nearbyLock.Release();
             }
         }
-
-        private bool _isCheckingGps;
-
-        public async Task CheckGpsAfterSettingsAsync()
+        // Phương thức disable location, ẩn vị trí trên server và xóa danh sách nearby
+        private async Task DisableLocationAsync()
         {
-            if (_isCheckingGps) return;
-            _isCheckingGps = true;
+            try
+            {
+                await _nearbyService.SetLocationVisibilityAsync(false);
+                _currentLocation = null;
+                Nearby.Clear();
+            }                   
+            catch (Exception ex)
+            {
+                await _anv.DisplayAlertAsync("Lỗi", ex.Message);
+            }
+        }
+        // Command để load thêm dữ liệu nearby khi cuộn đến cuối danh sách
+
+        [RelayCommand]
+        public Task LoadMoreNearby() => LoadNearby();
+        // Command để refresh lại danh sách nearby, reset paging và trạng thái
+        [RelayCommand]
+        public async Task RefreshNearby()
+        {
+            IsRefreshing = true;
 
             try
             {
-                var permissionResult = await _permissionService.RequestPermissionAsync(AppPermission.Location);
-                bool gpsEnabled = await _permissionService.CheckGpsStatusAsync();
-                if (permissionResult == PermissionResult.Granted && gpsEnabled)
+                _currentLocation = await GetAccurateLocationAsync();
+                Console.WriteLine($"[GPS] LoadNearby using: {_currentLocation?.Latitude}, {_currentLocation?.Longitude}");
+                if (_currentLocation == null)
                 {
-                    // ✅ Nếu quyền OK và GPS bật → bật switch
-                    if (!IsLocationEnabled)
-                        IsLocationEnabled = true;
-                    // Không gọi LoadNearbyInternalAsync trực tiếp, chỉ để OnIsLocationEnabledChanged xử lý
+                    UiState = UiViewState.Error;
+                    ErrorMessage = "Không lấy được vị trí.";
+                    return;
+                }
+
+                if (!HasLocationRecord)
+                {
+                    await CreateLocationAsync();
                 }
                 else
                 {
-                    UiState = UiViewState.Error;
-                    ErrorMessage = "GPS chưa được bật.";
+                    await _nearbyService.UpdateLocationAsync(new UpdateLocationRequest
+                    {
+                        Latitude = _currentLocation.Latitude,
+                        Longitude = _currentLocation.Longitude
+                    });
                 }
+                await ReloadNearby();
             }
             finally
             {
-                _isCheckingGps = false;
+                IsRefreshing = false;
             }
         }
-
-        [RelayCommand]
-        public Task LoadMoreNearby() => LoadNearbyInternalAsync();
-
+        // Command để mở trang filter, và nhận kết quả filter để cập nhật lại danh sách nearby
         [RelayCommand]
         public async Task Filter()
         {
@@ -425,71 +387,6 @@ namespace Sphere.ViewModels
 
             await _nv.PushModalAsync<FilterPage, FilterParam>(param);
         }
-
-        [RelayCommand]
-        public async Task RefreshNearby()
-        {
-            IsRefreshing = true;
-            try
-            {
-                // Lấy vị trí mới
-                if (!await RequestLocationPermissionAndGpsAsync() || !IsLocationEnabled)
-                {
-                    UiState = UiViewState.Error;
-                    return;
-                }
-                var location = await GetAccurateLocationAsync();
-                if (location == null)
-                {
-                    UiState = UiViewState.Error;
-                    return;
-                }
-                if (!HasLocationRecord)
-                {
-                    var createResp = await _nearbyService.CreateLocationAsync(new CreateLocationRequest
-                    {
-                        Latitude = location.Latitude,
-                        Longitude = location.Longitude
-                    });
-
-                    if (!createResp.IsSuccess)
-                    {
-                        UiState = UiViewState.Error;
-                        return;
-                    }
-
-                    HasLocationRecord = true;
-                }
-                else
-                {
-                    var updateResp = await _nearbyService.UpdateLocationAsync(new UpdateLocationRequest
-                    {
-                        Latitude = location.Latitude,
-                        Longitude = location.Longitude
-                    });
-
-                    if (!updateResp.IsSuccess)
-                    {
-                        ErrorMessage = updateResp.Errors?.FirstOrDefault()?.Description ?? updateResp.Message ?? "Có lỗi xảy ra";
-                        UiState = UiViewState.Error;
-                        return;
-                    }
-                }
-
-                // Load lại danh sách nearby
-                _nearbyPage = 1;
-                Nearby.Clear();
-                await LoadNearbyInternalAsync(forceReload: true);
-            }
-            finally
-            {
-                IsRefreshing = false;
-            }
-        }
-        public void ForceDisableLocationSwitch()
-        {
-            if (IsLocationEnabled)
-                IsLocationEnabled = false;
-        }
+        // Phương thức để ép tắt location switch nếu có lỗi xảy ra, đảm bảo không bị kẹt ở trạng thái bật mà không hoạt động được
     }
 }

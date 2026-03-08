@@ -40,7 +40,7 @@ namespace Sphere
             builder.Services.AddHttpClient();
             builder.Services.RegisterServices();
             builder.Services.AddSingleton<ApiResponseHelper>();
-            
+           
             builder.ConfigureMauiHandlers(handlers =>
             {
                 handlers.AddHandler(typeof(GlideImage), typeof(GlideImageHandler));

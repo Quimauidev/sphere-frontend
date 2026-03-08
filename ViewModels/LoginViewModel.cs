@@ -35,8 +35,7 @@ namespace Sphere.ViewModels
         private readonly IShellNavigationService _nv = nv;
         private readonly IAppNavigationService _anv = anv;
 
-        private bool _isCheckingGps;
-
+        
         [ObservableProperty]
         public partial bool IsLoading { get; set; }
 
