@@ -1,11 +1,12 @@
-﻿using CommunityToolkit.Maui.Views;
-using Android.Content;
+﻿using Android.Content;
 using Android.Net;
+using CommunityToolkit.Maui.Views;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Sphere.Common.Constans;
 using Sphere.Common.Helpers;
 using Sphere.Common.Responses;
+using Sphere.DTOs;
 using Sphere.Hubs;
 using Sphere.Models;
 using Sphere.Models.AuthModel;
@@ -182,7 +183,7 @@ namespace Sphere.ViewModels
                             await _permissionService.ShowGpsDialogAsync();
                             return;
                         }
-                        await UpdateUserLocationAsync();
+                        await CreateUserLocationAsync();
                         break;
 
                     case PermissionResult.Denied:
@@ -199,69 +200,123 @@ namespace Sphere.ViewModels
                 Console.WriteLine($"Permission error: {ex.Message}");
             }
         }
-        private async Task UpdateUserLocationAsync()
+        private async Task CreateUserLocationAsync()
         {
             try
             {
-                var location = await GetStableLocationAsync();
+                var location = await GetAccurateLocationAsync();
                 if (location == null)
                 {
                     await _anv.DisplayAlertAsync("Vị trí", "Không lấy được vị trí từ thiết bị.");
                     return;
                 }
 
-                var dto = new UserLocationModel
+                var dto = new CreateLocationRequest
                 {
                     Latitude = location.Latitude,
                     Longitude = location.Longitude,
-                    LastUpdated = DateTime.UtcNow,
-                    IsVisible = true
                 };
 
-                await _locationService.UpdateLocationAsync(dto);
+                var result = await _locationService.CreateLocationAsync(dto);
+                if (!result.IsSuccess)
+                {
+                    await res.ShowApiErrorsAsync(result, "Không thể tạo vị trí");
+                }
             }
             catch (Exception ex)
             {
                 await _anv.DisplayAlertAsync("Lỗi", $"Có lỗi xảy ra khi lấy hoặc gửi vị trí: {ex.Message}");
             }
         }
-        private async Task<Location?> GetStableLocationAsync(int samples = 3, int maxAccuracyMeters = 80)
+        //private async Task<Location?> GetStableLocationAsync(int samples = 3, int maxAccuracyMeters = 80)
+        //{
+        //    // thử lấy location cache trước
+        //    var last = await Geolocation.Default.GetLastKnownLocationAsync();
+        //    if (last != null && last.Accuracy <= maxAccuracyMeters)
+        //        return last;
+        //    var locs = new List<Location>();
+        //    var request = new GeolocationRequest(GeolocationAccuracy.High, TimeSpan.FromSeconds(8));
+
+        //    for (int i = 0; i < samples; i++)
+        //    {
+        //        if (!_permissionService.IsGpsEnabled())
+        //            return null;
+        //        try
+        //        {
+        //            var loc = await Geolocation.Default.GetLocationAsync(request);
+        //            if (loc != null && loc.Accuracy <= maxAccuracyMeters)
+        //                locs.Add(loc);
+
+
+        //        }
+        //        catch (Exception ex)
+        //        {
+        //            Console.WriteLine($"Lỗi lấy GPS: {ex.Message}");
+        //        }
+        //        await Task.Delay(700); // đợi GPS fix lại
+        //    }
+
+        //    if (locs.Count == 0)
+        //        return null;
+
+        //    // Lấy trung bình để giảm sai số
+        //    //double avgLat = locs.Average(l => l.Latitude);
+        //    //double avgLon = locs.Average(l => l.Longitude);
+        //    //return new Location(avgLat, avgLon);
+        //    return locs.OrderBy(l => l.Accuracy).First();// chọn location chính xác nhất
+        //}
+
+        private async Task<Location?> GetAccurateLocationAsync(int samples = 5, int maxAccuracyMeters = 80)
         {
-            // thử lấy location cache trước
-            var last = await Geolocation.Default.GetLastKnownLocationAsync();
-            if (last != null && last.Accuracy <= maxAccuracyMeters)
-                return last;
-            var locs = new List<Location>();
-            var request = new GeolocationRequest(GeolocationAccuracy.High, TimeSpan.FromSeconds(8));
-
-            for (int i = 0; i < samples; i++)
+            try
             {
-                if (!_permissionService.IsGpsEnabled())
+                var last = await Geolocation.Default.GetLastKnownLocationAsync();
+                if (last != null && last.Accuracy <= maxAccuracyMeters && DateTimeOffset.UtcNow - last.Timestamp < TimeSpan.FromSeconds(15))
+                    return last;
+
+                var request = new GeolocationRequest(GeolocationAccuracy.Best, TimeSpan.FromSeconds(10));
+
+                var locations = new List<Location>();
+
+                for (int i = 0; i < samples; i++)
+                {
+                    if (!_permissionService.IsGpsEnabled())
+                        return null;
+
+                    try
+                    {
+                        var loc = await Geolocation.Default.GetLocationAsync(request);
+
+                        if (loc?.Accuracy > 0)
+                            locations.Add(loc);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        return null;
+                    }
+                    catch { }
+
+                    await Task.Delay(800);
+                }
+
+                if (locations.Count == 0)
                     return null;
-                try
-                {
-                    var loc = await Geolocation.Default.GetLocationAsync(request);
-                    if (loc != null && loc.Accuracy <= maxAccuracyMeters)
-                        locs.Add(loc);
 
-                    
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"Lỗi lấy GPS: {ex.Message}");
-                }
-                await Task.Delay(700); // đợi GPS fix lại
+                var filtered = locations
+                    .Where(l => l.Accuracy <= maxAccuracyMeters)
+                    .ToList();
+
+                if (filtered.Count == 0)
+                    filtered = locations;
+
+                return filtered.OrderBy(l => l.Accuracy).First();
             }
-
-            if (locs.Count == 0)
+            catch
+            {
                 return null;
-
-            // Lấy trung bình để giảm sai số
-            //double avgLat = locs.Average(l => l.Latitude);
-            //double avgLon = locs.Average(l => l.Longitude);
-            //return new Location(avgLat, avgLon);
-            return locs.OrderBy(l => l.Accuracy).First();// chọn location chính xác nhất
+            }
         }
+
 
         [RelayCommand]
         public async Task Register()

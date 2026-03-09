@@ -31,19 +31,6 @@ namespace Sphere.Services.Service
             return await _apiService.GetAsync<IEnumerable<NearbyModel>>(url);
         }
 
-        public async Task<ApiResponse<object>> CreateLocationAsync(CreateLocationRequest request)
-        {
-            return await _apiService.PostAsync<CreateLocationRequest, object>("api/nearby", request);
-        }
-
-        public async Task<ApiResponse<object>> SetLocationVisibilityAsync(bool isVisible)
-        {
-            return await _apiService.PutAsync<object, object>("api/nearby/visibility", isVisible);
-        }
-
-        public async Task<ApiResponse<object>> UpdateLocationAsync(UpdateLocationRequest request)
-        {
-            return await _apiService.PutAsync<UpdateLocationRequest,object>("api/nearby/update-location", request);
-        }
+        
     }
 }
