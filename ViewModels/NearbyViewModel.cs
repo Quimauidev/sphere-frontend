@@ -23,19 +23,20 @@ namespace Sphere.ViewModels
     {
         // Biến kiểm soát task hiện tại để tránh chạy song song
         private readonly SemaphoreSlim _nearbyLock = new(1, 1);
+
         private readonly INearbyService _nearbyService;
         private readonly ILocationService _locationService;
         private readonly IPermissionService _permissionService;
         private CancellationTokenSource? _locationCts;
         private DateTime? _lastLoadTime;
-        private readonly TimeSpan _minLoadInterval = TimeSpan.FromSeconds(30);
         private readonly IShellNavigationService _nv;
         private readonly IAppNavigationService _anv;
-       
+
         private const int _pageSize = 20;
         private int _page = 1;
 
         private bool _noMoreData;
+
         [ObservableProperty]
         private bool nearbyLoading;
 
@@ -50,11 +51,13 @@ namespace Sphere.ViewModels
 
         [ObservableProperty]
         private Gender? selectedGender;
+
         private bool _isEnablingLocation;
         private Location? _currentLocation;
 
         [ObservableProperty]
         private ObservableCollection<NearbyModel> nearby = [];
+
         // Trạng thái đã lưu để biết đã tạo record vị trí trên server chưa, tránh trường hợp bật
         private bool HasLocationRecord
         {
@@ -62,7 +65,7 @@ namespace Sphere.ViewModels
             set => PreferencesHelper.SetHasLocationRecord(value);
         }
 
-        public NearbyViewModel( INearbyService nearbyService, IPermissionService permissionService, IShellNavigationService nv, IAppNavigationService anv, ILocationService locationService)
+        public NearbyViewModel(INearbyService nearbyService, IPermissionService permissionService, IShellNavigationService nv, IAppNavigationService anv, ILocationService locationService)
         {
             _nearbyService = nearbyService;
             _permissionService = permissionService;
@@ -74,33 +77,6 @@ namespace Sphere.ViewModels
             IsLocationEnabled = PreferencesHelper.GetLocationEnabled();
         }
 
-
-        //private async Task<Location?> GetAccurateLocationAsync(CancellationToken token, int samples = 5, int maxAccuracyMeters = 80)
-        //{
-        //    var last = await Geolocation.Default.GetLastKnownLocationAsync();
-        //    if (last != null && last.Accuracy <= 80)
-        //        return last;
-        //    var locs = new List<Location>();
-        //    var request = new GeolocationRequest(GeolocationAccuracy.Best, TimeSpan.FromSeconds(10));
-        //    for (int i = 0; i < samples; i++)
-        //    {
-
-        //        try
-        //        {
-        //            var loc = await Geolocation.Default.GetLocationAsync(request);
-        //            if (loc != null && loc.Accuracy <= maxAccuracyMeters)
-        //                locs.Add(loc);
-        //        }
-        //        catch (Exception ex)
-        //        {
-        //            Console.WriteLine($"Lỗi lấy GPS: {ex.Message}");
-        //        }
-        //        await Task.Delay(800);
-        //    }
-        //    if (locs.Count == 0)
-        //        return null;
-        //    return locs.OrderBy(l => l.Accuracy).First();
-        //}
         // Phương thức khởi tạo để gọi sau khi tạo instance
         public async Task InitAsync()
         {
@@ -110,6 +86,7 @@ namespace Sphere.ViewModels
                 await EnableLocationAsync(_locationCts.Token);
             }
         }
+
         // Khi IsLocationEnabled thay đổi, lưu trạng thái và thực hiện enable/disable location
         partial void OnIsLocationEnabledChanged(bool value)
         {
@@ -124,10 +101,11 @@ namespace Sphere.ViewModels
             {
                 _locationCts = new CancellationTokenSource();
                 _ = EnableLocationAsync(_locationCts.Token);
-            }    
+            }
             else
                 _ = DisableLocationAsync();
         }
+
         // Phương thức enable location với kiểm soát để tránh chạy song song
         private async Task EnableLocationAsync(CancellationToken token)
         {
@@ -157,10 +135,6 @@ namespace Sphere.ViewModels
 
                 await ReloadNearby();
             }
-            catch (OperationCanceledException)
-            {
-                Console.WriteLine("Enable location cancelled");
-            }
             finally
             {
                 _isEnablingLocation = false;
@@ -182,6 +156,7 @@ namespace Sphere.ViewModels
 
             return true;
         }
+
         // Kiểm tra nếu đã có record vị trí, nếu có thì update, nếu chưa thì tạo mới
         private async Task EnsureLocationRecord()
         {
@@ -193,12 +168,11 @@ namespace Sphere.ViewModels
             {
                 await _locationService.SetLocationVisibilityAsync(true);
             }
-            
         }
+
         // phương thức update vị chung
         private async Task CreateLocationAsync()
         {
-            
             var resp = await _locationService.CreateLocationAsync(new CreateLocationRequest
             {
                 Latitude = _currentLocation!.Latitude,
@@ -207,10 +181,10 @@ namespace Sphere.ViewModels
 
             if (resp.IsSuccess)
                 HasLocationRecord = true;
-
         }
+
         // Phương thức lấy vị trí chính xác, ưu tiên last known nếu đủ tốt, nếu không thì lấy mới với timeout
-        
+
         private async Task<Location?> GetAccurateLocationAsync(CancellationToken token, int samples = 5, int maxAccuracyMeters = 80)
         {
             try
@@ -230,18 +204,10 @@ namespace Sphere.ViewModels
                     if (!_permissionService.IsGpsEnabled())
                         return null;
 
-                    try
-                    {
-                        var loc = await Geolocation.Default.GetLocationAsync(request, token);
+                    var loc = await Geolocation.Default.GetLocationAsync(request, token);
 
-                        if (loc?.Accuracy > 0)
-                            locations.Add(loc);
-                    }
-                    catch (OperationCanceledException)
-                    {
-                        return null;
-                    }
-                    catch { }
+                    if (loc?.Accuracy > 0)
+                        locations.Add(loc);
 
                     await Task.Delay(800, token);
                 }
@@ -263,6 +229,7 @@ namespace Sphere.ViewModels
                 return null;
             }
         }
+
         // Phương thức reload dữ liệu nearby, reset paging và trạng thái
         private async Task ReloadNearby()
         {
@@ -272,6 +239,7 @@ namespace Sphere.ViewModels
 
             await LoadNearby();
         }
+
         // Phương thức load dữ liệu nearby, kiểm soát để tránh chạy song song, và xử lý paging
         private async Task LoadNearby()
         {
@@ -284,17 +252,6 @@ namespace Sphere.ViewModels
             try
             {
                 NearbyLoading = true;
-
-                //Console.WriteLine($"[GPS] LoadNearby using: {_currentLocation?.Latitude}, {_currentLocation?.Longitude}");
-                //_currentLocation = await GetAccurateLocationAsync();
-
-                //Console.WriteLine($"[GPS] Refresh using: {_currentLocation?.Latitude}, {_currentLocation?.Longitude}");
-                //if (_currentLocation == null)
-                //{
-                //    UiState = UiViewState.Error;
-                //    ErrorMessage = "Không lấy được vị trí.";
-                //    return;
-                //}
 
                 var req = new NearbyRequest
                 {
@@ -341,24 +298,26 @@ namespace Sphere.ViewModels
                 _nearbyLock.Release();
             }
         }
+
         // Phương thức disable location, ẩn vị trí trên server và xóa danh sách nearby
         private async Task DisableLocationAsync()
         {
             try
             {
                 await _locationService.SetLocationVisibilityAsync(false);
-                //_currentLocation = null;
                 Nearby.Clear();
-            }                   
+            }
             catch (Exception ex)
             {
                 await _anv.DisplayAlertAsync("Lỗi", ex.Message);
             }
         }
+
         // Command để load thêm dữ liệu nearby khi cuộn đến cuối danh sách
 
         [RelayCommand]
         public Task LoadMoreNearby() => LoadNearby();
+
         // Command để refresh lại danh sách nearby, reset paging và trạng thái
         [RelayCommand]
         public async Task RefreshNearby(CancellationToken token)
@@ -394,6 +353,7 @@ namespace Sphere.ViewModels
                 IsRefreshing = false;
             }
         }
+
         // Command để mở trang filter, và nhận kết quả filter để cập nhật lại danh sách nearby
         [RelayCommand]
         public async Task Filter()
@@ -410,6 +370,7 @@ namespace Sphere.ViewModels
 
             await _nv.PushModalAsync<FilterPage, FilterParam>(param);
         }
+
         // Phương thức để ép tắt location switch nếu có lỗi xảy ra, đảm bảo không bị kẹt ở trạng thái bật mà không hoạt động được
     }
 }

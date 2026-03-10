@@ -154,7 +154,6 @@ namespace Sphere.Common.Helpers
             ClearRefreshTokenId();
             ClearLocationEnabled();
             ClearDiamondPackages();
-            ClearHasLocationRecord();
         }
     }
 }
