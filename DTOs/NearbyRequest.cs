@@ -11,9 +11,11 @@ namespace Sphere.DTOs
     {
         public double? Latitude { get; set; } // Kinh độ
         public double? Longitude { get; set; } // Vĩ độ
-        public int DistanceKm { get; set; } // khoảng cách chọn lọc (1, 5, 15, 60)
-        public int Page { get; set; } = 1;
-        public int PageSize { get; set; } = 20;
+        public int DistanceKm { get; set; }
+        public int Page { get; set; }
+        public int PageSize { get; set; }
         public Gender? Gender { get; set; }
+        public int MinAge { get; set; }
+        public int MaxAge { get; set; }
     }
 }

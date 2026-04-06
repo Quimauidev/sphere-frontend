@@ -21,6 +21,7 @@ namespace Sphere.ViewModels
 {
     public partial class NearbyViewModel : BaseViewModel
     {
+        private readonly FilterService _filterService;
         // Biến kiểm soát task hiện tại để tránh chạy song song
         private readonly SemaphoreSlim _nearbyLock = new(1, 1);
 
@@ -31,9 +32,9 @@ namespace Sphere.ViewModels
         private DateTime? _lastLoadTime;
         private readonly IShellNavigationService _nv;
         private readonly IAppNavigationService _anv;
-
-        private const int _pageSize = 20;
+        private bool _initialized;
         private int _page = 1;
+        private const int _pageSize = 20;
 
         private bool _noMoreData;
 
@@ -41,7 +42,12 @@ namespace Sphere.ViewModels
         private bool nearbyLoading;
 
         [ObservableProperty]
-        private int distance = 60; // khoảng cách mặc định 60 km
+        private int distance;
+        [ObservableProperty]
+        private int minAge;
+        [ObservableProperty]
+        private int maxAge;
+
 
         [ObservableProperty]
         private bool isLocationEnabled;
@@ -59,20 +65,25 @@ namespace Sphere.ViewModels
         private ObservableCollection<NearbyModel> nearby = [];
 
         // Trạng thái đã lưu để biết đã tạo record vị trí trên server chưa, tránh trường hợp bật
-        private bool HasLocationRecord
+        private static bool HasLocationRecord
         {
             get => PreferencesHelper.GetHasLocationRecord();
             set => PreferencesHelper.SetHasLocationRecord(value);
         }
 
-        public NearbyViewModel(INearbyService nearbyService, IPermissionService permissionService, IShellNavigationService nv, IAppNavigationService anv, ILocationService locationService)
+        public NearbyViewModel(INearbyService nearbyService, IPermissionService permissionService, IShellNavigationService nv, IAppNavigationService anv, ILocationService locationService, FilterService filterService)
         {
             _nearbyService = nearbyService;
             _permissionService = permissionService;
             _nv = nv;
             _anv = anv;
             _locationService = locationService;
-
+            _filterService = filterService;
+            // Load filter từ service
+            SelectedGender = _filterService.SelectedGender;
+            MinAge = _filterService.MinAge;
+            MaxAge = _filterService.MaxAge;
+            Distance = _filterService.Distance;
             // 🔹 Đọc trạng thái đã lưu
             IsLocationEnabled = PreferencesHelper.GetLocationEnabled();
         }
@@ -80,6 +91,10 @@ namespace Sphere.ViewModels
         // Phương thức khởi tạo để gọi sau khi tạo instance
         public async Task InitAsync()
         {
+            if (_initialized)
+                return;
+
+            _initialized = true;
             if (IsLocationEnabled)
             {
                 _locationCts = new CancellationTokenSource();
@@ -222,7 +237,14 @@ namespace Sphere.ViewModels
                 if (filtered.Count == 0)
                     filtered = locations;
 
-                return filtered.OrderBy(l => l.Accuracy).First();
+                var best = filtered.OrderBy(l => l.Accuracy).First();
+                return new Location
+                {
+                    Latitude = Math.Round(best.Latitude, 6),
+                    Longitude = Math.Round(best.Longitude, 6),
+                    Accuracy = best.Accuracy,
+                    Timestamp = best.Timestamp
+                };
             }
             catch
             {
@@ -260,9 +282,10 @@ namespace Sphere.ViewModels
                     DistanceKm = Distance,
                     Page = _page,
                     PageSize = _pageSize,
-                    Gender = SelectedGender
+                    Gender = SelectedGender,
+                    MinAge = MinAge,
+                    MaxAge = MaxAge
                 };
-
                 var resp = await _nearbyService.GetNearbyUsersAsync(req);
 
                 if (!resp.IsSuccess)
@@ -273,19 +296,21 @@ namespace Sphere.ViewModels
                 }
 
                 var data = resp.Data ?? [];
-
                 if (!data.Any())
                 {
                     if (_page == 1)
                         UiState = UiViewState.Empty;
 
-                    _noMoreData = true;
+                    _noMoreData = true; // đánh dấu không còn dữ liệu để load nữa
                     return;
                 }
 
                 foreach (var item in data)
                     Nearby.Add(item);
-
+                if (data.Count() < _pageSize)
+                {
+                    _noMoreData = true;
+                }
                 _page++;
 
                 _lastLoadTime = DateTime.UtcNow;
@@ -314,9 +339,25 @@ namespace Sphere.ViewModels
         }
 
         // Command để load thêm dữ liệu nearby khi cuộn đến cuối danh sách
+        [ObservableProperty]
+        private bool isLoadingMore;
 
         [RelayCommand]
-        public Task LoadMoreNearby() => LoadNearby();
+        public async Task LoadMoreNearby()
+        {
+            if (_noMoreData || NearbyLoading || IsLoadingMore)
+                return;
+
+            try
+            {
+                IsLoadingMore = true;
+                await LoadNearby();
+            }
+            finally
+            {
+                IsLoadingMore = false;
+            }
+        }
 
         // Command để refresh lại danh sách nearby, reset paging và trạng thái
         [RelayCommand]
@@ -358,19 +399,36 @@ namespace Sphere.ViewModels
         [RelayCommand]
         public async Task Filter()
         {
+            if (!IsLocationEnabled)
+            {
+                await _anv.DisplayAlertAsync("Thông báo", "Vui lòng bật định vị để lọc lân cận");
+                return;
+            }
             var param = new FilterParam
             {
-                OnApply = (gender, dist, locationEnabled) =>
+                SelectedGender = SelectedGender,
+                MinAge = MinAge,
+                MaxAge = MaxAge,
+                Distance = Distance,
+                OnApply = (gender, minAge, maxAge, dist) =>
                 {
                     SelectedGender = gender;
+                    MinAge = minAge;
+                    MaxAge = maxAge;
                     Distance = dist;
-                    IsLocationEnabled = locationEnabled;
+                    _filterService.SelectedGender = gender;
+                    _filterService.MinAge = minAge;
+                    _filterService.MaxAge = maxAge;
+                    _filterService.Distance = dist;
+
+                    UiState = UiViewState.Loading;
+                    // reload dữ liệu với filter mới
+                    _ = ReloadNearby();
                 }
             };
 
             await _nv.PushModalAsync<FilterPage, FilterParam>(param);
         }
 
-        // Phương thức để ép tắt location switch nếu có lỗi xảy ra, đảm bảo không bị kẹt ở trạng thái bật mà không hoạt động được
     }
 }

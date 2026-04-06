@@ -41,17 +41,17 @@
             </Grid>
 
         </StackLayout>
-
-        <Button
-            Command="{Binding LoginCommand}"
-            FontAttributes="Bold"
-            Text="Đăng nhập" />
-        <Button
-            BackgroundColor="Green"
-            Command="{Binding RegisterCommand}"
-            FontAttributes="Bold"
-            Text="Tạo tài khoản mới" />
-
+        <VerticalStackLayout Spacing="10">
+            <Button
+                Command="{Binding LoginCommand}"
+                FontAttributes="Bold"
+                Text="Đăng nhập" />
+            <Button
+                BackgroundColor="Green"
+                Command="{Binding RegisterCommand}"
+                FontAttributes="Bold"
+                Text="Tạo tài khoản mới" />
+        </VerticalStackLayout>
         <Label
             HorizontalOptions="Center"
             Text="Quên mật khẩu"

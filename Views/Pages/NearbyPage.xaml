@@ -187,6 +187,13 @@
                         </Border>
                     </DataTemplate>
                 </CollectionView.ItemTemplate>
+                <CollectionView.Footer>
+                    <ActivityIndicator
+                        Margin="10"
+                        HorizontalOptions="Center"
+                        IsRunning="{Binding IsLoadingMore}"
+                        IsVisible="{Binding IsLoadingMore}" />
+                </CollectionView.Footer>
             </CollectionView>
         </RefreshView>
     </Grid>

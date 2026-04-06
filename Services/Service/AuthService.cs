@@ -2,6 +2,7 @@
 using Sphere.Common.Constans;
 using Sphere.Common.Helpers;
 using Sphere.Common.Responses;
+using Sphere.DTOs;
 using Sphere.Models;
 using Sphere.Models.AuthModel;
 using Sphere.Services.IService;
@@ -14,7 +15,7 @@ using System.Threading.Tasks;
 
 namespace Sphere.Services.Service
 {
-    internal class AuthService(IApiService apiService) : IAuthService
+    internal class AuthService(IApiService apiService, FilterService filterService) : IAuthService
     {
        
         public Task<ApiResponse<TokenResponse>> LoginAsync(LoginModel model)
@@ -35,6 +36,7 @@ namespace Sphere.Services.Service
             if (response.IsSuccess)
             {
                 PreferencesHelper.Logout(); // Xoá local token luôn
+                filterService.Reset();
             }
 
             return response;

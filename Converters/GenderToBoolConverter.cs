@@ -12,16 +12,26 @@ namespace Sphere.Converters
     {
         public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
         {
-            // So sánh trực tiếp enum Gender với Gender
-            return value is Gender gender && parameter is Gender genderParam && gender == genderParam;
+            // Nếu là "All", checked khi SelectedGender == null
+            if (parameter is string str && str == "All")
+                return value == null;
+
+            // Nếu là Gender enum, checked khi value == genderParam
+            if (value is Gender gender && parameter is Gender genderParam)
+                return gender == genderParam;
+
+            return false;
         }
 
-        public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
         {
-            // Nếu radio được check và parameter là Gender enum, thì trả về Gender
-            return (value is bool isChecked && isChecked && parameter is Gender genderParam)
-                ? genderParam
-                : Binding.DoNothing;
+            if (value is bool isChecked && isChecked)
+            {
+                if (parameter is string str && str == "All") return null; // chọn "Tất cả"
+                if (parameter is Gender genderParam) return genderParam; // chọn Nam/Nữ
+            }
+
+            return Binding.DoNothing;
         }
     }
 

@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Sphere.Common.Constans;
 using Sphere.Common.Helpers;
 using Sphere.Common.Responses;
+using Sphere.DTOs;
 using Sphere.Hubs;
 using Sphere.Models;
 using Sphere.Services.IService;
@@ -57,7 +58,6 @@ namespace Sphere
             try
             {
                 await _presenceService.StopAsync();
-
                 var response = await _authService.LogoutAsync();
 
                 if (!response.IsSuccess)

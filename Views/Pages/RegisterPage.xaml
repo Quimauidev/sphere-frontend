@@ -6,9 +6,6 @@
     xmlns:behaviors="clr-namespace:Sphere.Common.Constans"
     xmlns:local="clr-namespace:Sphere.Common.Constans"
     Title="RegisterPage">
-
-
-
     <VerticalStackLayout Padding="30" Spacing="20">
 
         <Entry

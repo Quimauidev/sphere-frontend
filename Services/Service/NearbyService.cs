@@ -24,7 +24,9 @@ namespace Sphere.Services.Service
                 ["DistanceKm"] = request.DistanceKm.ToString(CultureInfo.InvariantCulture),
                 ["Page"] = request.Page.ToString(),
                 ["PageSize"] = request.PageSize.ToString(),
-                ["Gender"] = request.Gender.HasValue ? ((int)request.Gender.Value).ToString() : null
+                ["Gender"] = request.Gender.HasValue ? ((int)request.Gender.Value).ToString() : null,
+                ["MinAge"] = request.MinAge.ToString(),
+                ["MaxAge"] = request.MaxAge.ToString()
             });
 
             // Trả về trực tiếp Task từ _apiService (không cần await nếu không xử lý thêm).

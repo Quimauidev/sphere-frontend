@@ -3,26 +3,58 @@
     x:Class="Sphere.Views.Pages.FilterPage"
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:local="clr-namespace:Sphere.Common.Constans"
     Title="FilterPage">
-    <VerticalStackLayout Padding="20" Spacing="16">
+
+    <VerticalStackLayout Padding="20" Spacing="20">
 
         <!--  Chọn giới tính  -->
-        <Label FontAttributes="Bold" Text="Giới tính:" />
-        <Picker ItemsSource="{Binding GenderOptions}" SelectedItem="{Binding SelectedGender}" />
+        <VerticalStackLayout>
+            <Label FontAttributes="Bold" Text="Giới tính:" />
+            <HorizontalStackLayout Spacing="20">
+                <RadioButton
+                    Content="Tất cả"
+                    GroupName="Gender"
+                    IsChecked="{Binding SelectedGender, Converter={StaticResource GenderToBoolConverter}, ConverterParameter='All'}" />
+                <RadioButton
+                    Content="Nam"
+                    GroupName="Gender"
+                    IsChecked="{Binding SelectedGender, Converter={StaticResource GenderToBoolConverter}, ConverterParameter={x:Static local:Gender.Male}}" />
+                <RadioButton
+                    Content="Nữ"
+                    GroupName="Gender"
+                    IsChecked="{Binding SelectedGender, Converter={StaticResource GenderToBoolConverter}, ConverterParameter={x:Static local:Gender.Female}}" />
+            </HorizontalStackLayout>
+        </VerticalStackLayout>
+
+        <!--  Độ tuổi  -->
+        <Label FontAttributes="Bold" Text="Độ tuổi:" />
+        <HorizontalStackLayout Spacing="10" VerticalOptions="Center">
+            <Label Text="Từ" VerticalOptions="Center" />
+            <Picker
+                HorizontalTextAlignment="Center"
+                ItemsSource="{Binding AgeOptions}"
+                SelectedItem="{Binding MinAge}"
+                WidthRequest="60" />
+
+            <Label Text="Đến" VerticalOptions="Center" />
+            <Picker
+                HorizontalTextAlignment="Center"
+                ItemsSource="{Binding AgeOptions}"
+                SelectedItem="{Binding MaxAge}"
+                WidthRequest="60" />
+        </HorizontalStackLayout>
 
         <!--  Khoảng cách  -->
-        <Label FontAttributes="Bold" Text="Khoảng cách (km):" />
+        <Label FontAttributes="Bold" Text="Khoảng cách (Km):" />
         <Slider
             Maximum="50"
             Minimum="1"
             Value="{Binding Distance}" />
-        <Label Text="{Binding Distance, StringFormat='{}{0:F1} km'}" />
-
-        <!--  Bật/tắt location  -->
-        <HorizontalStackLayout>
-            <Label Text="Bật định vị" VerticalOptions="Center" />
-            <Switch IsToggled="{Binding IsLocationEnabled}" />
-        </HorizontalStackLayout>
+        <Label
+            FontAttributes="Bold"
+            FontSize="16"
+            Text="{Binding Distance, StringFormat='{}{0:F0} Km'}" />
 
         <!--  Nút hành động  -->
         <Button Command="{Binding ApplyCommand}" Text="Áp dụng" />
