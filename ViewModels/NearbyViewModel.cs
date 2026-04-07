@@ -291,6 +291,8 @@ namespace Sphere.ViewModels
                     MaxAge = MaxAge
                 };
                 var resp = await _nearbyService.GetNearbyUsersAsync(req, token);
+                if (token.IsCancellationRequested)
+                    return; // 🔥 bỏ kết quả request cũ
 
                 if (!resp.IsSuccess)
                 {
@@ -320,6 +322,10 @@ namespace Sphere.ViewModels
                 _lastLoadTime = DateTime.UtcNow;
 
                 UiState = UiViewState.Success;
+            }
+            catch (TaskCanceledException)
+            {
+                // 🔥 ignore (bị cancel là bình thường)
             }
             finally
             {
