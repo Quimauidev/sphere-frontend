@@ -127,7 +127,10 @@
                 </CollectionView.ItemsLayout>
                 <CollectionView.ItemTemplate>
                     <DataTemplate>
-                        <Border Padding="5" Stroke="#ddd">
+                        <Border
+                            Padding="5"
+                            Stroke="#ac99ea"
+                            StrokeShape="5">
                             <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="10">
                                 <Border
                                     HeightRequest="50"
@@ -167,21 +170,21 @@
                                     <Button
                                         Padding="0"
                                         BackgroundColor="#5795ea"
-                                        CornerRadius="18"
+                                        CornerRadius="20"
                                         FontSize="12"
-                                        HeightRequest="30"
+                                        MaximumHeightRequest="30"
+                                        MinimumWidthRequest="60"
                                         Text="Theo dõi"
-                                        TextColor="White"
-                                        WidthRequest="70" />
+                                        TextColor="White" />
                                     <Button
                                         Padding="0"
                                         BackgroundColor="#e357ea"
-                                        CornerRadius="18"
+                                        CornerRadius="20"
                                         FontSize="12"
-                                        HeightRequest="30"
+                                        MaximumHeightRequest="30"
+                                        MinimumWidthRequest="60"
                                         Text="Nhắn tin"
-                                        TextColor="White"
-                                        WidthRequest="70" />
+                                        TextColor="White" />
                                 </StackLayout>
                             </Grid>
                         </Border>

@@ -59,7 +59,7 @@
         <VerticalStackLayout HorizontalOptions="Center">
             <HorizontalStackLayout Spacing="10">
                 <Label Text="{Binding CurrentUser.UserDTO.UserIdNumber, StringFormat='ID: {0}'}" TextColor="#666" />
-                <ImageButton HeightRequest="18" WidthRequest="18">
+                <ImageButton MaximumHeightRequest="18" MaximumWidthRequest="18">
                     <ImageButton.Source>
                         <FontImageSource
                             FontFamily="MaterialIcons"
@@ -152,6 +152,7 @@
                 Padding="10"
                 BackgroundColor="#1DA1F2"
                 HorizontalOptions="Center"
+                Stroke="#1DA1F2"
                 StrokeShape="20">
                 <HorizontalStackLayout
                     HorizontalOptions="Center"
@@ -230,9 +231,9 @@
             <ImageButton
                 Grid.Column="2"
                 Command="{Binding EditBioCommand}"
-                HeightRequest="18"
-                VerticalOptions="Start"
-                WidthRequest="18">
+                MaximumHeightRequest="18"
+                MaximumWidthRequest="18"
+                VerticalOptions="Start">
                 <ImageButton.Source>
                     <FontImageSource
                         FontFamily="MaterialIcons"
@@ -245,7 +246,8 @@
         <Border
             Margin="10"
             Padding="0"
-            Stroke="LightGray">
+            Stroke="LightGray"
+            StrokeShape="5">
             <Editor
                 Margin="5"
                 IsReadOnly="True"

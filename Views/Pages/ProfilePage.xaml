@@ -54,10 +54,9 @@
                             <Button
                                 Command="{Binding RetryCommand}"
                                 CornerRadius="25"
-                                HeightRequest="40"
                                 IsVisible="{Binding IsLoading, Converter={StaticResource InverseBoolConverter}}"
-                                Text="Thử lại"
-                                WidthRequest="80" />
+                                MaximumWidthRequest="120"
+                                Text="Thử lại" />
                         </StackLayout>
                     </StackLayout>
                 </CollectionView.EmptyView>

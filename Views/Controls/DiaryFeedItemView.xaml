@@ -9,7 +9,10 @@
 
     <VerticalStackLayout Padding="10,0,10,0">
 
-        <Border Padding="10" Stroke="LightGray">
+        <Border
+            Padding="10"
+            Stroke="#ac99ea"
+            StrokeShape="5">
             <VerticalStackLayout>
                 <Grid ColumnDefinitions="Auto,*,Auto">
                     <!--  Avatar  -->
@@ -65,26 +68,26 @@
                             Padding="0"
                             BackgroundColor="#5795ea"
                             Command="{Binding FollowCommand}"
-                            CornerRadius="18"
+                            CornerRadius="20"
                             FontSize="12"
-                            HeightRequest="30"
                             IsVisible="{Binding ShouldShowFollowButton}"
+                            MaximumHeightRequest="30"
+                            MinimumWidthRequest="60"
                             Text="Theo dõi"
                             TextColor="White"
-                            VerticalOptions="Center"
-                            WidthRequest="70" />
+                            VerticalOptions="Center" />
                         <Button
                             Padding="0"
                             BackgroundColor="#e357ea"
                             Command="{Binding ChatCommand}"
                             CornerRadius="18"
                             FontSize="12"
-                            HeightRequest="30"
                             IsVisible="{Binding ShouldShowChatButton}"
+                            MaximumHeightRequest="30"
+                            MinimumWidthRequest="60"
                             Text="Nhắn tin"
                             TextColor="White"
-                            VerticalOptions="Center"
-                            WidthRequest="70" />
+                            VerticalOptions="Center" />
                     </StackLayout>
                 </Grid>
                 <local:DiaryContentView BindingContext="{Binding Model.DiaryDTO}" />
