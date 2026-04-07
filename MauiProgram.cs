@@ -37,7 +37,6 @@ namespace Sphere
             builder.Logging.AddDebug();
 #endif
             builder.Services.AddSingleton<MediaStoreHelper>();
-            builder.Services.AddHttpClient();
             builder.Services.RegisterServices();
             builder.Services.AddSingleton<ApiResponseHelper>();
            
@@ -49,8 +48,14 @@ namespace Sphere
             builder.Services.AddHttpClient("AuthorizedClient", client =>
             {
                 client.BaseAddress = new Uri("https://sphere-iqm8.onrender.com");
+                client.Timeout = TimeSpan.FromSeconds(60);
             })
             .AddHttpMessageHandler<AuthHandler>();
+            builder.Services.AddHttpClient("PublicClient", client =>
+            {
+                client.BaseAddress = new Uri("https://sphere-iqm8.onrender.com");
+                client.Timeout = TimeSpan.FromSeconds(60);
+            });
 #if ANDROID
             Microsoft.Maui.Handlers.EditorHandler.Mapper.ModifyMapping("NoUnderline", (handler, view, _) =>
             {

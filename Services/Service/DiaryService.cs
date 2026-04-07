@@ -67,9 +67,9 @@ namespace Sphere.Services.Service
             return await apiService.GetAsync<IEnumerable<DiaryCommentUIModel>>($"api/diary/{id}/comments?page={page}&pageSize={pageSize}");
         }
 
-        public async Task<ApiResponse<IEnumerable<UserWithDiaryModel>>> GetHomeDiariesAsync(string type, int page, int pageSize)
+        public async Task<ApiResponse<IEnumerable<UserWithDiaryModel>>> GetHomeDiariesAsync(string type, int page, int pageSize, CancellationToken ct = default)
         {
-            return await apiService.GetAsync<IEnumerable<UserWithDiaryModel>>($"api/diary/home?type={type}&page={page}&pageSize={pageSize}");
+            return await apiService.GetAsync<IEnumerable<UserWithDiaryModel>>($"api/diary/home?type={type}&page={page}&pageSize={pageSize}", ct);
         }
 
         public async Task<ApiResponse<IEnumerable<DiaryModel>>> GetListDiaryAsync(int page, int pageSize)

@@ -12,7 +12,7 @@ namespace Sphere.Services.IService
 {
     public interface INearbyService
     {
-        Task<ApiResponse<IEnumerable<NearbyModel>>> GetNearbyUsersAsync(NearbyRequest request);
+        Task<ApiResponse<IEnumerable<NearbyModel>>> GetNearbyUsersAsync(NearbyRequest request, CancellationToken ct = default);
         
     }
 }

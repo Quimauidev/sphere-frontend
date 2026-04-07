@@ -15,7 +15,7 @@ namespace Sphere.Services.Service
     internal class NearbyService(IApiService apiService) : INearbyService
     {
         private readonly IApiService _apiService = apiService;
-        public async Task<ApiResponse<IEnumerable<NearbyModel>>> GetNearbyUsersAsync(NearbyRequest request)
+        public async Task<ApiResponse<IEnumerable<NearbyModel>>> GetNearbyUsersAsync(NearbyRequest request, CancellationToken ct = default)
         {
             var url = QueryHelpers.AddQueryString("api/nearby", new Dictionary<string, string?>
             {
@@ -30,7 +30,7 @@ namespace Sphere.Services.Service
             });
 
             // Trả về trực tiếp Task từ _apiService (không cần await nếu không xử lý thêm).
-            return await _apiService.GetAsync<IEnumerable<NearbyModel>>(url);
+            return await _apiService.GetAsync<IEnumerable<NearbyModel>>(url, ct);
         }
 
         

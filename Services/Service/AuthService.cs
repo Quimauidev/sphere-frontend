@@ -18,11 +18,11 @@ namespace Sphere.Services.Service
     internal class AuthService(IApiService apiService, FilterService filterService) : IAuthService
     {
        
-        public Task<ApiResponse<TokenResponse>> LoginAsync(LoginModel model)
-        => apiService.SendRequestAsync<LoginModel, TokenResponse>(HttpMethod.Post,"/api/auth/login", model, requireAuth: false);
+        public Task<ApiResponse<TokenResponse>> LoginAsync(LoginModel model, CancellationToken ct = default)
+        => apiService.SendRequestAsync<LoginModel, TokenResponse>(HttpMethod.Post,"/api/auth/login", model,false, ct );
 
-        public Task<ApiResponse<UserModel>> RegisterAsync(RegisterModel model)
-            => apiService.SendRequestAsync <RegisterModel, UserModel>(HttpMethod.Post,"/api/auth/register", model, requireAuth: false);
+        public Task<ApiResponse<UserModel>> RegisterAsync(RegisterModel model, CancellationToken ct = default)
+            => apiService.SendRequestAsync <RegisterModel, UserModel>(HttpMethod.Post,"/api/auth/register", model, false, ct);
         public async Task<ApiResponse<bool>> LogoutAsync()
         {
             var refreshTokenId = PreferencesHelper.GetRefreshTokenId();

@@ -34,11 +34,11 @@ namespace Sphere.Common.Responses
                 return;
             }
             // Ưu tiên hiển thị tiếng Việt nếu là lỗi SocketClosed
-            var socketClosedError = response.Errors?.FirstOrDefault(e => e.Code == "SocketClosed");
+            var socketClosedError = response.Errors?.FirstOrDefault(e => e.Code == "SocketClosed"|| e.Code == "ConnectionAborted" || e.Code == "NetworkError");
             string message;
             if (socketClosedError != null)
             {
-                message = "Kết nối đến máy chủ đã bị đóng. Vui lòng kiểm tra lại mạng hoặc thử lại sau";
+                message = "Kết nối đến máy chủ đã bị đóng hoặc kiểm tra lại mạng hoặc bị gián đoạn. Vui lòng thử lại sau";
             }
             else
             {

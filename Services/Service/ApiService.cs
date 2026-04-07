@@ -10,89 +10,63 @@ namespace Sphere.Services.Service
 {
     internal class ApiService(IHttpClientFactory httpClientFactory) : IApiService
     {
-        const string BaseUrl = "https://sphere-iqm8.onrender.com";
         private readonly IHttpClientFactory _httpClientFactory = httpClientFactory;
+        private static readonly JsonSerializerOptions _jsonOptions = new()
+        {
+            PropertyNameCaseInsensitive = true
+        };
 
         // DELETE Method
-        public async Task<ApiResponse<TResponse>> DeleteAsync<TResponse>(string endpoint)
+        public Task<ApiResponse<TResponse>> DeleteAsync<TResponse>(string endpoint, CancellationToken ct = default)
         {
-            return await SendRequestAsync<object, TResponse>(HttpMethod.Delete, endpoint, null);
+            return SendRequestAsync<object, TResponse>(HttpMethod.Delete, endpoint, null, true, ct);
         }
 
         // GET Method
-        public async Task<ApiResponse<TResponse>> GetAsync<TResponse>(string endpoint)
+        public Task<ApiResponse<TResponse>> GetAsync<TResponse>(string endpoint, CancellationToken ct = default)
         {
-            return await SendRequestAsync<object, TResponse>(HttpMethod.Get, endpoint, null);
+            return SendRequestAsync<object, TResponse>(HttpMethod.Get, endpoint, null, true, ct);
         }
 
         // PATCH Method
-        public async Task<ApiResponse<TResponse>> PatchAsync<TRequest, TResponse>(string endpoint, TRequest data)
+        public Task<ApiResponse<TResponse>> PatchAsync<TRequest, TResponse>(string endpoint, TRequest data, CancellationToken ct = default)
         {
-            return await SendRequestAsync<TRequest, TResponse>(HttpMethod.Patch, endpoint, data);
+            return SendRequestAsync<TRequest, TResponse>(HttpMethod.Patch, endpoint, data, true,ct);
         }
 
         // PATCH Form
-        public async Task<ApiResponse<TResponse>> PatchFormAsync<TResponse>(string endpoint, MultipartFormDataContent formData)
+        public Task<ApiResponse<TResponse>> PatchFormAsync<TResponse>(string endpoint, MultipartFormDataContent formData, CancellationToken ct = default)
         {
-            return await SendRequestAsync<MultipartFormDataContent, TResponse>(HttpMethod.Patch, endpoint, formData);
+            return SendRequestAsync<MultipartFormDataContent, TResponse>(HttpMethod.Patch, endpoint, formData, true, ct);
         }
 
         // POST Method
-        public async Task<ApiResponse<TResponse>> PostAsync<TRequest, TResponse>(string endpoint, TRequest data)
+        public Task<ApiResponse<TResponse>> PostAsync<TRequest, TResponse>(string endpoint, TRequest data, CancellationToken ct = default)
         {
-            return await SendRequestAsync<TRequest, TResponse>(HttpMethod.Post, endpoint, data);
+            return SendRequestAsync<TRequest, TResponse>(HttpMethod.Post, endpoint, data, true, ct);
         }
 
         // POST Form
-        public async Task<ApiResponse<TResponse>> PostFormAsync<TResponse>(string endpoint, MultipartFormDataContent formData)
+        public Task<ApiResponse<TResponse>> PostFormAsync<TResponse>(string endpoint, MultipartFormDataContent formData, CancellationToken ct = default)
         {
-            return await SendRequestAsync<MultipartFormDataContent, TResponse>(HttpMethod.Post, endpoint, formData);
+            return SendRequestAsync<MultipartFormDataContent, TResponse>(HttpMethod.Post, endpoint, formData, true, ct);
         }
 
         // PUT Method
-        public async Task<ApiResponse<TResponse>> PutAsync<TRequest, TResponse>(string endpoint, TRequest data)
+        public Task<ApiResponse<TResponse>> PutAsync<TRequest, TResponse>(string endpoint, TRequest data, CancellationToken ct = default)
         {
-            return await SendRequestAsync<TRequest, TResponse>(HttpMethod.Put, endpoint, data);
+            return SendRequestAsync<TRequest, TResponse>(HttpMethod.Put, endpoint, data, true, ct);
         }
 
         // PUT Form
-        public async Task<ApiResponse<TResponse>> PutFormAsync<TResponse>(string endpoint, MultipartFormDataContent formData)
+        public Task<ApiResponse<TResponse>> PutFormAsync<TResponse>(string endpoint, MultipartFormDataContent formData, CancellationToken ct = default)
         {
-            return await SendRequestAsync<MultipartFormDataContent, TResponse>(HttpMethod.Put, endpoint, formData);
+            return SendRequestAsync<MultipartFormDataContent, TResponse>(HttpMethod.Put, endpoint, formData, true,ct);
         }
 
-        private static ApiResponse<TResponse> ParseApiError<TResponse>(string content, JsonSerializerOptions options, string fallbackMessage)
+        private static HttpRequestMessage BuildRequest<TRequest>(HttpMethod method, string endpoint, TRequest? data)
         {
-            if (string.IsNullOrWhiteSpace(content) || !content.TrimStart().StartsWith('{'))
-            {
-                // Không phải JSON, trả về fallback
-                return ApiResponse<TResponse>.Fail(fallbackMessage, "InvalidResponse", content);
-            }
-            try
-            {
-                var error = JsonSerializer.Deserialize<ApiResponse<object>>(content, options);
-                var message = error?.Message ?? fallbackMessage;
-                var errors = error?.Errors ?? new List<ErrorDetail> { new() { Code = "Unhandled", Description = message } };
-                return ApiResponse<TResponse>.Fail(message, errors);
-            }
-            catch
-            {
-                return ApiResponse<TResponse>.Fail(fallbackMessage, "DeserializeError", fallbackMessage);
-            }
-        }
-        private HttpRequestMessage BuildRequest<TRequest>(HttpMethod method, string endpoint, TRequest? data, bool requireAuth)
-        {
-            HttpRequestMessage request = new(method, endpoint);
-            if (requireAuth)
-            {
-                // Thêm Authorization nếu có token
-                var token = PreferencesHelper.GetAuthToken(); // Lấy token từ Preferences (hoặc SecureStorage)
-                if (!string.IsNullOrEmpty(token))
-                {
-                    request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-                }
-            }
-
+            var request = new HttpRequestMessage(method, endpoint);
             // Xử lý nội dung gửi đi
             if (data != null)
             {
@@ -102,128 +76,115 @@ namespace Sphere.Services.Service
             }
             return request;
         }
-
-        // Hàm xử lý chung cho mọi phương thức HTTP
-        public async Task<ApiResponse<TResponse>> SendRequestAsync<TRequest, TResponse>(HttpMethod method, string endpoint, TRequest? data, bool requireAuth = true)
+        private static bool IsTransient(HttpRequestException ex)
         {
-            try
-            {
-                var client = requireAuth ? _httpClientFactory.CreateClient("AuthorizedClient") : _httpClientFactory.CreateClient();
-                client.BaseAddress = new Uri(BaseUrl);
-                client.Timeout = TimeSpan.FromSeconds(60);
-                return await SendWithRetryAsync<TRequest, TResponse>(client, method, endpoint, data, requireAuth);
-            }
-            catch (WebException ex)
-            {
-                var message = ex.Message.ToLowerInvariant();
-                if (message.Contains("socket") ||
-                    message.Contains("connection reset") ||
-                    message.Contains("forcibly closed") ||
-                    message.Contains("closed by the remote host"))
-                {
-                    return ApiResponse<TResponse>.Fail("Máy chủ tạm thời không phản hồi", "ServerClosed", "Kết nối bị đóng do máy chủ (có thể đang khởi động hoặc tạm ngưng). Vui lòng thử lại sau.");
-                }
+            var msg = ex.Message.ToLower();
 
-                return ApiResponse<TResponse>.Fail("Lỗi kết nối đến máy chủ", "WebException", ex.Message);
-            }
-            catch (HttpRequestException)
-            {
-                return ApiResponse<TResponse>.Fail("Lỗi mạng", "NetworkError", "Không có kết nối internet");
-            }
-            catch (TaskCanceledException)
-            {
-                return ApiResponse<TResponse>.Fail("Hết thời gian kết nối", "Timeout", "Không có kết nối internet hoặc quá thời gian chờ");
-            }
+            return msg.Contains("timeout") ||
+                   msg.Contains("reset") ||
+                   msg.Contains("abort") ||
+                   msg.Contains("closed");
         }
-        private async Task<ApiResponse<TResponse>> SendWithRetryAsync<TRequest, TResponse>(HttpClient client, HttpMethod method, string endpoint, TRequest? data, bool requireAuth)
+        // Hàm xử lý chung cho mọi phương thức HTTP
+        public Task<ApiResponse<TResponse>> SendRequestAsync<TRequest, TResponse>(HttpMethod method, string endpoint, TRequest? data, bool requireAuth, CancellationToken ct)
         {
-            var request = BuildRequest(method, endpoint, data, requireAuth);
-            // Cấu hình JsonSerializer
-            var jsonOptions = new JsonSerializerOptions
+            var client = requireAuth ? _httpClientFactory.CreateClient("AuthorizedClient") : _httpClientFactory.CreateClient("PublicClient");
+            return SendWithRetryAsync<TRequest, TResponse>(client, method, endpoint, data, ct);
+        }
+        
+        private async Task<ApiResponse<TResponse>> SendWithRetryAsync<TRequest, TResponse>(HttpClient client, HttpMethod method, string endpoint, TRequest? data, CancellationToken ct)
+        {
+            int retry = 0;
+            while (true)
             {
-                PropertyNameCaseInsensitive = true
-            };
-            HttpResponseMessage response;
-            try
-            {
-                // Dùng ResponseHeadersRead để stream lớn cũng đọc được
-                response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
-            }
-            catch (WebException ex)
-            {
-                var message = ex.Message.ToLowerInvariant();
-                if (message.Contains("socket") || message.Contains("connection reset") || message.Contains("forcibly closed") || message.Contains("closed by the remote host"))
-                {
-                    return ApiResponse<TResponse>.Fail("Máy chủ tạm thời không phản hồi", "ServerClosed", "Kết nối bị đóng do máy chủ (có thể đang khởi động hoặc tạm ngưng). Vui lòng thử lại sau.");
-                }
+                using var request = BuildRequest(method, endpoint, data);
 
-                return ApiResponse<TResponse>.Fail("Lỗi kết nối đến máy chủ", "WebException", ex.Message);
-            }
-            catch (HttpRequestException)
-            {
-                return ApiResponse<TResponse>.Fail("Lỗi mạng", "NetworkError", "Không có kết nối internet");
-            }
-            catch (TaskCanceledException)
-            {
-                return ApiResponse<TResponse>.Fail("Hết thời gian kết nối", "Timeout", "Không có kết nối internet hoặc quá thời gian chờ");
-            }
-
-
-
-            // Đọc toàn bộ content ra string trước
-            try
-            {
-                var content = await response.Content.ReadAsStringAsync();
-                ApiResponse<TResponse>? result = null;
                 try
                 {
-                    result = JsonSerializer.Deserialize<ApiResponse<TResponse>>(content, jsonOptions);
+                    using var response = await client.SendAsync(
+                        request,
+                        HttpCompletionOption.ResponseHeadersRead,
+                        ct);
+
+                    return await HandleResponse<TResponse>(response);
                 }
-                catch (JsonException)
+                catch (HttpRequestException ex) when (retry < 2 && IsTransient(ex))
                 {
-                    // bỏ qua, fallback bên dưới sẽ xử lý
+                    retry++;
+                    await Task.Delay(1000, ct);
                 }
-                // ✅ Nếu server trả ApiResponse hợp lệ, luôn ưu tiên dùng nó (kể cả khi là lỗi)
+                catch (TaskCanceledException)
+                {
+                    return ApiResponse<TResponse>.Fail( "Hết thời gian kết nối", "Timeout", "Kết nối quá lâu hoặc không có internet" );
+                }
+                catch (HttpRequestException ex)
+                {
+                    return MapNetworkError<TResponse>(ex);
+                }
+            }
+        }
+        private static ApiResponse<T> MapNetworkError<T>(HttpRequestException ex)
+        {
+            var msg = ex.Message.ToLower();
+
+            if (msg.Contains("abort") || msg.Contains("closed") || msg.Contains("reset"))
+            {
+                return ApiResponse<T>.Fail( "Kết nối bị gián đoạn", "ConnectionAborted", "Kết nối đến máy chủ bị ngắt giữa chừng" );
+            }
+
+            return ApiResponse<T>.Fail( "Lỗi mạng", "NetworkError", "Không thể kết nối đến máy chủ" );
+        }
+        private async Task<ApiResponse<T>> HandleResponse<T>(HttpResponseMessage response)
+        {
+            var content = await response.Content.ReadAsStringAsync();
+
+            try
+            {
+                var result = JsonSerializer.Deserialize<ApiResponse<T>>(content, _jsonOptions);
                 if (result != null)
                     return result;
-
-                // fallback theo status code nếu không phải định dạng JSON chuẩn
-                return response.StatusCode switch
-                {
-                    HttpStatusCode.Unauthorized =>
-                        ParseApiError<TResponse>(content, jsonOptions, "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại."),
-                    HttpStatusCode.Forbidden =>
-                        ParseApiError<TResponse>(content, jsonOptions, "Không có quyền truy cập"),
-                    HttpStatusCode.NotFound =>
-                        ParseApiError<TResponse>(content, jsonOptions, "Không tìm thấy tài nguyên. Có thể máy chủ đang khởi động, vui lòng thử lại"),
-                    var code when (int)code >= 500 =>
-                        ParseApiError<TResponse>(content, jsonOptions, "Máy chủ đang gặp sự cố. Vui lòng thử lại sau"),
-                    var code when (int)code >= 400 =>
-                        ParseApiError<TResponse>(content, jsonOptions, "Yêu cầu không hợp lệ hoặc không được phép"),
-                    _ =>
-                        ParseApiError<TResponse>(content, jsonOptions, "Có lỗi không xác định từ máy chủ")
-                };
             }
-            catch (JsonException jsonEx)
+            catch { }
+
+            return response.StatusCode switch
             {
-                return ApiResponse<TResponse>.Fail("Không đọc được dữ liệu từ máy chủ", "DeserializeError", jsonEx.Message);
-            }
-            catch (Exception ex)
+                HttpStatusCode.Unauthorized =>
+                    Fail<T>(content, "Phiên đăng nhập đã hết hạn"),
+                HttpStatusCode.Forbidden =>
+                    Fail<T>(content, "Không có quyền truy cập"),
+                HttpStatusCode.NotFound =>
+                    Fail<T>(content, "Không tìm thấy tài nguyên"),
+                var code when (int)code >= 500 =>
+                    Fail<T>(content, "Máy chủ đang lỗi"),
+                _ =>
+                    Fail<T>(content, "Lỗi không xác định")
+            };
+        }
+        private static ApiResponse<T> Fail<T>(string content, string fallback)
+        {
+            try
             {
-                return ApiResponse<TResponse>.Fail("Lỗi hệ thống khi đọc dữ liệu", "UnhandledException", ex.Message);
+                var err = JsonSerializer.Deserialize<ApiResponse<object>>(content, _jsonOptions);
+                return ApiResponse<T>.Fail(
+                    err?.Message ?? fallback,
+                    err?.Errors ?? []
+                );
+            }
+            catch
+            {
+                return ApiResponse<T>.Fail(fallback, "Unknown", fallback);
             }
         }
-
-        public async Task<ApiResponse<TResponse>> SendPublicPostAsync<TRequest, TResponse>(string endpoint, TRequest data)
+        public Task<ApiResponse<TResponse>> SendPublicPostAsync<TRequest, TResponse>(string endpoint, TRequest data, CancellationToken ct = default)
         {
-            return await SendRequestAsync<TRequest, TResponse>(HttpMethod.Post, endpoint, data, requireAuth: false);
+            return SendRequestAsync<TRequest, TResponse>(HttpMethod.Post, endpoint, data, false, ct);
         }
-        public async Task<ApiResponse<TResponse>> SendRequestAsync<TResponse>(HttpMethod method, string endpoint, bool requireAuth = true)
+        public Task<ApiResponse<TResponse>> SendRequestAsync<TResponse>(HttpMethod method, string endpoint, CancellationToken ct = default)
         {
-            return await SendRequestAsync<object, TResponse>(method, endpoint, null, requireAuth);
+            return SendRequestAsync<object, TResponse>(method, endpoint, null, true, ct);
         }
 
-        public async Task<ApiResponse<string>> UploadImageAsync(byte[] imageBytes)
+        public Task<ApiResponse<string>> UploadImageAsync(byte[] imageBytes)
         {
             var form = new MultipartFormDataContent();
             var fileContent = new ByteArrayContent(imageBytes);
@@ -232,7 +193,7 @@ namespace Sphere.Services.Service
             form.Add(fileContent, "file", "upload.jpg");
 
             // Gọi API — đường dẫn upload là ví dụ, bạn điều chỉnh cho đúng với backend
-            return await PostFormAsync<string>("/api/uploads/image", form);
+            return PostFormAsync<string>("/api/uploads/image", form);
         }
     }
 }

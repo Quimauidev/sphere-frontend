@@ -35,6 +35,7 @@ namespace Sphere.ViewModels
         private bool _initialized;
         private int _page = 1;
         private const int _pageSize = 20;
+        private CancellationTokenSource? _nearbyCts;
 
         private bool _noMoreData;
 
@@ -274,7 +275,10 @@ namespace Sphere.ViewModels
             try
             {
                 NearbyLoading = true;
-
+                _nearbyCts?.Cancel();
+                _nearbyCts?.Dispose();
+                _nearbyCts = new CancellationTokenSource();
+                var token = _nearbyCts.Token;
                 var req = new NearbyRequest
                 {
                     Latitude = _currentLocation!.Latitude,
@@ -286,7 +290,7 @@ namespace Sphere.ViewModels
                     MinAge = MinAge,
                     MaxAge = MaxAge
                 };
-                var resp = await _nearbyService.GetNearbyUsersAsync(req);
+                var resp = await _nearbyService.GetNearbyUsersAsync(req, token);
 
                 if (!resp.IsSuccess)
                 {

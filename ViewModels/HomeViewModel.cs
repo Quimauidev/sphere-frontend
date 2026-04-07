@@ -47,6 +47,9 @@ namespace Sphere.ViewModels
         [ObservableProperty] private bool isRefreshingFollowing;
         [ObservableProperty] private bool isRefreshingPopular;
         [ObservableProperty] private bool isRefreshingLatest;
+        private CancellationTokenSource? _latestCts;
+        private CancellationTokenSource? _popularCts;
+        private CancellationTokenSource? _followingCts;
 
         private const int PageSize = 20;
 
@@ -156,7 +159,11 @@ namespace Sphere.ViewModels
 
             try
             {
-                var response = await _diaryService.GetHomeDiariesAsync("follow", _followingPage, PageSize);
+                _followingCts?.Cancel();
+                _followingCts?.Dispose();
+                _followingCts = new CancellationTokenSource();
+                var token = _followingCts.Token;
+                var response = await _diaryService.GetHomeDiariesAsync("follow", _followingPage, PageSize, token);
 
                 if (response.IsSuccess)
                 {
@@ -224,7 +231,11 @@ namespace Sphere.ViewModels
 
             try
             {
-                var response = await _diaryService.GetHomeDiariesAsync("popular", _popularPage, PageSize);
+                _popularCts?.Cancel();
+                _popularCts?.Dispose();
+                _popularCts = new CancellationTokenSource();
+                var token = _popularCts.Token;
+                var response = await _diaryService.GetHomeDiariesAsync("popular", _popularPage, PageSize, token);
 
                 if (response.IsSuccess)
                 {
@@ -292,7 +303,11 @@ namespace Sphere.ViewModels
 
             try
             {
-                var response = await _diaryService.GetHomeDiariesAsync("latest", _latestPage, PageSize);
+                _latestCts?.Cancel();
+                _latestCts?.Dispose();
+                _latestCts = new CancellationTokenSource();
+                var token = _latestCts.Token;
+                var response = await _diaryService.GetHomeDiariesAsync("latest", _latestPage, PageSize, token);
 
                 if (response.IsSuccess)
                 {

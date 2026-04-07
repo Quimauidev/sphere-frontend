@@ -11,34 +11,37 @@ using System.Threading.Tasks;
 
 namespace Sphere.Common.Constans
 {
-    internal class AuthHandler : DelegatingHandler
+    internal class AuthHandler(IRefreshTokenService refreshTokenService) : DelegatingHandler
     {
-        private readonly IRefreshTokenService _refreshTokenService;
-
-        public AuthHandler(IRefreshTokenService refreshTokenService)
+        private readonly IRefreshTokenService _refreshTokenService = refreshTokenService;
+        private static readonly SemaphoreSlim _refreshLock = new(1, 1);
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
         {
-            _refreshTokenService = refreshTokenService;
-        }
-
-        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
-        {
-            // Nếu cần, làm mới token
-            var expiresAt = PreferencesHelper.GetAuthTokenExpiresAt();
-            if (expiresAt != null && (expiresAt.Value - DateTime.UtcNow).TotalMinutes <= 2)
+            await _refreshLock.WaitAsync(ct);
+            try
             {
-                var refreshResult = await _refreshTokenService.TryRefreshTokenAsync();
-                if (!refreshResult.IsSuccess)
+                // Nếu cần, làm mới token
+                var expiresAt = PreferencesHelper.GetAuthTokenExpiresAt();
+                if (expiresAt != null && (expiresAt.Value - DateTime.UtcNow).TotalMinutes <= 2)
                 {
-                    PreferencesHelper.Logout();
-                    return new HttpResponseMessage(HttpStatusCode.Unauthorized)
+                    var refreshResult = await _refreshTokenService.TryRefreshTokenAsync();
+                    if (!refreshResult.IsSuccess)
                     {
-                        Content = new StringContent(JsonSerializer.Serialize(new
+                        PreferencesHelper.Logout();
+                        return new HttpResponseMessage(HttpStatusCode.Unauthorized)
                         {
-                            message = "Phiên hết hạn",
-                            errors = new[] { new { code = "SessionExpired", description = "Phiên đăng nhập đã hết hạn." } }
-                        }), Encoding.UTF8, "application/json")
-                    };
+                            Content = new StringContent(JsonSerializer.Serialize(new
+                            {
+                                message = "Phiên hết hạn",
+                                errors = new[] { new { code = "SessionExpired", description = "Phiên đăng nhập đã hết hạn." } }
+                            }), Encoding.UTF8, "application/json")
+                        };
+                    }
                 }
+            }
+            finally
+            {
+                _refreshLock.Release();
             }
 
             // Gắn token vào header
@@ -47,26 +50,7 @@ namespace Sphere.Common.Constans
             {
                 request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
             }
-
-            try
-            {
-                return await base.SendAsync(request, cancellationToken);
-            }
-            catch (Exception ex)
-            {
-                if (ex.Message != null && ex.Message.Contains("Socket closed", StringComparison.OrdinalIgnoreCase))
-                {
-                    return new HttpResponseMessage(HttpStatusCode.ServiceUnavailable)
-                    {
-                        Content = new StringContent(JsonSerializer.Serialize(new
-                        {
-                            message = "Kết nối đến máy chủ đã bị đóng. Vui lòng kiểm tra lại mạng hoặc thử lại sau.",
-                            errors = new[] { new { code = "SocketClosed", description = "Kết nối đến máy chủ đã bị đóng. Vui lòng kiểm tra lại mạng hoặc thử lại sau." } }
-                        }), Encoding.UTF8, "application/json")
-                    };
-                }
-                throw;
-            }
+            return await base.SendAsync(request, ct);
         }
     }
 }
