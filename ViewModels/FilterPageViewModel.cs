@@ -22,6 +22,8 @@ namespace Sphere.ViewModels
         [ObservableProperty] private int minAge;
         [ObservableProperty] private int maxAge;
         [ObservableProperty] private int distance; // default 10km
+        [ObservableProperty] private List<int> maxAgeOptions = [];
+
         public List<int> AgeOptions { get; } = Enumerable.Range(16, 65).ToList(); // 16 → 80
         public async Task Receive(FilterParam param)
         {
@@ -29,12 +31,26 @@ namespace Sphere.ViewModels
             // Gán giá trị hiện tại từ NearbyViewModel
             SelectedGender = param.SelectedGender;
             MinAge = param.MinAge;
-            MaxAge = param.MaxAge;
+            MaxAgeOptions = AgeOptions.Where(x => x >= MinAge).ToList();
+            MaxAge = Math.Max(param.MaxAge, MinAge);
             Distance = param.Distance;
         }
 
-        
-        
+        partial void OnMinAgeChanged(int value)
+        {
+            // 🔥 Max chỉ được >= Min
+            MaxAgeOptions = AgeOptions.Where(x => x >= value).ToList();
+
+            // Nếu Max hiện tại < Min → auto fix
+            if (MaxAge < value)
+                MaxAge = value;
+        }
+        partial void OnMaxAgeChanged(int value)
+        {
+            // đảm bảo không bao giờ sai (defensive)
+            if (value < MinAge)
+                MaxAge = MinAge;
+        }
         // Command cho nút Áp dụng
         [RelayCommand]
         private async Task ApplyAsync()

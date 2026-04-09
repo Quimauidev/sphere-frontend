@@ -40,7 +40,7 @@
             <Label Text="Đến" VerticalOptions="Center" />
             <Picker
                 HorizontalTextAlignment="Center"
-                ItemsSource="{Binding AgeOptions}"
+                ItemsSource="{Binding MaxAgeOptions}"
                 SelectedItem="{Binding MaxAge}"
                 WidthRequest="60" />
         </HorizontalStackLayout>
