@@ -24,26 +24,23 @@ namespace Sphere.ViewModels
         [ObservableProperty] private int distance; // default 10km
         [ObservableProperty] private List<int> maxAgeOptions = [];
 
-        public List<int> AgeOptions { get; } = Enumerable.Range(16, 65).ToList(); // 16 → 80
+        public List<int> AgeOptions { get; } = [.. Enumerable.Range(16, 65)]; // 16 → 80
         public async Task Receive(FilterParam param)
         {
             _onApply = param.OnApply;
             // Gán giá trị hiện tại từ NearbyViewModel
             SelectedGender = param.SelectedGender;
             MinAge = param.MinAge;
-            MaxAgeOptions = AgeOptions.Where(x => x >= MinAge).ToList();
+            MaxAgeOptions = [.. AgeOptions.Where(x => x >= MinAge)];
             MaxAge = Math.Max(param.MaxAge, MinAge);
             Distance = param.Distance;
         }
 
         partial void OnMinAgeChanged(int value)
         {
-            // 🔥 Max chỉ được >= Min
+            var oldMax = MaxAge;
             MaxAgeOptions = AgeOptions.Where(x => x >= value).ToList();
-
-            // Nếu Max hiện tại < Min → auto fix
-            if (MaxAge < value)
-                MaxAge = value;
+            MaxAge = oldMax >= value ? oldMax : value;
         }
         partial void OnMaxAgeChanged(int value)
         {
