@@ -24,6 +24,11 @@ namespace Sphere.Services.Service
             return await apiService.DeleteAsync<UserProfileModel>($"api/profile/photo/{id}");
         }
 
+        public async Task<ApiResponse<UserWithUserProfileModel>> GetUserProfileOtherAsync(Guid id)
+        {
+            return await apiService.GetAsync<UserWithUserProfileModel>($"api/profile/{id}");
+        }
+
         public async Task<ApiResponse<UserWithUserProfileModel>> GetUserProfileMeAsync()
         {
             return await apiService.GetAsync<UserWithUserProfileModel>("api/profile/me");

@@ -25,6 +25,7 @@ namespace Sphere.ViewModels.DiaryViewModels
         private readonly IAppNavigationService _anv;
         private readonly IShellNavigationService _nv;
         private readonly ApiResponseHelper _res;
+        private Guid? _userId;
 
         [ObservableProperty]
         public partial ObservableCollection<DiaryContentViewModel> Diaries { get; set; } = new ObservableCollection<DiaryContentViewModel>();
@@ -87,10 +88,15 @@ namespace Sphere.ViewModels.DiaryViewModels
             await LoadDiaries(forceReload: true);
         }
         [RelayCommand]
-        public async Task LoadFirstPage()
+       
+        public async Task LoadFirstPage(Guid? userId = null)
         {
+            _userId = userId;
+
             _currentPage = 1;
+            HasNoMoreData = false;
             Diaries.Clear();
+
             await LoadDiaries(forceReload: true);
         }
         private async Task ReloadFirstPageAsync()
@@ -100,8 +106,8 @@ namespace Sphere.ViewModels.DiaryViewModels
 
             try
             {
-                var response = await _diaryService.GetListDiaryAsync(1, PageSize);
-                
+                var response = _userId == null ? await _diaryService.GetListDiaryMeAsync(1, PageSize) : await _diaryService.GetListDiaryOtherAsync(_userId.Value, 1, PageSize);
+
                 if (!response.IsSuccess)
                 {
                     ErrorMessage = response.Errors?.FirstOrDefault()?.Description ?? response.Message ?? "Có lỗi xảy ra";
@@ -142,7 +148,7 @@ namespace Sphere.ViewModels.DiaryViewModels
             try
             {
 
-                var response = await _diaryService.GetListDiaryAsync(_currentPage, PageSize);
+                var response = _userId == null ? await _diaryService.GetListDiaryMeAsync(_currentPage, PageSize) : await _diaryService.GetListDiaryOtherAsync(_userId.Value, _currentPage, PageSize);
                 if (response.IsSuccess)
                 {
                     var items = response.Data?.ToList() ?? [];

@@ -123,6 +123,7 @@
                     Padding="5"
                     BackgroundColor="#E5F0FF"
                     HorizontalOptions="Center"
+                    InputTransparent="{Binding IsViewingSelf, Converter={StaticResource InverseBoolConverter}}"
                     StrokeShape="15"
                     VerticalOptions="Center">
                     <Border.GestureRecognizers>
@@ -152,8 +153,12 @@
                 Padding="10"
                 BackgroundColor="#1DA1F2"
                 HorizontalOptions="Center"
+                IsVisible="{Binding ShouldShowFollowButton}"
                 Stroke="#1DA1F2"
                 StrokeShape="20">
+                <Border.GestureRecognizers>
+                    <TapGestureRecognizer Command="{Binding FollowCommand}" />
+                </Border.GestureRecognizers>
                 <HorizontalStackLayout
                     HorizontalOptions="Center"
                     Spacing="8"
@@ -178,8 +183,12 @@
                 Padding="10"
                 BackgroundColor="White"
                 HorizontalOptions="Center"
+                IsVisible="{Binding ShouldShowChatButton}"
                 Stroke="#1DA1F2"
                 StrokeShape="20">
+                <Border.GestureRecognizers>
+                    <TapGestureRecognizer Command="{Binding ChatCommand}" />
+                </Border.GestureRecognizers>
                 <HorizontalStackLayout
                     HorizontalOptions="Center"
                     Spacing="8"
@@ -231,6 +240,7 @@
             <ImageButton
                 Grid.Column="2"
                 Command="{Binding EditBioCommand}"
+                IsVisible="{Binding IsViewingSelf}"
                 MaximumHeightRequest="18"
                 MaximumWidthRequest="18"
                 VerticalOptions="Start">
@@ -246,6 +256,7 @@
         <Border
             Margin="10"
             Padding="0"
+            IsVisible="{Binding IsViewingSelf}"
             Stroke="LightGray"
             StrokeShape="5">
             <Editor

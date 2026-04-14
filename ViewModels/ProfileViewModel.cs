@@ -7,7 +7,9 @@ using Sphere.Common.Constans;
 using Sphere.Common.Helpers;
 using Sphere.Common.Responses;
 using Sphere.Extensions;
+using Sphere.Interfaces;
 using Sphere.Models;
+using Sphere.Models.Params;
 using Sphere.Reloads;
 using Sphere.Services.IService;
 using Sphere.Services.Service;
@@ -26,7 +28,7 @@ using static Android.Graphics.ColorSpace;
 
 namespace Sphere.ViewModels
 {
-    public partial class ProfileViewModel : ObservableObject
+    public partial class ProfileViewModel : ObservableObject, IModalParameterReceiver<Guid?>
     {
         private readonly IImagePickerService _imagePickerService;
         private readonly IUserProfileService _userProfileService;
@@ -34,11 +36,18 @@ namespace Sphere.ViewModels
         private readonly IShellNavigationService _nv;
         private readonly IAppNavigationService _anv;
         private readonly ApiResponseHelper _res;
+        private readonly IFollowService _followService;
+        private readonly IConversationService _conversationService;
 
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(ShouldShowFollowButton))]
+        [NotifyPropertyChangedFor(nameof(ShouldShowChatButton))]
+        private bool isFollowing;
+        public bool IsOwnFollow { get; }
         [ObservableProperty]
         public partial bool ShouldShowBioToggle { get; set; }
         public DiaryListViewModel DiaryListVM { get; }
-        public ProfileViewModel(IUserSessionService userSession, IImagePickerService imagePickerService, IUserProfileService userProfileService, IDiaryService diaryService,IAppNavigationService anv, IShellNavigationService nv, ApiResponseHelper res)
+        public ProfileViewModel(IUserSessionService userSession, IImagePickerService imagePickerService, IUserProfileService userProfileService, IDiaryService diaryService,IAppNavigationService anv, IShellNavigationService nv, ApiResponseHelper res, IFollowService followService, IConversationService conversationService)
         {
             _userSession = userSession;
             _imagePickerService = imagePickerService;
@@ -46,6 +55,8 @@ namespace Sphere.ViewModels
             _anv = anv;
             _nv = nv;
             _res = res;
+            _followService = followService;
+            _conversationService = conversationService;
             var restoredUser = PreferencesHelper.LoadCurrentUser();
             if (restoredUser != null)
             {
@@ -53,10 +64,79 @@ namespace Sphere.ViewModels
             }
             CurrentUser = _userSession.CurrentUser;
             DiaryListVM = new DiaryListViewModel(diaryService, _anv, _nv,_res);
-            _ = DiaryListVM.LoadFirstPage();
-            
         }
+        public bool ShouldShowFollowButton => !IsViewingSelf && !IsFollowing;
+        public bool ShouldShowChatButton => !IsViewingSelf;
+        [ObservableProperty]
+        private Guid? viewingUserId;
+        //public bool IsViewingSelf => !ViewingUserId.HasValue;
+        public bool IsViewingSelf => !ViewingUserId.HasValue || ViewingUserId == _userSession.CurrentUser?.UserDTO?.Id;
+        partial void OnViewingUserIdChanged(Guid? value)
+        {
+            OnPropertyChanged(nameof(IsViewingSelf)); // 🔥 bắt buộc
+            OnPropertyChanged(nameof(ShouldShowFollowButton));
+            OnPropertyChanged(nameof(ShouldShowChatButton));
+        }
+        public async Task Receive(Guid? userId)
+        {
+            ViewingUserId = userId;
 
+            if (userId == null)
+            {
+                // 👉 profile của mình
+                CurrentUser = _userSession.CurrentUser;
+                await DiaryListVM.LoadFirstPage();
+            }
+            else
+            {
+                // 👉 profile người khác
+                await LoadOtherUser(userId.Value);
+            }
+        }
+        private async Task LoadOtherUser(Guid userId)
+        {
+            IsLoading = true;
+            try
+            {
+                var resp = await _userProfileService.GetUserProfileOtherAsync(userId);
+
+                if (!resp.IsSuccess)
+                {
+                    await _anv.DisplayAlertAsync("Lỗi", $"{resp.Message}");
+                    return;
+                }
+
+                CurrentUser = new UserWithUserProfileModel
+                {
+                    UserDTO = resp.Data!.UserDTO,
+                    UserProfileDTO = resp.Data.UserProfileDTO,
+                    
+                };
+                IsFollowing = resp.Data.IsFollowing;
+                await DiaryListVM.LoadFirstPage(userId);
+            }
+            finally
+            {
+                await PopupHelper.HideLoadingAsync();
+                IsLoading = false;
+            }
+        }
+        [RelayCommand]
+        public async Task Follow()
+        {
+            if (IsFollowing || ViewingUserId == null) return;
+
+            var res = await _followService.FollowUserAsync(ViewingUserId.Value);
+
+            if (res.IsSuccess)
+            {
+                IsFollowing = true;
+            }
+            else
+            {
+                await _res.ShowApiErrorsAsync(res, "Theo dõi thất bại");
+            }
+        }
         public string? AvatarDisplay => string.IsNullOrWhiteSpace(CurrentUser?.UserProfileDTO?.AvatarUrl) ? (CurrentUser?.UserDTO?.Gender == Gender.Female ? "woman.png" : "man.png") : CurrentUser.UserProfileDTO.AvatarUrl;
 
         public string BioDisplay => string.IsNullOrWhiteSpace(CurrentUser?.UserProfileDTO?.Bio) ? "Xin chào! Tôi là người bí ẩn mới tham gia" : CurrentUser.UserProfileDTO.Bio;
@@ -105,6 +185,7 @@ namespace Sphere.ViewModels
         [RelayCommand]
         public async Task EditBio()
         {
+            if (!IsViewingSelf) return; // 🔥 CHẶN
             var oldBio = CurrentUser?.UserProfileDTO?.Bio ?? string.Empty;
             var popup = new BioEditPopup(oldBio);
 
@@ -126,7 +207,8 @@ namespace Sphere.ViewModels
         [RelayCommand]
         public async Task EditProfile()
         {
-           
+            if (!IsViewingSelf) return;
+
             await _nv.PushModalAsync<EditUserProfilePage>();
         }
 
@@ -173,15 +255,28 @@ namespace Sphere.ViewModels
         {
             string displayName = imageType == "avatar" ? "ảnh đại diện" : "ảnh bìa";
             string? imageUrl = imageType == "avatar" ? AvatarDisplay : CoverPhotoDisplay;
-
-            // Use DisplayActionSheetAsync (supports multiple buttons) instead of DisplayAlertAsync
-            var action = await Shell.Current.DisplayActionSheetAsync(
-                $"Tùy chọn {displayName}",
-                "Hủy",
-                null,
-                "Xem ảnh",
-                "Chỉnh sửa ảnh",
-                "Xóa ảnh");
+            string action;
+            if (IsViewingSelf)
+            {
+                // 👉 của mình
+                action = await Shell.Current.DisplayActionSheetAsync(
+                    $"Tùy chọn {displayName}",
+                    "Hủy",
+                    null,
+                    "Xem ảnh",
+                    "Chỉnh sửa ảnh",
+                    "Xóa ảnh");
+            }
+            else
+            {
+                // 👉 người khác
+                action = await Shell.Current.DisplayActionSheetAsync(
+                    $"Tùy chọn {displayName}",
+                    "Hủy",
+                    null,
+                    "Xem ảnh",
+                    "Tố cáo ảnh");
+            }
 
             switch (action)
             {
@@ -190,14 +285,17 @@ namespace Sphere.ViewModels
                     break;
 
                 case "Chỉnh sửa ảnh":
-                    await EditImageAsync(imageType);
+                    if (IsViewingSelf)
+                        await EditImageAsync(imageType);
                     break;
 
                 case "Xóa ảnh":
-                    await DeleteImageAsync(imageType);
+                    if (IsViewingSelf)
+                        await DeleteImageAsync(imageType);
                     break;
 
-                default:
+                case "Tố cáo ảnh":
+                    await ReportImageAsync(imageType, imageUrl!);
                     break;
             }
         }
@@ -302,10 +400,22 @@ namespace Sphere.ViewModels
                 IsLoading = false;
             }
         }
+        private async Task ReportImageAsync(string imageType, string imageUrl)
+        {
+            var confirm = await Shell.Current.DisplayAlertAsync( "Tố cáo", "Bạn có chắc muốn tố cáo ảnh này?", "Có", "Hủy");
+
+            if (!confirm) return;
+
+            // 👉 gọi API nếu có
+            // await _reportService.ReportImageAsync(...);
+
+            await Shell.Current.DisplayAlertAsync("Thông báo", "Đã gửi tố cáo", "OK");
+        }
 
         [RelayCommand]
         public async Task PostStatus()
         {
+            if (!IsViewingSelf) return; // 🔥 CHẶN
             await _nv.PushModalAsync<PostDiaryPage>();
         }
 
@@ -329,7 +439,92 @@ namespace Sphere.ViewModels
         // chuyeden trang quan ly coin
         public async Task ManageCoins()
         {
-           await _nv.PushModalAsync<DiamondPage>();
+            if (IsLoading || !IsViewingSelf)
+                return;
+
+            IsLoading = true;
+
+            try
+            {
+                await _nv.PushModalAsync<DiamondPage>();
+            }
+            finally
+            {
+                IsLoading = false;
+            }
+        }
+
+        [RelayCommand]
+        public async Task Chat()
+        {
+            // ❌ Không cho chat với chính mình
+            if (IsViewingSelf || ViewingUserId == null)
+                return;
+
+            var targetUserId = ViewingUserId.Value;
+
+            bool alreadyUnlocked = PreferencesHelper.IsChatUnlocked(targetUserId);
+
+            if (!alreadyUnlocked)
+            {
+                bool confirm = await ApiResponseHelper.ShowShellConfirmAsync(
+                    "Xác nhận mở khóa",
+                    "Cần tiêu 130 kim cương 💎 để mở khóa cuộc trò chuyện này. Bạn có muốn tiếp tục không?",
+                    "Đồng ý",
+                    "Hủy");
+
+                if (!confirm)
+                    return;
+            }
+
+            var response = await _conversationService.StartConversationAsync(targetUserId);
+
+            if (response.Errors?.Any(e => e.Code == "NotEnoughDiamonds") == true ||
+                response.Message?.Contains("kim cương", StringComparison.OrdinalIgnoreCase) == true)
+            {
+                bool goTopUp = await ApiResponseHelper.ShowShellConfirmAsync(
+                    "Không đủ kim cương 💎",
+                    "Bạn không đủ kim cương để mở khóa cuộc trò chuyện này. Bạn có muốn nạp thêm không?",
+                    "Nạp ngay",
+                    "Đóng");
+
+                if (goTopUp)
+                {
+                    await _nv.PushModalAsync<DiamondPage>();
+                }
+                return;
+            }
+
+            if (response.IsSuccess && response.Data?.ConversationId is Guid conId)
+            {
+                PreferencesHelper.SetChatUnlocked(targetUserId, true);
+
+                if (!alreadyUnlocked)
+                {
+                    await _anv.DisplayAlertAsync(
+                        "Mở khóa thành công",
+                        $"Bạn đã mở khóa cuộc trò chuyện. Số dư còn lại: {response.Data.NewBalance} 💎");
+                }
+
+                await _nv.PushModalAsync<MessagePage, MessageNavigationParam>(
+                    new MessageNavigationParam
+                    {
+                        ConversationId = conId,
+                        Partner = new UserDiaryModel
+                        {
+                            Id = CurrentUser!.UserDTO!.Id,
+                            FullName = CurrentUser.UserDTO.FullName,
+                            AvatarUrl = CurrentUser.UserProfileDTO?.AvatarUrl,
+                            Gender = CurrentUser.UserDTO.Gender,
+                            IsOnline = false, // hoặc lấy từ PresenceService nếu có
+                            IsFollow = IsFollowing
+                        }
+                    });
+            }
+            else
+            {
+                await _res.ShowApiErrorsAsync(response, "Không thể mở chat");
+            }
         }
     } 
 }

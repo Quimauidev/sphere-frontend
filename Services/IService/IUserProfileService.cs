@@ -13,7 +13,7 @@ namespace Sphere.Services.IService
     public interface IUserProfileService
     {
         Task<ApiResponse<UserWithUserProfileModel>> GetUserProfileMeAsync();
-
+        Task<ApiResponse<UserWithUserProfileModel>> GetUserProfileOtherAsync(Guid userId);
         Task<ApiResponse<UserProfileModel>> UpdateBioAsync(Guid id, BioProfileModel bio);
 
         Task<ApiResponse<UserProfileModel>> UpdateAvatarAsync(Guid id, string avatarUrl);

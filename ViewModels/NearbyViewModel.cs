@@ -440,5 +440,12 @@ namespace Sphere.ViewModels
             await _nv.PushModalAsync<FilterPage, FilterParam>(param);
         }
 
+        [RelayCommand]
+        public async Task OpenProfile(NearbyModel user)
+        {
+            if (user == null) return;
+            await PopupHelper.ShowLoadingAsync();
+            await _nv.PushModalAsync<ProfilePage, Guid?>(user.UserId);
+        }
     }
 }

@@ -10,5 +10,6 @@ namespace Sphere.Models
     {
         public UserModel? UserDTO { get; set; }
         public UserProfileModel? UserProfileDTO { get; set; }
+        public bool IsFollowing { get; set; } // 🔥 thêm dòng này
     }
 }

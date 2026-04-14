@@ -91,7 +91,7 @@ namespace Sphere.ViewModels
         public bool IsOwnMess { get; }
         public UserWithDiaryModel Model { get; }
         public bool ShouldShowChatButton => !IsOwnMess; // ẩn nếu là bài của chính mình
-        public bool ShouldShowFollowButton => !IsOwnFollow && !IsFollowing;
+        public bool ShouldShowFollowButton => !IsOwnFollow && !IsFollowing; // chỉ hiện nút follow nếu không phải bài của chính mình và chưa follow
 
         //// Lượt xem, thích, bình luận
         //public int ViewCount => Model.DiaryDTO?.ViewCount ?? 0;

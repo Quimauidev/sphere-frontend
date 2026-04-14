@@ -12,7 +12,8 @@ namespace Sphere.Services.IService
     public interface IDiaryService
     {
         Task<ApiResponse<DiaryModel>> CreateDiaryAsync(PostDiaryModel postDiaryModel);
-        Task<ApiResponse<IEnumerable<DiaryModel>>> GetListDiaryAsync(int page, int pageSize);
+        Task<ApiResponse<IEnumerable<DiaryModel>>> GetListDiaryMeAsync(int page, int pageSize);
+        Task<ApiResponse<IEnumerable<DiaryModel>>> GetListDiaryOtherAsync(Guid id, int page, int pageSize);
         Task<ApiResponse<DiaryModel>> PatchFormDiaryByIdAsync(Guid id, string? content, Privacy privacy, IEnumerable<Guid> removeImageIds, IEnumerable<string> newImagePaths);
         Task<ApiResponse<bool>> DeleteDiaryAsync(Guid id);
         Task<ApiResponse<IEnumerable<UserWithDiaryModel>>> GetHomeDiariesAsync(string type, int page, int pageSize, CancellationToken ct = default);

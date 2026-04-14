@@ -15,6 +15,11 @@ public partial class ProfilePage : ContentPage
     protected override void OnAppearing()
     {
         base.OnAppearing();
-        (BindingContext as ProfileViewModel)?.RefreshFromSession();
+        var vm = BindingContext as ProfileViewModel;
+
+        if (vm?.IsViewingSelf == true)
+        {
+            vm.RefreshFromSession();
+        }
     }
 }

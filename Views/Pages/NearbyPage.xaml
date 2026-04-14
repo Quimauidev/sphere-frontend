@@ -137,6 +137,9 @@
                                     StrokeShape="RoundRectangle 25"
                                     StrokeThickness="0"
                                     WidthRequest="50">
+                                    <Border.GestureRecognizers>
+                                        <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.OpenProfileCommand}" CommandParameter="{Binding .}" />
+                                    </Border.GestureRecognizers>
                                     <Image Aspect="AspectFill" Source="{Binding AvatarDisplay}" />
                                 </Border>
 
@@ -148,7 +151,11 @@
                                         FontAttributes="Bold"
                                         LineBreakMode="TailTruncation"
                                         MaxLines="1"
-                                        Text="{Binding FullName}" />
+                                        Text="{Binding FullName}">
+                                        <Label.GestureRecognizers>
+                                            <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.OpenProfileCommand}" CommandParameter="{Binding .}" />
+                                        </Label.GestureRecognizers>
+                                    </Label>
                                     <Label
                                         FontSize="12"
                                         Text="{Binding DistanceDisplay}"
