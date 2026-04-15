@@ -412,7 +412,7 @@ namespace Sphere.ViewModels
                 IsLoading = false;
             }
         }
-        private async Task ReportImageAsync(string imageType, string imageUrl)
+        private static async Task ReportImageAsync(string imageType, string imageUrl)
         {
             var confirm = await Shell.Current.DisplayAlertAsync( "Tố cáo", "Bạn có chắc muốn tố cáo ảnh này?", "Có", "Hủy");
 
@@ -474,14 +474,28 @@ namespace Sphere.ViewModels
             IsBusy = true;
             try
             {
-                var targetUserId = ViewingUserId.Value;
+                var targetUserId = ViewingUserId.Value; 
                 var myId = _userSession.CurrentUser?.UserDTO?.Id;
                 if (myId == null) return;
+                // 🟢 1. CHECK LOCAL TRƯỚC (FAST PATH)
                 bool alreadyUnlocked = PreferencesHelper.IsChatUnlocked(myId.Value, targetUserId);
-                // 🔵 CASE 1: ĐÃ MỞ KHÓA → đi thẳng
+
                 if (alreadyUnlocked)
                 {
                     await OpenChatAsync(targetUserId);
+                    return;
+                }
+
+                var check = await _conversationService.CheckConversationAsync(targetUserId);
+                if (!check.IsSuccess)
+                {
+                    await _res.ShowApiErrorsAsync(check, "Không thể kiểm tra");
+                    return;
+                }
+                var data = check.Data;
+                if(data!.IsUnlocked)
+                {
+                    await OpenChatAsync(data.ConversationId);
                     return;
                 }
                 bool confirm = await ApiResponseHelper.ShowShellConfirmAsync(
@@ -496,13 +510,10 @@ namespace Sphere.ViewModels
                 await PopupHelper.ShowLoadingAsync("Đang mở khóa...");
                 var response = await _conversationService.StartConversationAsync(targetUserId);
                 await PopupHelper.HideLoadingAsync();
-                if (response.Errors?.Any(e => e.Code == "NotEnoughDiamonds") == true || response.Message?.Contains("kim cương", StringComparison.OrdinalIgnoreCase) == true)
+
+                if (response.Errors?.Any(e => e.Code == "NotEnoughDiamonds") == true)
                 {
-                    bool goTopUp = await ApiResponseHelper.ShowShellConfirmAsync(
-                        "Không đủ kim cương 💎",
-                        "Bạn không đủ kim cương để mở khóa cuộc trò chuyện này. Bạn có muốn nạp thêm không?",
-                        "Nạp ngay",
-                        "Đóng");
+                    bool goTopUp = await ApiResponseHelper.ShowShellConfirmAsync( "Không đủ kim cương 💎", "Bạn không đủ kim cương để mở khóa cuộc trò chuyện này. Bạn có muốn nạp thêm không?", "Nạp ngay", "Đóng");
 
                     if (goTopUp)
                     {
@@ -510,23 +521,23 @@ namespace Sphere.ViewModels
                     }
                     return;
                 }
-
-                if (response.IsSuccess && response.Data?.ConversationId is Guid conId)
-                {
-                    PreferencesHelper.SetChatUnlocked(myId.Value, targetUserId, true);
-                    UpdateCoins(response.Data.NewBalance);
-                    await PopupHelper.HideLoadingAsync();
-                    await _anv.DisplayAlertAsync(
-                            "Mở khóa thành công",
-                            $"Bạn đã mở khóa cuộc trò chuyện. Số dư còn lại: {response.Data.NewBalance} 💎");
-
-                    await OpenChatAsync(targetUserId, conId, response.Data.NewBalance);
-                    
-                }
-                else
+                if (!response.IsSuccess)
                 {
                     await _res.ShowApiErrorsAsync(response, "Không thể mở chat");
+                    return;
                 }
+                PreferencesHelper.SetChatUnlocked(myId.Value, targetUserId, true);
+
+                if (response.Data!.IsFirstUnlock)
+                {
+                    UpdateCoins(response.Data.NewBalance);
+
+                    await _anv.DisplayAlertAsync(
+                        "Mở khóa thành công",
+                        $"Bạn đã mở khóa cuộc trò chuyện. Số dư còn lại: {response.Data.NewBalance} 💎");
+                }
+
+                await OpenChatAsync(response.Data.ConversationId);
             }
             finally
             {
@@ -534,7 +545,7 @@ namespace Sphere.ViewModels
             }
         }
 
-        private async Task OpenChatAsync(Guid targetUserId, Guid? conId = null, long? newBalance = null)
+        private async Task OpenChatAsync(Guid? conId = null)
         {
             await _nv.PushModalAsync<MessagePage, MessageNavigationParam>(
                 new MessageNavigationParam

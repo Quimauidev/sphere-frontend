@@ -15,7 +15,15 @@ namespace Sphere.Models
         public class MessageStartResponse
         {
             public bool IsUnlocked { get; set; }
+            public bool IsFirstUnlock { get; set; }
             public long NewBalance { get; set; }
+            public Guid? ConversationId { get; set; }
+        }
+        public class CheckConversationResponse
+        {
+            public bool IsUnlocked { get; set; }
+            public bool CanUnlock { get; set; }
+            public long RequiredDiamonds { get; set; }
             public Guid? ConversationId { get; set; }
         }
 

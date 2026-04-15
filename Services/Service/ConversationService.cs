@@ -42,5 +42,10 @@ namespace Sphere.Services.Service
         {
             return await _apiService.DeleteAsync<bool>($"/api/conversations/{targetUserId}");
         }
+
+        public async Task<ApiResponse<CheckConversationResponse>> CheckConversationAsync(Guid id)
+        {
+            return await _apiService.GetAsync<CheckConversationResponse>($"/api/conversations/check-unlock/{id}");
+        }
     }
 }
