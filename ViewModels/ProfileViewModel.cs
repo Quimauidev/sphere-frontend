@@ -40,6 +40,11 @@ namespace Sphere.ViewModels
         private readonly IConversationService _conversationService;
 
         [ObservableProperty]
+        private bool isLoading;
+        [ObservableProperty]
+        private bool isBusy;
+
+        [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(ShouldShowFollowButton))]
         [NotifyPropertyChangedFor(nameof(ShouldShowChatButton))]
         private bool isFollowing;
@@ -121,20 +126,30 @@ namespace Sphere.ViewModels
                 IsLoading = false;
             }
         }
+
         [RelayCommand]
         public async Task Follow()
         {
-            if (IsFollowing || ViewingUserId == null) return;
-
-            var res = await _followService.FollowUserAsync(ViewingUserId.Value);
-
-            if (res.IsSuccess)
+            if (IsBusy || IsFollowing || ViewingUserId == null) return;
+            IsBusy = true;
+            await PopupHelper.ShowLoadingAsync("Đang theo dõi...");
+            try
             {
-                IsFollowing = true;
+                var res = await _followService.FollowUserAsync(ViewingUserId.Value);
+
+                if (res.IsSuccess)
+                {
+                    IsFollowing = true;
+                }
+                else
+                {
+                    await _res.ShowApiErrorsAsync(res, "Theo dõi thất bại");
+                }
             }
-            else
+            finally
             {
-                await _res.ShowApiErrorsAsync(res, "Theo dõi thất bại");
+                await PopupHelper.HideLoadingAsync();
+                IsBusy = false;
             }
         }
         public string? AvatarDisplay => string.IsNullOrWhiteSpace(CurrentUser?.UserProfileDTO?.AvatarUrl) ? (CurrentUser?.UserDTO?.Gender == Gender.Female ? "woman.png" : "man.png") : CurrentUser.UserProfileDTO.AvatarUrl;
@@ -179,8 +194,7 @@ namespace Sphere.ViewModels
         [NotifyPropertyChangedFor(nameof(BioMaxLines))]
         [NotifyPropertyChangedFor(nameof(BioToggleText))]
         public partial bool IsBioExpanded { get; set; }
-        [ObservableProperty]
-        public partial bool IsLoading { get; set; }
+        
 
         [RelayCommand]
         public async Task EditBio()
@@ -458,73 +472,84 @@ namespace Sphere.ViewModels
         public async Task Chat()
         {
             // ❌ Không cho chat với chính mình
-            if (IsViewingSelf || ViewingUserId == null)
+            if (IsBusy || IsViewingSelf || ViewingUserId == null)
                 return;
-
-            var targetUserId = ViewingUserId.Value;
-
-            bool alreadyUnlocked = PreferencesHelper.IsChatUnlocked(targetUserId);
-
-            if (!alreadyUnlocked)
+            IsBusy = true;
+            try
             {
+                var targetUserId = ViewingUserId.Value;
+
+                bool alreadyUnlocked = PreferencesHelper.IsChatUnlocked(targetUserId);
+                // 🔵 CASE 1: ĐÃ MỞ KHÓA → đi thẳng
+                if (alreadyUnlocked)
+                {
+                    await OpenChatAsync(targetUserId);
+                    return;
+                }
                 bool confirm = await ApiResponseHelper.ShowShellConfirmAsync(
-                    "Xác nhận mở khóa",
-                    "Cần tiêu 130 kim cương 💎 để mở khóa cuộc trò chuyện này. Bạn có muốn tiếp tục không?",
-                    "Đồng ý",
-                    "Hủy");
+                        "Xác nhận mở khóa",
+                        "Cần tiêu 130 kim cương 💎 để mở khóa cuộc trò chuyện này. Bạn có muốn tiếp tục không?",
+                        "Đồng ý",
+                        "Hủy");
 
                 if (!confirm)
                     return;
-            }
 
-            var response = await _conversationService.StartConversationAsync(targetUserId);
-
-            if (response.Errors?.Any(e => e.Code == "NotEnoughDiamonds") == true ||
-                response.Message?.Contains("kim cương", StringComparison.OrdinalIgnoreCase) == true)
-            {
-                bool goTopUp = await ApiResponseHelper.ShowShellConfirmAsync(
-                    "Không đủ kim cương 💎",
-                    "Bạn không đủ kim cương để mở khóa cuộc trò chuyện này. Bạn có muốn nạp thêm không?",
-                    "Nạp ngay",
-                    "Đóng");
-
-                if (goTopUp)
+                await PopupHelper.ShowLoadingAsync("Đang mở khóa...");
+                var response = await _conversationService.StartConversationAsync(targetUserId);
+                await PopupHelper.HideLoadingAsync();
+                if (response.Errors?.Any(e => e.Code == "NotEnoughDiamonds") == true || response.Message?.Contains("kim cương", StringComparison.OrdinalIgnoreCase) == true)
                 {
-                    await _nv.PushModalAsync<DiamondPage>();
-                }
-                return;
-            }
+                    bool goTopUp = await ApiResponseHelper.ShowShellConfirmAsync(
+                        "Không đủ kim cương 💎",
+                        "Bạn không đủ kim cương để mở khóa cuộc trò chuyện này. Bạn có muốn nạp thêm không?",
+                        "Nạp ngay",
+                        "Đóng");
 
-            if (response.IsSuccess && response.Data?.ConversationId is Guid conId)
-            {
-                PreferencesHelper.SetChatUnlocked(targetUserId, true);
-
-                if (!alreadyUnlocked)
-                {
-                    await _anv.DisplayAlertAsync(
-                        "Mở khóa thành công",
-                        $"Bạn đã mở khóa cuộc trò chuyện. Số dư còn lại: {response.Data.NewBalance} 💎");
-                }
-
-                await _nv.PushModalAsync<MessagePage, MessageNavigationParam>(
-                    new MessageNavigationParam
+                    if (goTopUp)
                     {
-                        ConversationId = conId,
-                        Partner = new UserDiaryModel
-                        {
-                            Id = CurrentUser!.UserDTO!.Id,
-                            FullName = CurrentUser.UserDTO.FullName,
-                            AvatarUrl = CurrentUser.UserProfileDTO?.AvatarUrl,
-                            Gender = CurrentUser.UserDTO.Gender,
-                            IsOnline = false, // hoặc lấy từ PresenceService nếu có
-                            IsFollow = IsFollowing
-                        }
-                    });
+                        await _nv.PushModalAsync<DiamondPage>();
+                    }
+                    return;
+                }
+
+                if (response.IsSuccess && response.Data?.ConversationId is Guid conId)
+                {
+                    PreferencesHelper.SetChatUnlocked(targetUserId, true);
+                    await PopupHelper.HideLoadingAsync();
+                    await _anv.DisplayAlertAsync(
+                            "Mở khóa thành công",
+                            $"Bạn đã mở khóa cuộc trò chuyện. Số dư còn lại: {response.Data.NewBalance} 💎");
+
+                    await OpenChatAsync(targetUserId, conId, response.Data.NewBalance);
+                }
+                else
+                {
+                    await _res.ShowApiErrorsAsync(response, "Không thể mở chat");
+                }
             }
-            else
+            finally
             {
-                await _res.ShowApiErrorsAsync(response, "Không thể mở chat");
+                IsBusy = false;
             }
+        }
+
+        private async Task OpenChatAsync(Guid targetUserId, Guid? conId = null, long? newBalance = null)
+        {
+            await _nv.PushModalAsync<MessagePage, MessageNavigationParam>(
+                new MessageNavigationParam
+                {
+                    ConversationId = conId ?? Guid.Empty,
+                    Partner = new UserDiaryModel
+                    {
+                        Id = CurrentUser!.UserDTO!.Id,
+                        FullName = CurrentUser.UserDTO.FullName,
+                        AvatarUrl = CurrentUser.UserProfileDTO?.AvatarUrl,
+                        Gender = CurrentUser.UserDTO.Gender,
+                        IsOnline = false,
+                        IsFollow = IsFollowing
+                    }
+                });
         }
     } 
 }

@@ -9,6 +9,10 @@
     <ContentView HeightRequest="120" WidthRequest="300">
         <VerticalStackLayout VerticalOptions="Center">
             <ActivityIndicator IsRunning="True" />
+            <Label
+                HorizontalOptions="Center"
+                HorizontalTextAlignment="Center"
+                Text="{Binding Message}" />
         </VerticalStackLayout>
     </ContentView>
 </toolkit:Popup>

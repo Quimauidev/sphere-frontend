@@ -153,6 +153,7 @@
                 Padding="10"
                 BackgroundColor="#1DA1F2"
                 HorizontalOptions="Center"
+                IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}}"
                 IsVisible="{Binding ShouldShowFollowButton}"
                 Stroke="#1DA1F2"
                 StrokeShape="20">
@@ -183,6 +184,7 @@
                 Padding="10"
                 BackgroundColor="White"
                 HorizontalOptions="Center"
+                IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}}"
                 IsVisible="{Binding ShouldShowChatButton}"
                 Stroke="#1DA1F2"
                 StrokeShape="20">

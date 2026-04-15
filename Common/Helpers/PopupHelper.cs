@@ -18,7 +18,7 @@ namespace Sphere.Common.Helpers
             return Shell.Current ?? (Application.Current?.Windows.Count > 0 ? Application.Current.Windows[0].Page : null);
         }
 
-        public static Task ShowLoadingAsync()
+        public static Task ShowLoadingAsync(string message = "Đang tải...")
         {
             if (_isShowing)
                 return Task.CompletedTask;
@@ -30,7 +30,14 @@ namespace Sphere.Common.Helpers
                     return;
 
                 _isShowing = true;
-                _loadingPopup = new LoadingPopup();
+                _loadingPopup = new LoadingPopup
+                {
+                    BindingContext = new LoadingViewModel
+                    {
+                        Message = message
+                    }
+                };
+
 
                 page.ShowPopup(_loadingPopup); // ✅ KHÔNG await
             });
@@ -52,5 +59,9 @@ namespace Sphere.Common.Helpers
                 _isShowing = false;
             });
         }
+    }
+    public class LoadingViewModel
+    {
+        public string? Message { get; set; }
     }
 }

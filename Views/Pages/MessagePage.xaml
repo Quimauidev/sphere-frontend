@@ -49,10 +49,7 @@
                 VerticalOptions="Center">
 
                 <!--  Gọi thoại  -->
-                <ImageButton
-                    BackgroundColor="Transparent"
-                    HeightRequest="24"
-                    WidthRequest="24">
+                <ImageButton MaximumHeightRequest="24" MaximumWidthRequest="24">
                     <ImageButton.Source>
                         <FontImageSource
                             FontFamily="MaterialIcons"
@@ -63,10 +60,7 @@
                 </ImageButton>
 
                 <!--  Gọi video  -->
-                <ImageButton
-                    BackgroundColor="Transparent"
-                    HeightRequest="24"
-                    WidthRequest="24">
+                <ImageButton MaximumHeightRequest="24" MaximumWidthRequest="24">
                     <ImageButton.Source>
                         <FontImageSource
                             FontFamily="MaterialIcons"
@@ -77,10 +71,7 @@
                 </ImageButton>
 
                 <!--  Báo cáo  -->
-                <ImageButton
-                    BackgroundColor="Transparent"
-                    HeightRequest="24"
-                    WidthRequest="24">
+                <ImageButton MaximumHeightRequest="24" MaximumWidthRequest="24">
                     <ImageButton.Source>
                         <FontImageSource
                             FontFamily="MaterialIcons"
@@ -181,14 +172,14 @@
             <ImageButton
                 Margin="0,0,0,10"
                 Command="{Binding SendLocationCommand}"
-                HeightRequest="25"
-                VerticalOptions="End"
-                WidthRequest="25">
+                MaximumHeightRequest="24"
+                MaximumWidthRequest="24"
+                VerticalOptions="End">
                 <ImageButton.Source>
                     <FontImageSource
                         FontFamily="MaterialIcons"
                         Glyph="&#xF034E;"
-                        Size="25"
+                        Size="24"
                         Color="#512BD4" />
                 </ImageButton.Source>
             </ImageButton>
@@ -198,14 +189,14 @@
                 Grid.Column="1"
                 Margin="0,0,0,10"
                 Command="{Binding OpenGalleryCommand}"
-                HeightRequest="25"
-                VerticalOptions="End"
-                WidthRequest="25">
+                MaximumHeightRequest="24"
+                MaximumWidthRequest="24"
+                VerticalOptions="End">
                 <ImageButton.Source>
                     <FontImageSource
                         FontFamily="MaterialIcons"
                         Glyph="&#xF02F9;"
-                        Size="25"
+                        Size="24"
                         Color="#512BD4" />
                 </ImageButton.Source>
             </ImageButton>
@@ -232,15 +223,15 @@
                 Grid.Column="3"
                 Margin="0,0,0,10"
                 Command="{Binding AttachCommand}"
-                HeightRequest="25"
                 IsVisible="{Binding CurrentMessage, Converter={StaticResource StringIsNullOrEmptyToBoolConverter}}"
-                VerticalOptions="End"
-                WidthRequest="25">
+                MaximumHeightRequest="24"
+                MaximumWidthRequest="24"
+                VerticalOptions="End">
                 <ImageButton.Source>
                     <FontImageSource
                         FontFamily="MaterialIcons"
                         Glyph="&#xF0C68;"
-                        Size="25"
+                        Size="24"
                         Color="#512BD4" />
                 </ImageButton.Source>
             </ImageButton>
@@ -250,14 +241,15 @@
                 Grid.Column="3"
                 Margin="0,0,0,10"
                 Command="{Binding SendMessageCommand}"
-                HeightRequest="25"
                 IsVisible="{Binding CurrentMessage, Converter={StaticResource StringIsNotNullOrEmptyToBoolConverter}}"
-                VerticalOptions="End"
-                WidthRequest="25">
+                MaximumHeightRequest="24"
+                MaximumWidthRequest="24"
+                VerticalOptions="End">
                 <ImageButton.Source>
                     <FontImageSource
                         FontFamily="MaterialIcons"
                         Glyph="&#xF1C4D;"
+                        Size="24"
                         Color="#512BD4" />
                 </ImageButton.Source>
             </ImageButton>
