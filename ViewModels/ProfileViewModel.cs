@@ -167,8 +167,6 @@ namespace Sphere.ViewModels
 
         public string BirthDayDisplay => CurrentUser?.UserDTO?.BirthDay.HasValue == true ? CurrentUser.UserDTO.BirthDay.Value.ToString("dd/MM/yyyy") : string.Empty;
 
-        public long Coins => CurrentUser?.UserProfileDTO?.Coins ?? 0;
-
         public string CoverPhotoDisplay => string.IsNullOrWhiteSpace(CurrentUser?.UserProfileDTO?.CoverPhotoUrl)
                 ? "anhbia.jpg"
                 : CurrentUser.UserProfileDTO.CoverPhotoUrl;
@@ -444,7 +442,6 @@ namespace Sphere.ViewModels
             OnPropertyChanged(nameof(AvatarDisplay));
             OnPropertyChanged(nameof(CoverPhotoDisplay));
             OnPropertyChanged(nameof(BioDisplay));
-            OnPropertyChanged(nameof(Coins));
             CheckBioLength();
             OnPropertyChanged(nameof(CanEditProfile));
         }
@@ -478,8 +475,9 @@ namespace Sphere.ViewModels
             try
             {
                 var targetUserId = ViewingUserId.Value;
-
-                bool alreadyUnlocked = PreferencesHelper.IsChatUnlocked(targetUserId);
+                var myId = _userSession.CurrentUser?.UserDTO?.Id;
+                if (myId == null) return;
+                bool alreadyUnlocked = PreferencesHelper.IsChatUnlocked(myId.Value, targetUserId);
                 // 🔵 CASE 1: ĐÃ MỞ KHÓA → đi thẳng
                 if (alreadyUnlocked)
                 {
@@ -515,13 +513,15 @@ namespace Sphere.ViewModels
 
                 if (response.IsSuccess && response.Data?.ConversationId is Guid conId)
                 {
-                    PreferencesHelper.SetChatUnlocked(targetUserId, true);
+                    PreferencesHelper.SetChatUnlocked(myId.Value, targetUserId, true);
+                    UpdateCoins(response.Data.NewBalance);
                     await PopupHelper.HideLoadingAsync();
                     await _anv.DisplayAlertAsync(
                             "Mở khóa thành công",
                             $"Bạn đã mở khóa cuộc trò chuyện. Số dư còn lại: {response.Data.NewBalance} 💎");
 
                     await OpenChatAsync(targetUserId, conId, response.Data.NewBalance);
+                    
                 }
                 else
                 {
@@ -550,6 +550,25 @@ namespace Sphere.ViewModels
                         IsFollow = IsFollowing
                     }
                 });
+        }
+
+        private void UpdateCoins(long newBalance)
+        {
+            var myUser = _userSession.CurrentUser;
+
+            if (myUser?.UserProfileDTO == null) return;
+
+            // update user thật
+            myUser.UserProfileDTO.Coins = newBalance;
+
+            // nếu đang xem chính mình → update UI
+            if (IsViewingSelf)
+            {
+                CurrentUser = myUser; // trigger UI luôn
+            }
+
+            _userSession.CurrentUser = myUser;
+            PreferencesHelper.SaveCurrentUser(myUser);
         }
     } 
 }

@@ -30,7 +30,8 @@ namespace Sphere.ViewModels
         private readonly IShellNavigationService _nv;
         private readonly IAppNavigationService _anv;
         private readonly ApiResponseHelper _res;
-        
+        private readonly IUserSessionService _userSession;
+
 
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(ShouldShowFollowButton))] // cập nhật UI khi thay đổi trạng thái
@@ -41,7 +42,7 @@ namespace Sphere.ViewModels
         [ObservableProperty]
         private Guid userId;
 
-        public DiaryFeedItemViewModel(UserWithDiaryModel model, Guid currentUserId, IFollowService followService, IConversationService conversationService, IShellNavigationService nv, IAppNavigationService anv, ApiResponseHelper res)
+        public DiaryFeedItemViewModel(UserWithDiaryModel model, Guid currentUserId, IFollowService followService, IConversationService conversationService, IShellNavigationService nv, IAppNavigationService anv, ApiResponseHelper res, IUserSessionService userSession)
         {
             Model = model ?? throw new ArgumentNullException(nameof(model));
             _followService = followService;
@@ -49,6 +50,7 @@ namespace Sphere.ViewModels
             _nv = nv;
             _anv = anv;
             _res = res;
+            _userSession = userSession;
             var user = model.UserDiaryDTO ?? throw new ArgumentNullException(nameof(model));
             UserId = user.Id;
 
@@ -133,7 +135,9 @@ namespace Sphere.ViewModels
         public async Task ChatAsync()
         {
             if (IsOwnMess) return;
-            bool alreadyUnlocked = PreferencesHelper.IsChatUnlocked(Model.UserDiaryDTO!.Id);
+            var myId = _userSession.CurrentUser?.UserDTO?.Id;
+            if (myId == null) return;
+            bool alreadyUnlocked = PreferencesHelper.IsChatUnlocked(myId.Value, Model.UserDiaryDTO!.Id);
             if (!alreadyUnlocked)
             {
                 bool confirm = await ApiResponseHelper.ShowShellConfirmAsync( "Xác nhận mở khóa", "Cần tiêu 130 kim cương 💎 để mở khóa cuộc trò chuyện này. Bạn có muốn tiếp tục không?", "Đồng ý", "Hủy");
@@ -156,7 +160,7 @@ namespace Sphere.ViewModels
             }
             if (response.IsSuccess && response.Data?.ConversationId is Guid conId)
             {
-                PreferencesHelper.SetChatUnlocked(Model.UserDiaryDTO.Id, true);
+                PreferencesHelper.SetChatUnlocked(myId.Value, Model.UserDiaryDTO.Id, true);
                 if (!alreadyUnlocked)
                 {
                     await _anv.DisplayAlertAsync("Mở khóa thành công", $"Bạn đã mở khóa cuộc trò chuyện. Số dư còn lại: {response.Data.NewBalance} 💎");

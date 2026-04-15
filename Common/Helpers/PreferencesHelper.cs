@@ -25,21 +25,21 @@ namespace Sphere.Common.Helpers
 
 
         // Lưu trạng thái đã mở khóa
-        public static void SetChatUnlocked(Guid conversationId, bool unlocked)
+        public static void SetChatUnlocked(Guid currentUserId, Guid targetUserId, bool unlocked)
         {
-            Preferences.Set(ChatUnlockedKeyPrefix + conversationId, unlocked);
+            Preferences.Set($"{ChatUnlockedKeyPrefix}{currentUserId}_{targetUserId}", unlocked);
         }
 
         // Lấy trạng thái đã mở khóa
-        public static bool IsChatUnlocked(Guid conversationId)
+        public static bool IsChatUnlocked(Guid currentUserId, Guid targetUserId)
         {
-            return Preferences.Get(ChatUnlockedKeyPrefix + conversationId, false);
+            return Preferences.Get($"{ChatUnlockedKeyPrefix}{currentUserId}_{targetUserId}", false);
         }
 
         // Xóa trạng thái (nếu cần)
-        public static void ClearChatUnlocked(Guid conversationId)
+        public static void ClearChatUnlocked(Guid currentUserId, Guid targetUserId)
         {
-            Preferences.Remove(ChatUnlockedKeyPrefix + conversationId);
+            Preferences.Remove($"{ChatUnlockedKeyPrefix}{currentUserId}_{targetUserId}");
         }
         public static bool GetLocationEnabled()
         {

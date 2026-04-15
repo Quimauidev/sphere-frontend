@@ -94,7 +94,7 @@
             HeightRequest="40"
             Stroke="#DADADA"
             StrokeShape="20"
-            WidthRequest="150">
+            WidthRequest="160">
             <Grid ColumnDefinitions="40,*,40">
                 <!--  Icon Kim Cương  -->
                 <Label
@@ -109,7 +109,7 @@
                     FontAttributes="Bold"
                     FontSize="20"
                     HorizontalOptions="Center"
-                    Text="{Binding Coins, Converter={StaticResource CoinsFormatterConverter}}"
+                    Text="{Binding CurrentUser.UserProfileDTO.Coins, Converter={StaticResource CoinsFormatterConverter}}"
                     TextColor="#1877F2"
                     VerticalOptions="Center">
                     <Label.GestureRecognizers>

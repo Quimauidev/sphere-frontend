@@ -173,7 +173,7 @@ namespace Sphere.ViewModels
                     var items = response.Data?
                     .Select(d =>
                     {
-                        var vm = new DiaryFeedItemViewModel(d, currentUserId, _followService, _conversationService, _nv, _anv,_res);
+                        var vm = new DiaryFeedItemViewModel(d, currentUserId, _followService, _conversationService, _nv, _anv,_res, _userSessionService);
                         vm.IsOnline = PresenceService.OnlineUsersCache.ContainsKey(vm.UserId)
                          ? PresenceService.OnlineUsersCache[vm.UserId]
                          : d.UserDiaryDTO?.IsOnline ?? false;
@@ -244,7 +244,7 @@ namespace Sphere.ViewModels
                     var items = response.Data?
                     .Select(d =>
                     {
-                        var vm = new DiaryFeedItemViewModel(d, currentUserId, _followService, _conversationService, _nv,_anv,_res);
+                        var vm = new DiaryFeedItemViewModel(d, currentUserId, _followService, _conversationService, _nv,_anv,_res, _userSessionService);
                         vm.IsOnline = PresenceService.OnlineUsersCache.ContainsKey(vm.UserId)
                          ? PresenceService.OnlineUsersCache[vm.UserId]
                          : d.UserDiaryDTO?.IsOnline ?? false;
@@ -316,7 +316,7 @@ namespace Sphere.ViewModels
                     var items = response.Data?
                    .Select(d =>
                    {
-                       var vm = new DiaryFeedItemViewModel(d, currentUserId, _followService, _conversationService, _nv, _anv, _res);
+                       var vm = new DiaryFeedItemViewModel(d, currentUserId, _followService, _conversationService, _nv, _anv, _res, _userSessionService);
                        vm.IsOnline = PresenceService.OnlineUsersCache.ContainsKey(vm.UserId)
                          ? PresenceService.OnlineUsersCache[vm.UserId]
                          : d.UserDiaryDTO?.IsOnline ?? false;
