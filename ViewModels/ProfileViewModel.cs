@@ -436,7 +436,7 @@ namespace Sphere.ViewModels
         }
 
         [RelayCommand]
-        // chuyeden trang quan ly coin
+        // chuyển sang trang quản lý kim cương
         public async Task ManageCoins()
         {
             if (IsLoading || !IsViewingSelf)

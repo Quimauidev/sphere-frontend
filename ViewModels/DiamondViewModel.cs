@@ -43,15 +43,12 @@ namespace Sphere.ViewModels
             _res = res;
             Coins = _userSessionService.CurrentUser!.UserProfileDTO!.Coins;
             _ = LoadPackagesAsync();
-            
         }
-
-        public async Task LoadPackagesAsync(bool forceRefresh = false, bool showLoading = true)
+        public async Task LoadPackagesAsync(bool forceRefresh = false)
         {
             if (IsLoading) return;
             IsLoading = true;
-            if (showLoading)
-                await PopupHelper.ShowLoadingAsync();
+            
             try
             {
                 // Lấy từ cache trước
@@ -79,8 +76,6 @@ namespace Sphere.ViewModels
             }
             finally
             {
-                if (showLoading)
-                    await PopupHelper.HideLoadingAsync();
                 IsLoading = false;
                 IsRefreshing = false; // đảm bảo refresh view tắt sau khi load xong
             }
@@ -107,7 +102,7 @@ namespace Sphere.ViewModels
                 PreferencesHelper.ClearDiamondPackages();
 
                 // Tải lại từ API
-                await LoadPackagesAsync(forceRefresh: true, showLoading: false);
+                await LoadPackagesAsync(forceRefresh: true);
             }
             finally
             {
