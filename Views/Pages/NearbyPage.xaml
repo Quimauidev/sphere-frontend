@@ -177,8 +177,11 @@
                                     <Button
                                         Padding="0"
                                         BackgroundColor="#5795ea"
+                                        Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.FollowCommand}"
+                                        CommandParameter="{Binding .}"
                                         CornerRadius="20"
                                         FontSize="12"
+                                        IsVisible="{Binding IsFollowing, Converter={StaticResource InverseBoolConverter}}"
                                         MaximumHeightRequest="30"
                                         MinimumWidthRequest="60"
                                         Text="Theo dõi"

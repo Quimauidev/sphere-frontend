@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace Sphere.Models
 {
-    public class NearbyModel
+    public partial class NearbyModel : ObservableObject
     {
         public Guid UserId { get; set; }
         public string? AvatarUrl { get; set; }
@@ -18,9 +18,13 @@ namespace Sphere.Models
         public Gender Gender { get; set; }
 
         public string? DistanceDisplay { get; set; } // VD: "534m" hoặc "4km"
-        public bool IsFollowed { get; set; } // theo dỗi
-        public bool CanChat { get; set; } // mở khóa chát
+        [ObservableProperty]
+        private bool isFollowing;
 
+        [ObservableProperty]
+        private bool isBusy;
+        //public bool CanChat { get; set; } // mở khóa chát
+       
         public string AvatarDisplay => !string.IsNullOrEmpty(AvatarUrl) ? AvatarUrl : Gender == Gender.Male ? "man.png" : "woman.png";
     }
 }

@@ -24,7 +24,8 @@ namespace Sphere.ViewModels
         private readonly FilterService _filterService;
         // Biến kiểm soát task hiện tại để tránh chạy song song
         private readonly SemaphoreSlim _nearbyLock = new(1, 1);
-
+        private readonly ApiResponseHelper _res;
+        private readonly IFollowService _followService;
         private readonly INearbyService _nearbyService;
         private readonly ILocationService _locationService;
         private readonly IPermissionService _permissionService;
@@ -72,9 +73,11 @@ namespace Sphere.ViewModels
             set => PreferencesHelper.SetHasLocationRecord(value);
         }
 
-        public NearbyViewModel(INearbyService nearbyService, IPermissionService permissionService, IShellNavigationService nv, IAppNavigationService anv, ILocationService locationService, FilterService filterService)
+        public NearbyViewModel(ApiResponseHelper res,INearbyService nearbyService, IFollowService followService, IPermissionService permissionService, IShellNavigationService nv, IAppNavigationService anv, ILocationService locationService, FilterService filterService)
         {
+            _res = res;
             _nearbyService = nearbyService;
+            _followService = followService;
             _permissionService = permissionService;
             _nv = nv;
             _anv = anv;
@@ -446,6 +449,32 @@ namespace Sphere.ViewModels
             if (user == null) return;
             await PopupHelper.ShowLoadingAsync();
             await _nv.PushModalAsync<ProfilePage, Guid?>(user.UserId);
+        }
+
+        [RelayCommand]
+        public async Task Follow(NearbyModel user)
+        {
+            if (user == null || user.IsFollowing) return;
+
+            user.IsBusy = true;
+
+            try
+            {
+                var res = await _followService.FollowUserAsync(user.UserId);
+
+                if (res.IsSuccess)
+                {
+                    user.IsFollowing = true; // 🔥 quan trọng nhất
+                }
+                else
+                {
+                    await _res.ShowApiErrorsAsync(res, "Theo dõi thất bại");
+                }
+            }
+            finally
+            {
+                user.IsBusy = false;
+            }
         }
     }
 }
