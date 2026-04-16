@@ -1,11 +1,13 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using ExCSS;
+using IntelliJ.Lang.Annotations;
 using Sphere.Common.Constans;
 using Sphere.Common.Helpers;
 using Sphere.Common.Responses;
 using Sphere.DTOs;
 using Sphere.Models;
+using Sphere.Models.Params;
 using Sphere.Services.IService;
 using Sphere.Services.Service;
 using Sphere.Views.Pages;
@@ -21,12 +23,14 @@ namespace Sphere.ViewModels
 {
     public partial class NearbyViewModel : BaseViewModel
     {
+        private readonly IUserSessionService _userSession;
         private readonly FilterService _filterService;
         // Biến kiểm soát task hiện tại để tránh chạy song song
         private readonly SemaphoreSlim _nearbyLock = new(1, 1);
         private readonly ApiResponseHelper _res;
         private readonly IFollowService _followService;
         private readonly INearbyService _nearbyService;
+        private readonly IConversationService _conversationService;
         private readonly ILocationService _locationService;
         private readonly IPermissionService _permissionService;
         private CancellationTokenSource? _locationCts;
@@ -49,7 +53,8 @@ namespace Sphere.ViewModels
         private int minAge;
         [ObservableProperty]
         private int maxAge;
-
+        [ObservableProperty]
+        private bool isBusy;
 
         [ObservableProperty]
         private bool isLocationEnabled;
@@ -73,8 +78,10 @@ namespace Sphere.ViewModels
             set => PreferencesHelper.SetHasLocationRecord(value);
         }
 
-        public NearbyViewModel(ApiResponseHelper res,INearbyService nearbyService, IFollowService followService, IPermissionService permissionService, IShellNavigationService nv, IAppNavigationService anv, ILocationService locationService, FilterService filterService)
+        public NearbyViewModel(IUserSessionService userSessionService,IConversationService conversationService ,ApiResponseHelper res,INearbyService nearbyService, IFollowService followService, IPermissionService permissionService, IShellNavigationService nv, IAppNavigationService anv, ILocationService locationService, FilterService filterService)
         {
+            _userSession = userSessionService;
+            _conversationService = conversationService;
             _res = res;
             _nearbyService = nearbyService;
             _followService = followService;
@@ -91,7 +98,9 @@ namespace Sphere.ViewModels
             // 🔹 Đọc trạng thái đã lưu
             IsLocationEnabled = PreferencesHelper.GetLocationEnabled();
         }
-
+        
+        [ObservableProperty]
+        public partial UserWithUserProfileModel? CurrentUser { get; set; }
         // Phương thức khởi tạo để gọi sau khi tạo instance
         public async Task InitAsync()
         {
@@ -475,6 +484,128 @@ namespace Sphere.ViewModels
             {
                 user.IsBusy = false;
             }
+        }
+
+        [RelayCommand]
+        public async Task Chat(NearbyModel user)
+        {
+            if (user == null || user.UserId == Guid.Empty)
+                return;
+
+            if (IsBusy)
+                return;
+            var targetUserId = user.UserId;
+            var myId = _userSession.CurrentUser?.UserDTO?.Id;
+            if (myId == null || myId.Value == targetUserId)
+                return;
+            IsBusy = true;
+
+            try
+            {
+                bool alreadyUnlocked = PreferencesHelper.IsChatUnlocked(myId.Value, targetUserId);
+
+                if (alreadyUnlocked)
+                {
+                    await OpenChatAsync(targetUserId, user);
+                    return;
+                }
+
+                var check = await _conversationService.CheckConversationAsync(targetUserId);
+                if (!check.IsSuccess)
+                {
+                    await _res.ShowApiErrorsAsync(check, "Không thể kiểm tra");
+                    return;
+                }
+
+                var data = check.Data;
+                if (data!.IsUnlocked)
+                {
+                    await OpenChatAsync(data.ConversationId, user);
+                    return;
+                }
+
+                bool confirm = await ApiResponseHelper.ShowShellConfirmAsync(
+                    "Xác nhận mở khóa",
+                    "Cần tiêu 130 kim cương 💎 để mở khóa cuộc trò chuyện này. Bạn có muốn tiếp tục không?",
+                    "Đồng ý",
+                    "Hủy");
+
+                if (!confirm)
+                    return;
+
+                await PopupHelper.ShowLoadingAsync("Đang mở khóa...");
+
+                var response = await _conversationService.StartConversationAsync(targetUserId);
+
+                await PopupHelper.HideLoadingAsync();
+
+                if (response.Errors?.Any(e => e.Code == "NotEnoughDiamonds") == true)
+                {
+                    bool goTopUp = await ApiResponseHelper.ShowShellConfirmAsync(
+                        "Không đủ kim cương 💎",
+                        "Bạn không đủ kim cương. Nạp ngay?",
+                        "Nạp ngay",
+                        "Đóng");
+
+                    if (goTopUp)
+                        await _nv.PushModalAsync<DiamondPage>();
+
+                    return;
+                }
+
+                if (!response.IsSuccess)
+                {
+                    await _res.ShowApiErrorsAsync(response, "Không thể mở chat");
+                    return;
+                }
+
+                PreferencesHelper.SetChatUnlocked(myId.Value, targetUserId, true);
+
+                if (response.Data!.IsFirstUnlock)
+                {
+                    UpdateCoins(response.Data.NewBalance);
+
+                    await _anv.DisplayAlertAsync(
+                        "Mở khóa thành công",
+                        $"Còn lại: {response.Data.NewBalance} 💎");
+                }
+
+                await OpenChatAsync(response.Data.ConversationId, user);
+            }
+            finally
+            {
+                IsBusy = false;
+            }
+        }
+        private async Task OpenChatAsync(Guid? conId, NearbyModel user)
+        {
+            await _nv.PushModalAsync<MessagePage, MessageNavigationParam>(
+                new MessageNavigationParam
+                {
+                    ConversationId = conId ?? Guid.Empty,
+                    Partner = new UserDiaryModel
+                    {
+                        Id = user.UserId,
+                        FullName = user.FullName,
+                        AvatarUrl = user.AvatarUrl,
+                        Gender = user.Gender,
+                        IsOnline = false,
+                        IsFollow = user.IsFollowing
+                    }
+                });
+        }
+
+        private void UpdateCoins(long newBalance)
+        {
+            var myUser = _userSession.CurrentUser;
+
+            if (myUser?.UserProfileDTO == null) return;
+
+            // update user thật
+            myUser.UserProfileDTO.Coins = newBalance;
+            CurrentUser = myUser; // trigger UI luôn
+            _userSession.CurrentUser = myUser;
+            PreferencesHelper.SaveCurrentUser(myUser);
         }
     }
 }

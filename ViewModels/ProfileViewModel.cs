@@ -476,7 +476,7 @@ namespace Sphere.ViewModels
             {
                 var targetUserId = ViewingUserId.Value; 
                 var myId = _userSession.CurrentUser?.UserDTO?.Id;
-                if (myId == null) return;
+                if (myId == null || myId.Value == targetUserId) return;
                 // 🟢 1. CHECK LOCAL TRƯỚC (FAST PATH)
                 bool alreadyUnlocked = PreferencesHelper.IsChatUnlocked(myId.Value, targetUserId);
 
