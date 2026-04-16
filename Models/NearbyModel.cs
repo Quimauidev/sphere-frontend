@@ -23,8 +23,6 @@ namespace Sphere.Models
 
         [ObservableProperty]
         private bool isBusy;
-        //public bool CanChat { get; set; } // mở khóa chát
-       
         public string AvatarDisplay => !string.IsNullOrEmpty(AvatarUrl) ? AvatarUrl : Gender == Gender.Male ? "man.png" : "woman.png";
     }
 }
