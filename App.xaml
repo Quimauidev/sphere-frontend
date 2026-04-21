@@ -30,6 +30,7 @@
             <local:LikeEmojiConverter x:Key="LikeEmojiConverter" />
             <local:LevelToMarginConverter x:Key="LevelToMarginConverter" />
             <local:ExpandReplyTextConverter x:Key="ExpandReplyTextConverter" />
+            <local:InverseBoolToOpacityConverter x:Key="InverseBoolToOpacityConverter" />
 
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="Resources/Styles/Colors.xaml" />

@@ -466,7 +466,7 @@ namespace Sphere.ViewModels
             if (user == null || user.IsFollowing) return;
 
             user.IsBusy = true;
-
+            await PopupHelper.ShowLoadingAsync("Đang theo dõi...");
             try
             {
                 var res = await _followService.FollowUserAsync(user.UserId);
@@ -482,6 +482,7 @@ namespace Sphere.ViewModels
             }
             finally
             {
+                await PopupHelper.HideLoadingAsync();
                 user.IsBusy = false;
             }
         }

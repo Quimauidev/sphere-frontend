@@ -131,7 +131,7 @@
                             Padding="5"
                             Stroke="#ac99ea"
                             StrokeShape="5">
-                            <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="10">
+                            <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto" ColumnSpacing="10">
                                 <Border
                                     HeightRequest="50"
                                     StrokeShape="RoundRectangle 25"
@@ -168,36 +168,33 @@
                                     TextColor="{Binding Gender, Converter={StaticResource GenderToColorConverter}}"
                                     VerticalOptions="Center" />
 
-                                <StackLayout
+                                <Button
                                     Grid.Column="3"
-                                    HeightRequest="40"
-                                    Orientation="Horizontal"
-                                    Spacing="5"
-                                    VerticalOptions="Center">
-                                    <Button
-                                        Padding="0"
-                                        BackgroundColor="#5795ea"
-                                        Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.FollowCommand}"
-                                        CommandParameter="{Binding .}"
-                                        CornerRadius="20"
-                                        FontSize="12"
-                                        IsVisible="{Binding IsFollowing, Converter={StaticResource InverseBoolConverter}}"
-                                        MaximumHeightRequest="30"
-                                        MinimumWidthRequest="60"
-                                        Text="Theo dõi"
-                                        TextColor="White" />
-                                    <Button
-                                        Padding="0"
-                                        BackgroundColor="#e357ea"
-                                        Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.ChatCommand}"
-                                        CommandParameter="{Binding .}"
-                                        CornerRadius="20"
-                                        FontSize="12"
-                                        MaximumHeightRequest="30"
-                                        MinimumWidthRequest="60"
-                                        Text="Nhắn tin"
-                                        TextColor="White" />
-                                </StackLayout>
+                                    Padding="0"
+                                    BackgroundColor="#5795ea"
+                                    Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.FollowCommand}"
+                                    CommandParameter="{Binding .}"
+                                    CornerRadius="20"
+                                    FontSize="12"
+                                    InputTransparent="{Binding IsFollowing}"
+                                    MaximumHeightRequest="30"
+                                    MinimumWidthRequest="60"
+                                    Opacity="{Binding IsFollowing, Converter={StaticResource InverseBoolToOpacityConverter}}"
+                                    Text="Theo dõi"
+                                    TextColor="White" />
+                                <Button
+                                    Grid.Column="4"
+                                    Padding="0"
+                                    BackgroundColor="#e357ea"
+                                    Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.ChatCommand}"
+                                    CommandParameter="{Binding .}"
+                                    CornerRadius="20"
+                                    FontSize="12"
+                                    MaximumHeightRequest="30"
+                                    MinimumWidthRequest="60"
+                                    Text="Nhắn tin"
+                                    TextColor="White" />
+
                             </Grid>
                         </Border>
                     </DataTemplate>
