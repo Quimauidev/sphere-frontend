@@ -86,10 +86,10 @@ namespace Sphere.Services.Service
                    msg.Contains("closed");
         }
         // Hàm xử lý chung cho mọi phương thức HTTP
-        public Task<ApiResponse<TResponse>> SendRequestAsync<TRequest, TResponse>(HttpMethod method, string endpoint, TRequest? data, bool requireAuth, CancellationToken ct)
+        public async Task<ApiResponse<TResponse>> SendRequestAsync<TRequest, TResponse>(HttpMethod method, string endpoint, TRequest? data, bool requireAuth, CancellationToken ct)
         {
             var client = requireAuth ? _httpClientFactory.CreateClient("AuthorizedClient") : _httpClientFactory.CreateClient("PublicClient");
-            return SendWithRetryAsync<TRequest, TResponse>(client, method, endpoint, data, ct);
+            return await SendWithRetryAsync<TRequest, TResponse>(client, method, endpoint, data, ct);
         }
         
         private async Task<ApiResponse<TResponse>> SendWithRetryAsync<TRequest, TResponse>(HttpClient client, HttpMethod method, string endpoint, TRequest? data, CancellationToken ct)
@@ -126,13 +126,13 @@ namespace Sphere.Services.Service
         private static ApiResponse<T> MapNetworkError<T>(HttpRequestException ex)
         {
             var msg = ex.Message.ToLower();
-
+          
             if (msg.Contains("abort") || msg.Contains("closed") || msg.Contains("reset"))
             {
                 return ApiResponse<T>.Fail( "Kết nối bị gián đoạn", "ConnectionAborted", "Kết nối đến máy chủ bị ngắt giữa chừng" );
             }
 
-            return ApiResponse<T>.Fail( "Lỗi mạng", "NetworkError", "Không thể kết nối đến máy chủ" );
+            return ApiResponse<T>.Fail( "Không có kết nối internet", "NoInternet", "Vui lòng kiểm tra WiFi / 4G" );
         }
         private async Task<ApiResponse<T>> HandleResponse<T>(HttpResponseMessage response)
         {
