@@ -24,5 +24,7 @@ namespace Sphere.Models
         [ObservableProperty]
         private bool isBusy;
         public string AvatarDisplay => !string.IsNullOrEmpty(AvatarUrl) ? AvatarUrl : Gender == Gender.Male ? "man.png" : "woman.png";
+        public string BioDisplay => string.IsNullOrWhiteSpace(Bio) ? "Xin chào! Tôi là người bí ẩn mới tham gia" : Bio;
+
     }
 }

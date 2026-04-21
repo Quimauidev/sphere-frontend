@@ -139,6 +139,7 @@ namespace Sphere.ViewModels
 
                 if (res.IsSuccess)
                 {
+                    WeakReferenceMessenger.Default.Send(new FollowChangedMessage(ViewingUserId.Value));
                     IsFollowing = true;
                 }
                 else

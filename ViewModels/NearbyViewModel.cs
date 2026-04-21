@@ -1,5 +1,6 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 using ExCSS;
 using IntelliJ.Lang.Annotations;
 using Sphere.Common.Constans;
@@ -8,6 +9,7 @@ using Sphere.Common.Responses;
 using Sphere.DTOs;
 using Sphere.Models;
 using Sphere.Models.Params;
+using Sphere.Reloads;
 using Sphere.Services.IService;
 using Sphere.Services.Service;
 using Sphere.Views.Pages;
@@ -97,7 +99,12 @@ namespace Sphere.ViewModels
             Distance = _filterService.Distance;
             // 🔹 Đọc trạng thái đã lưu
             IsLocationEnabled = PreferencesHelper.GetLocationEnabled();
-        }
+            WeakReferenceMessenger.Default.Register<FollowChangedMessage>(this, (r, m) =>
+            {
+                var item = Nearby.FirstOrDefault(x => x.UserId == m.Value);
+                item?.IsFollowing = true;
+            });
+        }   
         
         [ObservableProperty]
         public partial UserWithUserProfileModel? CurrentUser { get; set; }

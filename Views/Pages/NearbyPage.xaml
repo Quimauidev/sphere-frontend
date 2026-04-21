@@ -131,7 +131,7 @@
                             Padding="5"
                             Stroke="#ac99ea"
                             StrokeShape="5">
-                            <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto" ColumnSpacing="10">
+                            <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto" ColumnSpacing="5">
                                 <Border
                                     HeightRequest="50"
                                     StrokeShape="RoundRectangle 25"
@@ -156,8 +156,15 @@
                                             <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.OpenProfileCommand}" CommandParameter="{Binding .}" />
                                         </Label.GestureRecognizers>
                                     </Label>
+                                    <!--  Bio  -->
                                     <Label
                                         FontSize="12"
+                                        LineBreakMode="TailTruncation"
+                                        MaxLines="1"
+                                        Text="{Binding BioDisplay}"
+                                        TextColor="Gray" />
+                                    <Label
+                                        FontSize="11"
                                         Text="{Binding DistanceDisplay}"
                                         TextColor="DodgerBlue" />
                                 </StackLayout>
