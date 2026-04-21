@@ -26,195 +26,170 @@
             <Label Text="Bật vị trí" VerticalOptions="Center" />
             <Switch IsToggled="{Binding IsLocationEnabled}" />
         </StackLayout>
+        <Grid Grid.Row="1">
+            <!--  Nội dung khi switch tắt  -->
+            <StackLayout
+                HorizontalOptions="Center"
+                IsVisible="{Binding IsLocationEnabled, Converter={StaticResource InverseBoolConverter}}"
+                Spacing="30"
+                VerticalOptions="Center">
+                <Label
+                    FontAttributes="Bold"
+                    FontSize="16"
+                    HorizontalTextAlignment="Center"
+                    Text="Hãy bật vị trí để tìm bạn bè lân cận" />
+            </StackLayout>
 
-        <!--  Nội dung khi switch tắt  -->
-        <StackLayout
-            Grid.Row="1"
-            HorizontalOptions="Center"
-            IsVisible="{Binding IsLocationEnabled, Converter={StaticResource InverseBoolConverter}}"
-            Spacing="30"
-            VerticalOptions="Center">
-            <Label
-                FontAttributes="Bold"
-                FontSize="16"
-                HorizontalTextAlignment="Center"
-                Text="Hãy bật vị trí để tìm bạn bè lân cận" />
-        </StackLayout>
+            <!--  Loading  -->
+            <ActivityIndicator
+                HorizontalOptions="Center"
+                IsRunning="True"
+                IsVisible="{Binding UiState, Converter={StaticResource StateToBoolConverter}, ConverterParameter=Loading}"
+                VerticalOptions="Center" />
 
-        <!--  Loading  -->
-        <ActivityIndicator
-            Grid.Row="1"
-            HeightRequest="40"
-            HorizontalOptions="Center"
-            IsRunning="True">
-            <ActivityIndicator.IsVisible>
-                <MultiBinding Converter="{StaticResource NearbyItemVisibilityConverter}" ConverterParameter="Loading">
-                    <Binding Path="IsLocationEnabled" />
-                    <Binding Path="UiState" />
-                </MultiBinding>
-            </ActivityIndicator.IsVisible>
-        </ActivityIndicator>
+            <!--  Error  -->
+            <StackLayout
+                HorizontalOptions="Center"
+                IsVisible="{Binding UiState, Converter={StaticResource StateToBoolConverter}, ConverterParameter=Error}"
+                Spacing="20"
+                VerticalOptions="Center">
+                <Label
+                    FontAttributes="Bold"
+                    FontSize="16"
+                    HorizontalTextAlignment="Center"
+                    Text="{Binding ErrorMessage}"
+                    TextColor="Red" />
+                <Button
+                    Command="{Binding ReloadNearbyCommand}"
+                    CornerRadius="25"
+                    Text="Thử lại"
+                    WidthRequest="100" />
+            </StackLayout>
 
-        <!--  Error  -->
-        <StackLayout
-            Grid.Row="1"
-            HorizontalOptions="Center"
-            Spacing="30"
-            VerticalOptions="Center">
-            <StackLayout.IsVisible>
-                <MultiBinding Converter="{StaticResource NearbyItemVisibilityConverter}" ConverterParameter="Error">
-                    <Binding Path="IsLocationEnabled" />
-                    <Binding Path="UiState" />
-                </MultiBinding>
-            </StackLayout.IsVisible>
+            <!--  Empty  -->
+            <StackLayout
+                HorizontalOptions="Center"
+                IsVisible="{Binding UiState, Converter={StaticResource StateToBoolConverter}, ConverterParameter=Empty}"
+                Spacing="20"
+                VerticalOptions="Center">
+                <Label
+                    FontAttributes="Bold"
+                    FontSize="16"
+                    HorizontalTextAlignment="Center"
+                    Text="Không có người dùng nào gần bạn." />
+                <Button
+                    Command="{Binding ReloadNearbyCommand}"
+                    CornerRadius="25"
+                    Text="Thử lại"
+                    WidthRequest="100" />
+            </StackLayout>
 
-            <Label
-                FontAttributes="Bold"
-                FontSize="16"
-                HorizontalTextAlignment="Center"
-                Text="{Binding ErrorMessage}"
-                TextColor="Red" />
-            <Button
-                Command="{Binding LoadFirstNearbyCommand}"
-                Text="Thử lại"
-                WidthRequest="100" />
-        </StackLayout>
+            <!--  Success / danh sách Nearby  -->
+            <RefreshView
+                Command="{Binding RefreshNearbyCommand}"
+                IsRefreshing="{Binding IsRefreshing}"
+                IsVisible="{Binding UiState, Converter={StaticResource StateToBoolConverter}, ConverterParameter=Success}">
 
-        <!--  Empty  -->
-        <StackLayout
-            Grid.Row="1"
-            HorizontalOptions="Center"
-            Spacing="30"
-            VerticalOptions="Center">
-            <StackLayout.IsVisible>
-                <MultiBinding Converter="{StaticResource NearbyItemVisibilityConverter}" ConverterParameter="Empty">
-                    <Binding Path="IsLocationEnabled" />
-                    <Binding Path="UiState" />
-                </MultiBinding>
-            </StackLayout.IsVisible>
-
-            <Label
-                FontAttributes="Bold"
-                FontSize="16"
-                HorizontalTextAlignment="Center"
-                Text="Không có người dùng nào gần bạn." />
-            <Button
-                Command="{Binding LoadFirstNearbyCommand}"
-                Text="Thử lại"
-                WidthRequest="100" />
-        </StackLayout>
-
-        <!--  Success / danh sách Nearby  -->
-        <RefreshView
-            Grid.Row="1"
-            Command="{Binding RefreshNearbyCommand}"
-            IsRefreshing="{Binding IsRefreshing}">
-            <RefreshView.IsVisible>
-                <MultiBinding Converter="{StaticResource NearbyItemVisibilityConverter}" ConverterParameter="Success">
-                    <Binding Path="IsLocationEnabled" />
-                    <Binding Path="UiState" />
-                </MultiBinding>
-            </RefreshView.IsVisible>
-
-            <CollectionView
-                x:Name="NearbyList"
-                ItemsSource="{Binding Nearby}"
-                RemainingItemsThreshold="3"
-                RemainingItemsThresholdReachedCommand="{Binding LoadMoreNearbyCommand}"
-                SelectionMode="None">
-                <CollectionView.ItemsLayout>
-                    <LinearItemsLayout ItemSpacing="5" Orientation="Vertical" />
-                </CollectionView.ItemsLayout>
-                <CollectionView.ItemTemplate>
-                    <DataTemplate>
-                        <Border
-                            Padding="5"
-                            Stroke="#ac99ea"
-                            StrokeShape="5">
-                            <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto" ColumnSpacing="5">
-                                <Border
-                                    HeightRequest="50"
-                                    StrokeShape="RoundRectangle 25"
-                                    StrokeThickness="0"
-                                    WidthRequest="50">
-                                    <Border.GestureRecognizers>
-                                        <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.OpenProfileCommand}" CommandParameter="{Binding .}" />
-                                    </Border.GestureRecognizers>
-                                    <Image Aspect="AspectFill" Source="{Binding AvatarDisplay}" />
-                                </Border>
-
-                                <StackLayout
-                                    Grid.Column="1"
-                                    Orientation="Vertical"
-                                    VerticalOptions="Center">
-                                    <Label
-                                        FontAttributes="Bold"
-                                        LineBreakMode="TailTruncation"
-                                        MaxLines="1"
-                                        Text="{Binding FullName}">
-                                        <Label.GestureRecognizers>
+                <CollectionView
+                    x:Name="NearbyList"
+                    ItemsSource="{Binding Nearby}"
+                    RemainingItemsThreshold="3"
+                    RemainingItemsThresholdReachedCommand="{Binding LoadMoreNearbyCommand}"
+                    SelectionMode="None">
+                    <CollectionView.ItemsLayout>
+                        <LinearItemsLayout ItemSpacing="5" Orientation="Vertical" />
+                    </CollectionView.ItemsLayout>
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate>
+                            <Border
+                                Padding="5"
+                                Stroke="#ac99ea"
+                                StrokeShape="5">
+                                <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto" ColumnSpacing="5">
+                                    <Border
+                                        HeightRequest="50"
+                                        StrokeShape="RoundRectangle 25"
+                                        StrokeThickness="0"
+                                        WidthRequest="50">
+                                        <Border.GestureRecognizers>
                                             <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.OpenProfileCommand}" CommandParameter="{Binding .}" />
-                                        </Label.GestureRecognizers>
-                                    </Label>
-                                    <!--  Bio  -->
+                                        </Border.GestureRecognizers>
+                                        <Image Aspect="AspectFill" Source="{Binding AvatarDisplay}" />
+                                    </Border>
+
+                                    <StackLayout
+                                        Grid.Column="1"
+                                        Orientation="Vertical"
+                                        VerticalOptions="Center">
+                                        <Label
+                                            FontAttributes="Bold"
+                                            LineBreakMode="TailTruncation"
+                                            MaxLines="1"
+                                            Text="{Binding FullName}">
+                                            <Label.GestureRecognizers>
+                                                <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.OpenProfileCommand}" CommandParameter="{Binding .}" />
+                                            </Label.GestureRecognizers>
+                                        </Label>
+                                        <!--  Bio  -->
+                                        <Label
+                                            FontSize="12"
+                                            LineBreakMode="TailTruncation"
+                                            MaxLines="1"
+                                            Text="{Binding BioDisplay}"
+                                            TextColor="Gray" />
+                                        <Label
+                                            FontSize="11"
+                                            Text="{Binding DistanceDisplay}"
+                                            TextColor="DodgerBlue" />
+                                    </StackLayout>
+
                                     <Label
+                                        Grid.Column="2"
+                                        Text="{Binding Age}"
+                                        TextColor="{Binding Gender, Converter={StaticResource GenderToColorConverter}}"
+                                        VerticalOptions="Center" />
+
+                                    <Button
+                                        Grid.Column="3"
+                                        Padding="0"
+                                        BackgroundColor="#5795ea"
+                                        Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.FollowCommand}"
+                                        CommandParameter="{Binding .}"
+                                        CornerRadius="20"
                                         FontSize="12"
-                                        LineBreakMode="TailTruncation"
-                                        MaxLines="1"
-                                        Text="{Binding BioDisplay}"
-                                        TextColor="Gray" />
-                                    <Label
-                                        FontSize="11"
-                                        Text="{Binding DistanceDisplay}"
-                                        TextColor="DodgerBlue" />
-                                </StackLayout>
+                                        InputTransparent="{Binding IsFollowing}"
+                                        MaximumHeightRequest="30"
+                                        MinimumWidthRequest="60"
+                                        Opacity="{Binding IsFollowing, Converter={StaticResource InverseBoolToOpacityConverter}}"
+                                        Text="Theo dõi"
+                                        TextColor="White" />
+                                    <Button
+                                        Grid.Column="4"
+                                        Padding="0"
+                                        BackgroundColor="#e357ea"
+                                        Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.ChatCommand}"
+                                        CommandParameter="{Binding .}"
+                                        CornerRadius="20"
+                                        FontSize="12"
+                                        MaximumHeightRequest="30"
+                                        MinimumWidthRequest="60"
+                                        Text="Nhắn tin"
+                                        TextColor="White" />
 
-                                <Label
-                                    Grid.Column="2"
-                                    Text="{Binding Age}"
-                                    TextColor="{Binding Gender, Converter={StaticResource GenderToColorConverter}}"
-                                    VerticalOptions="Center" />
-
-                                <Button
-                                    Grid.Column="3"
-                                    Padding="0"
-                                    BackgroundColor="#5795ea"
-                                    Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.FollowCommand}"
-                                    CommandParameter="{Binding .}"
-                                    CornerRadius="20"
-                                    FontSize="12"
-                                    InputTransparent="{Binding IsFollowing}"
-                                    MaximumHeightRequest="30"
-                                    MinimumWidthRequest="60"
-                                    Opacity="{Binding IsFollowing, Converter={StaticResource InverseBoolToOpacityConverter}}"
-                                    Text="Theo dõi"
-                                    TextColor="White" />
-                                <Button
-                                    Grid.Column="4"
-                                    Padding="0"
-                                    BackgroundColor="#e357ea"
-                                    Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.ChatCommand}"
-                                    CommandParameter="{Binding .}"
-                                    CornerRadius="20"
-                                    FontSize="12"
-                                    MaximumHeightRequest="30"
-                                    MinimumWidthRequest="60"
-                                    Text="Nhắn tin"
-                                    TextColor="White" />
-
-                            </Grid>
-                        </Border>
-                    </DataTemplate>
-                </CollectionView.ItemTemplate>
-                <CollectionView.Footer>
-                    <ActivityIndicator
-                        Margin="10"
-                        HorizontalOptions="Center"
-                        IsRunning="{Binding IsLoadingMore}"
-                        IsVisible="{Binding IsLoadingMore}" />
-                </CollectionView.Footer>
-            </CollectionView>
-        </RefreshView>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                    <CollectionView.Footer>
+                        <ActivityIndicator
+                            Margin="10"
+                            HorizontalOptions="Center"
+                            IsRunning="{Binding IsLoadingMore}"
+                            IsVisible="{Binding IsLoadingMore}"
+                            VerticalOptions="Center" />
+                    </CollectionView.Footer>
+                </CollectionView>
+            </RefreshView>
+        </Grid>
     </Grid>
-
 </ContentPage>

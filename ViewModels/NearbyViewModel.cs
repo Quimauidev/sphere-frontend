@@ -40,11 +40,9 @@ namespace Sphere.ViewModels
         private readonly IShellNavigationService _nv;
         private readonly IAppNavigationService _anv;
         private bool _initialized;
-        private int _page = 1;
-        private const int _pageSize = 20;
+        private int page = 1;
+        private int pageSize = 20;
         private CancellationTokenSource? _nearbyCts;
-
-        private bool _noMoreData;
 
         [ObservableProperty]
         private bool nearbyLoading;
@@ -272,28 +270,45 @@ namespace Sphere.ViewModels
             }
         }
 
+        [RelayCommand]
         // Phương thức reload dữ liệu nearby, reset paging và trạng thái
         private async Task ReloadNearby()
         {
-            _page = 1;
-            _noMoreData = false;
+            NearbyLoading = false;
+            page = 1;
+            HasNoMoreData = false;
             Nearby.Clear();
 
-            await LoadNearby();
+            await LoadNearby(forceReload:true);
         }
 
         // Phương thức load dữ liệu nearby, kiểm soát để tránh chạy song song, và xử lý paging
-        private async Task LoadNearby()
+        private async Task LoadNearby(bool forceReload = false)
         {
-            if (NearbyLoading || _noMoreData || !IsLocationEnabled)
+            if (!IsLocationEnabled)
+            {
+                UiState = UiViewState.Error;
+                ErrorMessage = "Vui lòng bật vị trí";
                 return;
+            }
+            if (NearbyLoading) return;
+
+            if (HasNoMoreData && !forceReload) return;
 
             if (!await _nearbyLock.WaitAsync(0))
                 return;
+            
 
             try
             {
                 NearbyLoading = true;
+                if (forceReload)
+                {
+                    page = 1;
+                    HasNoMoreData = false;
+                    Nearby.Clear();
+                    UiState = UiViewState.Loading;
+                }
                 _nearbyCts?.Cancel();
                 _nearbyCts?.Dispose();
                 _nearbyCts = new CancellationTokenSource();
@@ -303,8 +318,8 @@ namespace Sphere.ViewModels
                     Latitude = _currentLocation!.Latitude,
                     Longitude = _currentLocation.Longitude,
                     DistanceKm = Distance,
-                    Page = _page,
-                    PageSize = _pageSize,
+                    Page = page,
+                    PageSize = pageSize,
                     Gender = SelectedGender,
                     MinAge = MinAge,
                     MaxAge = MaxAge
@@ -316,35 +331,28 @@ namespace Sphere.ViewModels
                 if (!resp.IsSuccess)
                 {
                     UiState = UiViewState.Error;
-                    ErrorMessage = resp.Message;
+                    ErrorMessage = resp.Errors?.FirstOrDefault()?.Description ?? resp.Message ?? "Có lỗi xảy ra";
                     return;
                 }
 
                 var data = resp.Data ?? [];
-                if (!data.Any())
+                if (page ==1 && !data.Any())
                 {
-                    if (_page == 1)
-                        UiState = UiViewState.Empty;
-
-                    _noMoreData = true; // đánh dấu không còn dữ liệu để load nữa
+                    UiState = UiViewState.Empty;
+                    HasNoMoreData = true; // đánh dấu không còn dữ liệu để load nữa
                     return;
                 }
 
                 foreach (var item in data)
                     Nearby.Add(item);
-                if (data.Count() < _pageSize)
+                HasNoMoreData = data.Count() < pageSize;
+                if (!HasNoMoreData)
                 {
-                    _noMoreData = true;
+                    page++;
                 }
-                _page++;
-
                 _lastLoadTime = DateTime.UtcNow;
 
                 UiState = UiViewState.Success;
-            }
-            catch (TaskCanceledException)
-            {
-                // 🔥 ignore (bị cancel là bình thường)
             }
             finally
             {
@@ -374,7 +382,7 @@ namespace Sphere.ViewModels
         [RelayCommand]
         public async Task LoadMoreNearby()
         {
-            if (_noMoreData || NearbyLoading || IsLoadingMore)
+            if (HasNoMoreData || NearbyLoading || IsLoadingMore)
                 return;
 
             try

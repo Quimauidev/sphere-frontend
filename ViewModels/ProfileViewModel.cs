@@ -90,7 +90,7 @@ namespace Sphere.ViewModels
             {
                 // 👉 profile của mình
                 CurrentUser = _userSession.CurrentUser;
-                await DiaryListVM.LoadFirstPage();
+                await DiaryListVM.ReloadDiary();
             }
             else
             {
@@ -118,7 +118,7 @@ namespace Sphere.ViewModels
                     
                 };
                 IsFollowing = resp.Data.IsFollowing;
-                await DiaryListVM.LoadFirstPage(userId);
+                await DiaryListVM.ReloadDiary(userId);
             }
             finally
             {

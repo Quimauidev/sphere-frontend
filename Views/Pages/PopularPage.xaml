@@ -10,12 +10,10 @@
     <Grid>
         <!--  Loading  -->
         <ActivityIndicator
-            HeightRequest="40"
             HorizontalOptions="Center"
             IsRunning="True"
             IsVisible="{Binding PopularState, Converter={StaticResource StateToBoolConverter}, ConverterParameter=Loading}"
-            VerticalOptions="Center"
-            WidthRequest="40" />
+            VerticalOptions="Center" />
 
         <!--  Error  -->
         <StackLayout
@@ -49,25 +47,6 @@
             <Button
                 Command="{Binding LoadFirstPopularPageCommand}"
                 CornerRadius="25"
-                Text="Thử lại"
-                WidthRequest="100" />
-        </StackLayout>
-
-        <!--  Offline  -->
-        <StackLayout
-            HorizontalOptions="Center"
-            IsVisible="{Binding PopularState, Converter={StaticResource StateToBoolConverter}, ConverterParameter=Offline}"
-            Spacing="20"
-            VerticalOptions="Center">
-            <Label
-                FontAttributes="Bold"
-                FontSize="16"
-                Text="{Binding PopularErrorMessage}"
-                TextColor="Red" />
-            <Button
-                Command="{Binding LoadFirstPopularPageCommand}"
-                CornerRadius="25"
-                HeightRequest="40"
                 Text="Thử lại"
                 WidthRequest="100" />
         </StackLayout>

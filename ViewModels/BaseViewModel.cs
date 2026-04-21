@@ -28,6 +28,9 @@ namespace Sphere.ViewModels
 
         [ObservableProperty]
         private string? errorMessage;
+
+        [ObservableProperty]
+        private bool hasNoMoreData;
     }
 
 }
