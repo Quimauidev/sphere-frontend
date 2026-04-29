@@ -81,93 +81,43 @@ namespace Sphere.ViewModels.DiaryViewModels
         }
 
         // like commnet và reply
-        //[RelayCommand]
-        //public async Task CommentLikeAsync(DiaryCommentFlatItem item)
-        //{
-        //    if (item.IsBusy)
-        //        return;
-
-        //    item.IsBusy = true;
-
-        //    // 🔥 UI đổi NGAY
-        //    item.IsLiked = !item.IsLiked;
-        //    item.LikeCount += item.IsLiked ? 1 : -1;
-
-        //    try
-        //    {
-        //        var res = await _diaryService.SetCommentLikeAsync(item.Comment.Id);
-
-        //        if (!res.IsSuccess)
-        //            await _res.ShowApiErrorsAsync(res, "Thao tác thích thất bại");
-
-        //        // ✅ Sync nhẹ (chỉ khi lệch)
-        //        if (item.IsLiked != res.Data!.IsLiked)
-        //            item.IsLiked = res.Data.IsLiked;
-
-        //        item.LikeCount = res.Data.LikeCount;
-        //    }
-        //    catch
-        //    {
-        //        // ❌ rollback nếu fail
-        //        item.IsLiked = !item.IsLiked;
-        //        item.LikeCount += item.IsLiked ? 1 : -1;
-        //    }
-        //    finally
-        //    {
-        //        item.IsBusy = false;
-        //    }
-        //}
         [RelayCommand]
         public async Task CommentLikeAsync(DiaryCommentFlatItem item)
         {
-            // 1. Update UI ngay
-            var newState = !item.IsLiked;
-
-            item.IsLiked = newState;
-            item.PendingLikeState = newState;
-            item.LikeCount += newState ? 1 : -1;
-
-            // 2. Nếu đang xử lý → thôi (loop xử lý)
-            if (item.IsProcessingLike)
+            if (item.IsBusy)
                 return;
 
-            item.IsProcessingLike = true;
+            item.IsBusy = true;
+
+            // 🔥 UI đổi NGAY
+            item.IsLiked = !item.IsLiked;
+            item.LikeCount += item.IsLiked ? 1 : -1;
 
             try
             {
-                while (true)
-                {
-                    var stateToSend = item.PendingLikeState;
+                var res = await _diaryService.SetCommentLikeAsync(item.Comment.Id);
 
-                    var res = await _diaryService.SetCommentLikeAsync(item.Comment.Id, stateToSend);
+                if (!res.IsSuccess)
+                    await _res.ShowApiErrorsAsync(res, "Thao tác thích thất bại");
 
-                    if (!res.IsSuccess)
-                    {
-                        await _res.ShowApiErrorsAsync(res, "Thao tác thích thất bại");
-                        break;
-                    }
+                // ✅ Sync nhẹ (chỉ khi lệch)
+                if (item.IsLiked != res.Data!.IsLiked)
+                    item.IsLiked = res.Data.IsLiked;
 
-                    // sync nhẹ nếu lệch
-                    if (item.IsLiked != res.Data!.IsLiked)
-                        item.IsLiked = res.Data.IsLiked;
-
-                    item.LikeCount = res.Data.LikeCount;
-
-                    if (stateToSend == item.PendingLikeState)
-                        break;
-                }
+                item.LikeCount = res.Data.LikeCount;
             }
             catch
             {
-                // rollback
+                // ❌ rollback nếu fail
                 item.IsLiked = !item.IsLiked;
                 item.LikeCount += item.IsLiked ? 1 : -1;
             }
             finally
             {
-                item.IsProcessingLike = false;
+                item.IsBusy = false;
             }
         }
+
 
         [RelayCommand]
         public async Task LoadCommentsAsync()

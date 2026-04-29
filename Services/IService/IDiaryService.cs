@@ -18,7 +18,7 @@ namespace Sphere.Services.IService
         Task<ApiResponse<bool>> DeleteDiaryAsync(Guid id);
         Task<ApiResponse<IEnumerable<UserWithDiaryModel>>> GetHomeDiariesAsync(string type, int page, int pageSize, CancellationToken ct = default);
         Task<ApiResponse<DiaryLikeStatusDTO>> SetLikeAsync(Guid diaryId);
-        Task<ApiResponse<CommentLikeStatusDTO>> SetCommentLikeAsync(Guid commentId, bool isLiked);
+        Task<ApiResponse<CommentLikeStatusDTO>> SetCommentLikeAsync(Guid commentId);
         Task<ApiResponse<IEnumerable<DiaryCommentUIModel>>> GetCommentAsync(Guid id, int page,int pageSize);
         Task<ApiResponse<IEnumerable<DiaryCommentUIModel>>> GetRepliesAsync(Guid id, int page, int pageSize);
         Task<ApiResponse<DiaryCommentUIModel>> CreateCommentAsync(Guid diaryId, string content, Guid? replyToCommentId = null);

@@ -131,10 +131,9 @@ namespace Sphere.Services.Service
           return await apiService.PostAsync<object, bool>($"api/diary/comment/{commentId}/report", null!);
         }
 
-        public async Task<ApiResponse<CommentLikeStatusDTO>> SetCommentLikeAsync(Guid commentId, bool isLiked)
+        public async Task<ApiResponse<CommentLikeStatusDTO>> SetCommentLikeAsync(Guid commentId)
         {
-            //return await apiService.PostAsync<object, CommentLikeStatusDTO>($"api/diary/comment/{commentId}/like", null!);
-            return await apiService.PutAsync<object, CommentLikeStatusDTO>( $"api/diary/comment/like", new { commentId, isLiked });
+            return await apiService.PostAsync<object, CommentLikeStatusDTO>($"api/diary/comment/{commentId}/like", null!);
         }
 
         public async Task<ApiResponse<DiaryLikeStatusDTO>> SetLikeAsync(Guid diaryId)
