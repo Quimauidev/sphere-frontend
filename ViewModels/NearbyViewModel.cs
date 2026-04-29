@@ -291,11 +291,8 @@ namespace Sphere.ViewModels
         // Phương thức reload dữ liệu nearby, reset paging và trạng thái
         private async Task ReloadNearby()
         {
-            NearbyLoading = false;
             page = 1;
-            HasNoMoreData = false;
             Nearby.Clear();
-
             await LoadNearby(forceReload:true);
         }
 
@@ -352,12 +349,7 @@ namespace Sphere.ViewModels
                 }
 
                 var data = resp.Data ?? [];
-                if (page ==1 && !data.Any())
-                {
-                    UiState = UiViewState.Empty;
-                    HasNoMoreData = true; // đánh dấu không còn dữ liệu để load nữa
-                    return;
-                }
+              
 
                 foreach (var item in data)
                     Nearby.Add(item);
@@ -369,11 +361,12 @@ namespace Sphere.ViewModels
                 HasNoMoreData = data.Count() < pageSize;
                 _lastLoadTime = DateTime.UtcNow;
 
-                UiState = UiViewState.Success;
+                UiState = nearby.Count == 0 ? UiViewState.Empty : UiViewState.Success;
             }
             finally
             {
                 NearbyLoading = false;
+                IsRefreshing = false;
                 _nearbyLock.Release();
             }
         }
@@ -399,12 +392,12 @@ namespace Sphere.ViewModels
         [RelayCommand]
         public async Task LoadMoreNearby()
         {
-            if (HasNoMoreData || NearbyLoading || IsLoadingMore)
-                return;
+            if (HasNoMoreData || IsLoadingMore) return;
+
+            IsLoadingMore = true;
 
             try
             {
-                IsLoadingMore = true;
                 await LoadNearby();
             }
             finally
@@ -412,6 +405,8 @@ namespace Sphere.ViewModels
                 IsLoadingMore = false;
             }
         }
+
+       
 
         // Command để refresh lại danh sách nearby, reset paging và trạng thái
         [RelayCommand]
@@ -441,7 +436,7 @@ namespace Sphere.ViewModels
                         Longitude = _currentLocation.Longitude
                     });
                 }
-                await LoadNearby(forceReload: true);
+                await ReloadNearby();
             }
             finally
             {
