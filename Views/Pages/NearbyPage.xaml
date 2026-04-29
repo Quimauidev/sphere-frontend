@@ -11,7 +11,7 @@
             <ToolbarItem.IconImageSource>
                 <FontImageSource
                     FontFamily="MaterialIcons"
-                    Glyph="&#xF10E6;"
+                    Glyph="&#xF10E5;"
                     Size="24"
                     Color="#512BD4" />
             </ToolbarItem.IconImageSource>
@@ -44,13 +44,13 @@
             <ActivityIndicator
                 HorizontalOptions="Center"
                 IsRunning="True"
-                IsVisible="{Binding UiState, Converter={StaticResource StateToBoolConverter}, ConverterParameter=Loading}"
+                IsVisible="{Binding ShowLoading}"
                 VerticalOptions="Center" />
 
             <!--  Error  -->
             <StackLayout
                 HorizontalOptions="Center"
-                IsVisible="{Binding UiState, Converter={StaticResource StateToBoolConverter}, ConverterParameter=Error}"
+                IsVisible="{Binding ShowError}"
                 Spacing="20"
                 VerticalOptions="Center">
                 <Label
@@ -69,7 +69,7 @@
             <!--  Empty  -->
             <StackLayout
                 HorizontalOptions="Center"
-                IsVisible="{Binding UiState, Converter={StaticResource StateToBoolConverter}, ConverterParameter=Empty}"
+                IsVisible="{Binding ShowEmpty}"
                 Spacing="20"
                 VerticalOptions="Center">
                 <Label
@@ -88,7 +88,7 @@
             <RefreshView
                 Command="{Binding RefreshNearbyCommand}"
                 IsRefreshing="{Binding IsRefreshing}"
-                IsVisible="{Binding UiState, Converter={StaticResource StateToBoolConverter}, ConverterParameter=Success}">
+                IsVisible="{Binding ShowContent}">
 
                 <CollectionView
                     x:Name="NearbyList"
@@ -134,7 +134,7 @@
                                         <Label
                                             FontSize="12"
                                             LineBreakMode="TailTruncation"
-                                            MaxLines="1"
+                                            MaxLines="2"
                                             Text="{Binding BioDisplay}"
                                             TextColor="Gray" />
                                         <Label

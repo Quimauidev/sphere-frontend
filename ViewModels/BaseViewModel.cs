@@ -17,6 +17,7 @@ namespace Sphere.ViewModels
         public bool IsSuccess => UiState == UiViewState.Success;
         public bool IsEmpty => UiState == UiViewState.Empty;
         public bool IsError => UiState == UiViewState.Error;
+        public bool IsIdle => UiState == UiViewState.Idle;
 
         partial void OnUiStateChanged(UiViewState value)
         {
@@ -24,6 +25,7 @@ namespace Sphere.ViewModels
             OnPropertyChanged(nameof(IsSuccess));
             OnPropertyChanged(nameof(IsEmpty));
             OnPropertyChanged(nameof(IsError));
+            OnPropertyChanged(nameof(IsIdle));
         }
 
         [ObservableProperty]

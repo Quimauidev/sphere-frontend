@@ -16,6 +16,7 @@ using Sphere.Views.Pages;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -70,6 +71,10 @@ namespace Sphere.ViewModels
 
         [ObservableProperty]
         private ObservableCollection<NearbyModel> nearby = [];
+        public bool ShowLoading => IsLocationEnabled && IsLoading && !IsRefreshing;
+        public bool ShowError => IsLocationEnabled && IsError;
+        public bool ShowEmpty => IsLocationEnabled && IsEmpty;
+        public bool ShowContent => IsLocationEnabled && IsSuccess;
 
         // Trạng thái đã lưu để biết đã tạo record vị trí trên server chưa, tránh trường hợp bật
         private static bool HasLocationRecord
@@ -115,6 +120,7 @@ namespace Sphere.ViewModels
             _initialized = true;
             if (IsLocationEnabled)
             {
+                UiState = UiViewState.Loading;
                 _locationCts = new CancellationTokenSource();
                 await EnableLocationAsync(_locationCts.Token);
             }
@@ -132,13 +138,24 @@ namespace Sphere.ViewModels
             catch { }
             if (value)
             {
+                // Khi bật lại vị trí, reset state và bắt đầu loading
+                UiState = UiViewState.Loading;
                 _locationCts = new CancellationTokenSource();
                 _ = EnableLocationAsync(_locationCts.Token);
             }
             else
+            {
+                // Khi tắt vị trí, reset state và bắt đầu loading
+                UiState = UiViewState.Idle;
                 _ = DisableLocationAsync();
-        }
+            }
 
+            OnPropertyChanged(nameof(ShowLoading));
+            OnPropertyChanged(nameof(ShowError));
+            OnPropertyChanged(nameof(ShowEmpty));
+            OnPropertyChanged(nameof(ShowContent));
+        }
+        
         // Phương thức enable location với kiểm soát để tránh chạy song song
         private async Task EnableLocationAsync(CancellationToken token)
         {
@@ -287,8 +304,7 @@ namespace Sphere.ViewModels
         {
             if (!IsLocationEnabled)
             {
-                UiState = UiViewState.Error;
-                ErrorMessage = "Vui lòng bật vị trí";
+                _nearbyCts?.Cancel(); // 🔥 bắt buộc
                 return;
             }
             if (NearbyLoading) return;
@@ -307,6 +323,9 @@ namespace Sphere.ViewModels
                     page = 1;
                     HasNoMoreData = false;
                     Nearby.Clear();
+                }
+                if (page == 1 && !IsRefreshing)
+                {
                     UiState = UiViewState.Loading;
                 }
                 _nearbyCts?.Cancel();
@@ -622,6 +641,18 @@ namespace Sphere.ViewModels
             CurrentUser = myUser; // trigger UI luôn
             _userSession.CurrentUser = myUser;
             PreferencesHelper.SaveCurrentUser(myUser);
+        }
+        protected override void OnPropertyChanged(PropertyChangedEventArgs e)
+        {
+            base.OnPropertyChanged(e);
+
+            if (e.PropertyName == nameof(UiState))
+            {
+                OnPropertyChanged(nameof(ShowLoading));
+                OnPropertyChanged(nameof(ShowError));
+                OnPropertyChanged(nameof(ShowEmpty));
+                OnPropertyChanged(nameof(ShowContent));
+            }
         }
     }
 }

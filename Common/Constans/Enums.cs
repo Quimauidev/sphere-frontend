@@ -29,6 +29,7 @@ namespace Sphere.Common.Constans
 
     public enum UiViewState
     {
+        Idle,
         Loading,
         Success,
         Empty,
