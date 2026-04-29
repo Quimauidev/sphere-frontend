@@ -75,7 +75,7 @@ namespace Sphere.ViewModels
             if (IsLoading) return;
 
             IsLoading = true;
-            await PopupHelper.ShowLoadingAsync();
+            await PopupHelper.ShowLoadingAsync("Đang đăng nhập...");
 
             try
             {

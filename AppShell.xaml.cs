@@ -54,7 +54,7 @@ namespace Sphere
             if (!confirm)
                 return;
             IsLoading = true;
-            await PopupHelper.ShowLoadingAsync();
+            await PopupHelper.ShowLoadingAsync("Đang đăng xuất...");
             try
             {
                 await _presenceService.StopAsync();

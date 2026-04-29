@@ -43,7 +43,7 @@
                             Margin="2"
                             Padding="5"
                             BackgroundColor="White"
-                            StrokeShape="20">
+                            StrokeShape="10">
                             <VerticalStackLayout Spacing="5">
 
                                 <Label
@@ -63,7 +63,7 @@
                                     CommandParameter="{Binding .}"
                                     CornerRadius="25"
                                     FontAttributes="Bold"
-                                    HeightRequest="40"
+                                    MaximumHeightRequest="40"
                                     Text="Nạp ngay" />
                             </VerticalStackLayout>
                         </Border>

@@ -582,5 +582,19 @@ namespace Sphere.ViewModels
             _userSession.CurrentUser = myUser;
             PreferencesHelper.SaveCurrentUser(myUser);
         }
+
+        // id number
+        [RelayCommand]
+        private async Task CopyNumberAsync()
+        {
+            if (UserIdNumberDisplay == 0)
+            {
+                await ApiResponseHelper.ShowShellAlertAsync("Lỗi", "Không có ID để copy.");
+                return;
+            }
+            var text = UserIdNumberDisplay.ToString();
+            await Clipboard.SetTextAsync(text);
+            await ApiResponseHelper.ShowShellAlertAsync("Đã copy", $"Đã sao chép {text}");
+        }
     } 
 }

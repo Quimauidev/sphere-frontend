@@ -58,8 +58,11 @@
         </Grid>
         <VerticalStackLayout HorizontalOptions="Center">
             <HorizontalStackLayout Spacing="10">
-                <Label Text="{Binding CurrentUser.UserDTO.UserIdNumber, StringFormat='ID: {0}'}" TextColor="#666" />
-                <ImageButton MaximumHeightRequest="18" MaximumWidthRequest="18">
+                <Label Text="{Binding UserIdNumberDisplay, StringFormat='ID: {0}'}" TextColor="#666" />
+                <ImageButton
+                    Command="{Binding CopyNumberCommand}"
+                    MaximumHeightRequest="18"
+                    MaximumWidthRequest="18">
                     <ImageButton.Source>
                         <FontImageSource
                             FontFamily="MaterialIcons"
