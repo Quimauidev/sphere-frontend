@@ -20,6 +20,13 @@ namespace Sphere.Models
 
         [ObservableProperty]
         private bool isBusy;
+
+        [ObservableProperty]
+        private bool isProcessingLike;
+
+        [ObservableProperty]
+        private bool pendingLikeState;
+
         public Action<DiaryCommentFlatItem>? RequestEdit { get; set; }
         public Action<DiaryCommentFlatItem>? RequestDelete { get; set; }
 
