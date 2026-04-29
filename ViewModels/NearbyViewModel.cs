@@ -455,7 +455,7 @@ namespace Sphere.ViewModels
         {
             if (!IsLocationEnabled)
             {
-                await _anv.DisplayAlertAsync("Thông báo", "Vui lòng bật định vị để lọc lân cận");
+                await _anv.DisplayAlertAsync("Thông báo", "Vui lòng bật vị trí để lọc lân cận");
                 return;
             }
             var param = new FilterParam
