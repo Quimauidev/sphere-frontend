@@ -5,6 +5,7 @@ using Sphere.Models;
 using Sphere.Services.IService;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.Design;
 using System.Linq;
 using System.Net.Http.Headers;
 using System.Text;
@@ -136,11 +137,14 @@ namespace Sphere.Services.Service
             return await apiService.PostAsync<object, CommentLikeStatusDTO>($"api/diary/comment/{commentId}/like", null!);
         }
 
-        public async Task<ApiResponse<DiaryLikeStatusDTO>> SetLikeAsync(Guid diaryId)
+        //public async Task<ApiResponse<DiaryLikeStatusDTO>> SetLikeAsync(Guid diaryId)
+        //{
+        //    return await apiService.PostAsync<object, DiaryLikeStatusDTO>( $"api/diary/{diaryId}/like",null!);
+        //}
+        public async Task<ApiResponse<DiaryLikeStatusDTO>> SetLikeAsync(Guid diaryId, bool isLiked)
         {
-            return await apiService.PostAsync<object, DiaryLikeStatusDTO>( $"api/diary/{diaryId}/like",null!);
+            return await apiService.PutAsync<object, DiaryLikeStatusDTO>( $"api/diary/like", new { diaryId, isLiked });
         }
-
         public async Task<ApiResponse<DiaryCommentUIModel>> UpdateCommentAsync(Guid commentId, string? newContent, Guid? replyToUserId)
         {
             var body = new 

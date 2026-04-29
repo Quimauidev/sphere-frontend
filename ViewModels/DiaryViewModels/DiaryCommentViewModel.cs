@@ -117,7 +117,6 @@ namespace Sphere.ViewModels.DiaryViewModels
                 item.IsBusy = false;
             }
         }
-        private CancellationTokenSource? _likeCts;
 
         [RelayCommand]
         public async Task LoadCommentsAsync()

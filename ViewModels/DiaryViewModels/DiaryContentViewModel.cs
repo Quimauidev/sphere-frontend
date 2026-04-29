@@ -135,40 +135,91 @@ namespace Sphere.ViewModels.DiaryViewModels
         private bool isBusy;
 
         // like bài viết
-        [RelayCommand]
+        //[RelayCommand]
+        //public async Task LikeAsync()
+        //{
+        //    if (IsBusy)
+        //        return;
+
+        //    IsBusy = true;
+
+        //    // 🔥 UI đổi NGAY
+        //    IsLiked = !IsLiked;
+        //    LikeCount += IsLiked ? 1 : -1;
+
+        //    try
+        //    {
+        //        var res = await _diaryService.SetLikeAsync(Model.Id);
+
+        //        if (!res.IsSuccess)
+        //           await _res.ShowApiErrorsAsync(res, "Thao tác thích thất bại");
+
+        //        // ✅ Sync nhẹ (chỉ khi lệch)
+        //        if (IsLiked != res.Data!.IsLiked)
+        //            IsLiked = res.Data.IsLiked;
+
+        //        LikeCount = res.Data.LikeCount;
+        //    }
+        //    catch
+        //    {
+        //        // ❌ rollback nếu fail
+        //        IsLiked = !IsLiked;
+        //        LikeCount += IsLiked ? 1 : -1;
+        //    }
+        //    finally
+        //    {
+        //        IsBusy = false;
+        //    }
+        //}
+
+        private CancellationTokenSource? _likeCts;
+
+        [RelayCommand(AllowConcurrentExecutions = true)]
         public async Task LikeAsync()
         {
-            if (IsBusy)
-                return;
+            var originalState = IsLiked;
+            var originalCount = LikeCount;
 
-            IsBusy = true;
+            var newState = !IsLiked;
 
-            // 🔥 UI đổi NGAY
-            IsLiked = !IsLiked;
-            LikeCount += IsLiked ? 1 : -1;
+            // 🔥 UI update ngay
+            IsLiked = newState;
+            LikeCount += newState ? 1 : -1;
+
+            _likeCts?.Cancel();
+            _likeCts = new CancellationTokenSource();
+            var currentCts = _likeCts; // 🔥 giữ reference
+            var token = currentCts.Token;
 
             try
             {
-                var res = await _diaryService.SetLikeAsync(Model.Id);
+                await Task.Delay(300, token);
+
+                var finalState = IsLiked;
+
+                var res = await _diaryService.SetLikeAsync(Model.Id, finalState);
+
+                // ❗ CHỈ xử lý nếu vẫn là request mới nhất
+                if (currentCts != _likeCts)
+                    return;
 
                 if (!res.IsSuccess)
-                   await _res.ShowApiErrorsAsync(res, "Thao tác thích thất bại");
+                {
+                    await _res.ShowApiErrorsAsync(res, "Thao tác thích thất bại");
 
-                // ✅ Sync nhẹ (chỉ khi lệch)
-                if (IsLiked != res.Data!.IsLiked)
-                    IsLiked = res.Data.IsLiked;
-
-                LikeCount = res.Data.LikeCount;
+                    // rollback
+                    IsLiked = originalState;
+                    LikeCount = originalCount;
+                }
+                else
+                {
+                    if (LikeCount != res.Data!.LikeCount)
+                        LikeCount = res.Data.LikeCount;
+                }
             }
-            catch
+            catch (TaskCanceledException)
             {
-                // ❌ rollback nếu fail
-                IsLiked = !IsLiked;
-                LikeCount += IsLiked ? 1 : -1;
-            }
-            finally
-            {
-                IsBusy = false;
+                // 👉 bị spam → bỏ qua (KHÔNG lỗi)
             }
         }
         public int CommentCount => Model.CommentCount;
