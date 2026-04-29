@@ -81,92 +81,43 @@ namespace Sphere.ViewModels.DiaryViewModels
         }
 
         // like commnet và reply
-        //[RelayCommand]
-        //public async Task CommentLikeAsync(DiaryCommentFlatItem item)
-        //{
-        //    if (item.IsBusy)
-        //        return;
-
-        //    item.IsBusy = true;
-
-        //    // 🔥 UI đổi NGAY
-        //    item.IsLiked = !item.IsLiked;
-        //    item.LikeCount += item.IsLiked ? 1 : -1;
-
-        //    try
-        //    {
-        //        var res = await _diaryService.SetCommentLikeAsync(item.Comment.Id);
-
-        //        if (!res.IsSuccess)
-        //            await _res.ShowApiErrorsAsync(res, "Thao tác thích thất bại");
-
-        //        // ✅ Sync nhẹ (chỉ khi lệch)
-        //        if (item.IsLiked != res.Data!.IsLiked)
-        //            item.IsLiked = res.Data.IsLiked;
-
-        //        item.LikeCount = res.Data.LikeCount;
-        //    }
-        //    catch
-        //    {
-        //        // ❌ rollback nếu fail
-        //        item.IsLiked = !item.IsLiked;
-        //        item.LikeCount += item.IsLiked ? 1 : -1;
-        //    }
-        //    finally
-        //    {
-        //        item.IsBusy = false;
-        //    }
-        //}
-        private CancellationTokenSource? _likeCts;
-
         [RelayCommand]
         public async Task CommentLikeAsync(DiaryCommentFlatItem item)
         {
-            // 🔥 1. Update UI ngay
-            var newState = !item.IsLiked;
+            if (item.IsBusy)
+                return;
 
-            item.IsLiked = newState;
-            item.LikeCount += newState ? 1 : -1;
+            item.IsBusy = true;
 
-            // 🔥 2. Lưu trạng thái cuối
-            item.PendingLikeState = newState;
-
-            // 🔥 3. Cancel request cũ
-            _likeCts?.Cancel();
-            _likeCts = new CancellationTokenSource();
-            var token = _likeCts.Token;
+            // 🔥 UI đổi NGAY
+            item.IsLiked = !item.IsLiked;
+            item.LikeCount += item.IsLiked ? 1 : -1;
 
             try
             {
-                // 🔥 4. Chờ user ngừng bấm
-                await Task.Delay(300, token);
-
-                // 🔥 5. Gọi API DUY NHẤT 1 lần
-                var res = await _diaryService.SetCommentLikeAsync(
-                    item.Comment.Id,
-                    item.PendingLikeState
-                );
+                var res = await _diaryService.SetCommentLikeAsync(item.Comment.Id);
 
                 if (!res.IsSuccess)
-                {
                     await _res.ShowApiErrorsAsync(res, "Thao tác thích thất bại");
 
-                    // rollback nhẹ
-                    item.IsLiked = !item.IsLiked;
-                    item.LikeCount += item.IsLiked ? 1 : -1;
-                }
-                else
-                {
-                    // sync count nếu lệch
-                    if (item.LikeCount != res.Data!.LikeCount)
-                        item.LikeCount = res.Data.LikeCount;
-                }
+                // ✅ Sync nhẹ (chỉ khi lệch)
+                if (item.IsLiked != res.Data!.IsLiked)
+                    item.IsLiked = res.Data.IsLiked;
+
+                item.LikeCount = res.Data.LikeCount;
             }
-            catch (TaskCanceledException)
+            catch
             {
-                // 👉 bị spam → hủy → bỏ qua
+                // ❌ rollback nếu fail
+                item.IsLiked = !item.IsLiked;
+                item.LikeCount += item.IsLiked ? 1 : -1;
+            }
+            finally
+            {
+                item.IsBusy = false;
             }
         }
+        private CancellationTokenSource? _likeCts;
 
         [RelayCommand]
         public async Task LoadCommentsAsync()
