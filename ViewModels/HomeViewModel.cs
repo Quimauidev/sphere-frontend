@@ -205,8 +205,24 @@ namespace Sphere.ViewModels
             }
         }
 
+        [ObservableProperty]
+        private bool isLoadingMoreFollowing;
+
         [RelayCommand]
-        public Task LoadMoreFollowing() => LoadFollowingAsync();
+        public async Task LoadMoreFollowing()
+        {
+            if (_followingHasNoMoreData || IsLoadingMoreFollowing)
+                return;
+            IsLoadingMoreFollowing = true;
+            try
+            {
+                await LoadFollowingAsync();
+            }
+            finally
+            {
+                IsLoadingMoreFollowing = false;
+            }
+        }
 
         // ----------------- POPULAR -----------------
         public async Task LoadPopularAsync(bool forceReload = false)
@@ -271,9 +287,24 @@ namespace Sphere.ViewModels
                 IsRefreshingPopular = false;
             }
         }
+        [ObservableProperty]
+        private bool isLoadingMorePopular;
 
         [RelayCommand]
-        public Task LoadMorePopular() => LoadPopularAsync();
+        public async Task LoadMorePopular()
+        {
+            if (_popularHasNoMoreData || IsLoadingMorePopular)
+                return;
+            IsLoadingMorePopular = true;
+            try
+            {
+                await LoadPopularAsync();
+            }
+            finally
+            {
+                IsLoadingMorePopular = false;
+            }
+        }
 
         // ----------------- LATEST -----------------
         public async Task LoadLatestAsync(bool forceReload = false)
@@ -339,7 +370,23 @@ namespace Sphere.ViewModels
             }
         }
 
+        [ObservableProperty]
+        private bool isLoadingMoreLatest;
+
         [RelayCommand]
-        public Task LoadMoreLatest() => LoadLatestAsync();
+        public async Task LoadMoreLatest()
+        {
+            if (_latestHasNoMoreData || IsLoadingMoreLatest)
+                return;
+            IsLoadingMoreLatest = true;
+            try
+            {
+                await LoadLatestAsync();
+            }
+            finally
+            {
+                IsLoadingMoreLatest = false;
+            }
+        }
     }
 }

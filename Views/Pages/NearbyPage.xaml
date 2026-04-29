@@ -184,7 +184,7 @@
                         <ActivityIndicator
                             Margin="10"
                             HorizontalOptions="Center"
-                            IsRunning="{Binding IsLoadingMore}"
+                            IsRunning="True"
                             IsVisible="{Binding IsLoadingMore}"
                             VerticalOptions="Center" />
                     </CollectionView.Footer>

@@ -88,6 +88,14 @@
                         <local:DiaryFeedItemView BindingContext="{Binding .}" />
                     </DataTemplate>
                 </CollectionView.ItemTemplate>
+                <CollectionView.Footer>
+                    <ActivityIndicator
+                        Margin="10"
+                        HorizontalOptions="Center"
+                        IsRunning="True"
+                        IsVisible="{Binding IsLoadingMoreLatest}"
+                        VerticalOptions="Center" />
+                </CollectionView.Footer>
             </CollectionView>
         </RefreshView>
     </Grid>
