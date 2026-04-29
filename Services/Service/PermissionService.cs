@@ -219,8 +219,8 @@ namespace Sphere.Services.Service
             // Đảm bảo đóng popup GPS nếu đang mở
             _gpsDialogOpen = false;
             // Nếu GPS đã bật thì bắn event cho ViewModel
-            if (IsGpsEnabled())
-                ReturnedFromSettings?.Invoke();
+          
+            ReturnedFromSettings?.Invoke();
         }
     }
 }

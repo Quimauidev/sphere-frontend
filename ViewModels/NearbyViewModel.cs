@@ -196,14 +196,19 @@ namespace Sphere.ViewModels
             var permission = await _permissionService.RequestPermissionAsync(AppPermission.Location);
 
             if (permission != PermissionResult.Granted)
-                return false;
-
-            if (!_permissionService.IsGpsEnabled())
             {
-                await _permissionService.ShowGpsDialogAsync();
+                IsLocationEnabled = false;
                 return false;
             }
 
+            var gpsOn = _permissionService.IsGpsEnabled();
+            if (!gpsOn)
+            {
+                IsLocationEnabled = false;
+                await _permissionService.ShowGpsDialogAsync();
+                return false;
+            }
+            IsLocationEnabled = true; // 🔥 DÒNG QUAN TRỌNG
             return true;
         }
 

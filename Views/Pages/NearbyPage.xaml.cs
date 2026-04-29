@@ -43,8 +43,11 @@ public partial class NearbyPage : ContentPage
         _permissionService.GpsTurnedOff -= HandleGpsTurnedOff;
     }
 
-    private async void OnReturnedFromSettings()
+    private void OnReturnedFromSettings()
     {
-        await _viewModel.CheckPermissionAndGps();
+        MainThread.BeginInvokeOnMainThread(async () =>
+        {
+            await _viewModel.CheckPermissionAndGps();
+        });
     }
 }

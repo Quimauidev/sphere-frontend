@@ -105,6 +105,6 @@ namespace Sphere
             var login = _serviceProvider.GetRequiredService<LoginPage>();
             // Nếu không có token hoặc hết hạn → chuyển sang LoginPage
             _anv.SetRootPage(new NavigationPage(login));
-        }        
+        }
     }
 }
