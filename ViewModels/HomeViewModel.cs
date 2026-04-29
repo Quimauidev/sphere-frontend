@@ -143,17 +143,20 @@ namespace Sphere.ViewModels
         }
 
         // ----------------- FOLLOWING -----------------
-        public async Task LoadFollowingAsync(bool forceReload = false)
+        public async Task LoadFollowingAsync(bool forceReload = false, bool isRefresh = false)
         {
             if (_followingLoading || (_followingHasNoMoreData && !forceReload)) return;
             _followingLoading = true;
-            IsRefreshingFollowing = forceReload;
-
+            IsRefreshingFollowing = isRefresh;
             if (forceReload)
             {
                 _followingPage = 1;
                 _followingHasNoMoreData = false;
                 FollowingPosts.Clear();
+            }
+            // 🔥 chỉ loading khi load lần đầu
+            if (_followingPage == 1 && !IsRefreshingFollowing)
+            {
                 FollowingState = UiViewState.Loading;
             }
 
@@ -164,45 +167,38 @@ namespace Sphere.ViewModels
                 _followingCts = new CancellationTokenSource();
                 var token = _followingCts.Token;
                 var response = await _diaryService.GetHomeDiariesAsync("follow", _followingPage, PageSize, token);
-
-                if (response.IsSuccess)
+                if(!response.IsSuccess)
                 {
-                    var currentUser = PreferencesHelper.LoadCurrentUser();
-                    var currentUserId = currentUser?.UserDTO?.Id ?? Guid.Empty;
-
-                    var items = response.Data?
-                    .Select(d =>
-                    {
-                        var vm = new DiaryFeedItemViewModel(d, currentUserId, _followService, _conversationService, _nv, _anv,_res, _userSessionService);
-                        vm.IsOnline = PresenceService.OnlineUsersCache.ContainsKey(vm.UserId)
-                         ? PresenceService.OnlineUsersCache[vm.UserId]
-                         : d.UserDiaryDTO?.IsOnline ?? false;
-
-                        return vm;
-                    })
-                    .ToList() ?? [];
-
-                    if (forceReload) FollowingPosts.Clear();
-                    foreach (var item in items) FollowingPosts.Add(item);
-                    // nếu có data thì tăng page, còn không thì giữ nguyên page
-                    if (items.Any())
-                    {
-                        _followingPage++;
-                    }
-
-                    _followingHasNoMoreData = items.Count < PageSize;
-
-                    FollowingState = FollowingPosts.Count == 0 ? UiViewState.Empty : UiViewState.Success;
-                    FollowingErrorMessage = FollowingPosts.Count == 0 ? response.Message : null;
-                }
-                else
-                {
-                    var msg = response.Errors?.FirstOrDefault()?.Description
-                              ?? response.Message
-                              ?? "Có lỗi xảy ra";
-                    FollowingErrorMessage = msg;
                     FollowingState = UiViewState.Error;
+                    FollowingErrorMessage = response.Errors?.FirstOrDefault()?.Description ?? response.Message ?? "Có lỗi xảy ra";
+                    return;
                 }
+                var currentUser = PreferencesHelper.LoadCurrentUser();
+                var currentUserId = currentUser?.UserDTO?.Id ?? Guid.Empty;
+
+                var data = response.Data?
+                .Select(d =>
+                {
+                    var vm = new DiaryFeedItemViewModel(d, currentUserId, _followService, _conversationService, _nv, _anv, _res, _userSessionService);
+                    vm.IsOnline = PresenceService.OnlineUsersCache.ContainsKey(vm.UserId)
+                     ? PresenceService.OnlineUsersCache[vm.UserId]
+                     : d.UserDiaryDTO?.IsOnline ?? false;
+
+                    return vm;
+                })
+                .ToList() ?? [];
+
+                if (forceReload) 
+                    FollowingPosts.Clear();
+                foreach (var item in data)
+                    FollowingPosts.Add(item);
+                // nếu có data thì tăng page, còn không thì giữ nguyên page
+                _followingHasNoMoreData = data.Count < PageSize;
+                if (data.Count > 0)
+                {
+                    _followingPage++;
+                }
+                FollowingState = FollowingPosts.Count == 0 ? UiViewState.Empty : UiViewState.Success;
             }
             finally
             {
@@ -219,16 +215,15 @@ namespace Sphere.ViewModels
         {
             if (_popularLoading || (_popularHasNoMoreData && !forceReload)) return;
             _popularLoading = true;
-            IsRefreshingPopular = forceReload;
-
             if (forceReload)
             {
                 _popularPage = 1;
                 _popularHasNoMoreData = false;
                 PopularPosts.Clear();
-                PopularState = UiViewState.Loading;
+                if(!IsRefreshingPopular)
+                    PopularState = UiViewState.Loading;
             }
-
+           
             try
             {
                 _popularCts?.Cancel();
@@ -252,20 +247,20 @@ namespace Sphere.ViewModels
                         return vm;
                     })
                     .ToList() ?? new List<DiaryFeedItemViewModel>();
-
-                    if (forceReload) PopularPosts.Clear();
-                    foreach (var item in items) PopularPosts.Add(item);
+                   
+                    foreach (var item in items)
+                        PopularPosts.Add(item);
                     // nếu có data thì tăng page, còn không thì giữ nguyên page
+
                     if (items.Any())
                     {
                         _popularPage++;
                     }
 
                     _popularHasNoMoreData = items.Count < PageSize;
-                    
+
 
                     PopularState = PopularPosts.Count == 0 ? UiViewState.Empty : UiViewState.Success;
-                    PopularErrorMessage = PopularPosts.Count == 0 ? response.Message : null;
                 }
                 else
                 {
@@ -279,7 +274,6 @@ namespace Sphere.ViewModels
             finally
             {
                 _popularLoading = false;
-                IsRefreshingPopular = false;
             }
         }
 
@@ -287,20 +281,21 @@ namespace Sphere.ViewModels
         public Task LoadMorePopular() => LoadPopularAsync();
 
         // ----------------- LATEST -----------------
-        public async Task LoadLatestAsync(bool forceReload = false)
+        public async Task LoadLatestAsync(bool forceReload = false, bool isRefresh = false)
         {
             if (_latestLoading || (_latestHasNoMoreData && !forceReload)) return;
             _latestLoading = true;
-            IsRefreshingLatest = forceReload;
-
+            IsRefreshingLatest = isRefresh;
             if (forceReload)
             {
                 _latestPage = 1;
                 _latestHasNoMoreData = false;
                 LatestPosts.Clear();
+            }
+            if (_latestPage == 1 && !IsRefreshingLatest)
+            {
                 LatestState = UiViewState.Loading;
             }
-
             try
             {
                 _latestCts?.Cancel();

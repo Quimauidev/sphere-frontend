@@ -304,17 +304,16 @@ namespace Sphere.ViewModels
         {
             if (!IsLocationEnabled)
             {
-                _nearbyCts?.Cancel(); // 🔥 bắt buộc
+                _nearbyCts?.Cancel();
                 return;
             }
-            if (NearbyLoading) return;
-
-            if (HasNoMoreData && !forceReload) return;
-
+            if (NearbyLoading)
+                return;
+            if (HasNoMoreData && !forceReload)
+                return;
             if (!await _nearbyLock.WaitAsync(0))
                 return;
             
-
             try
             {
                 NearbyLoading = true;
@@ -323,10 +322,8 @@ namespace Sphere.ViewModels
                     page = 1;
                     HasNoMoreData = false;
                     Nearby.Clear();
-                }
-                if (page == 1 && !IsRefreshing)
-                {
-                    UiState = UiViewState.Loading;
+                    if (!IsRefreshing)
+                        UiState = UiViewState.Loading;
                 }
                 _nearbyCts?.Cancel();
                 _nearbyCts?.Dispose();
@@ -364,11 +361,12 @@ namespace Sphere.ViewModels
 
                 foreach (var item in data)
                     Nearby.Add(item);
-                HasNoMoreData = data.Count() < pageSize;
-                if (!HasNoMoreData)
+                
+                if (data.Any())
                 {
                     page++;
                 }
+                HasNoMoreData = data.Count() < pageSize;
                 _lastLoadTime = DateTime.UtcNow;
 
                 UiState = UiViewState.Success;
@@ -443,7 +441,7 @@ namespace Sphere.ViewModels
                         Longitude = _currentLocation.Longitude
                     });
                 }
-                await ReloadNearby();
+                await LoadNearby(forceReload: true);
             }
             finally
             {
